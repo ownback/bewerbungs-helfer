@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ownback.local/schemas/profile.schema.json",
+  "title": "Master-Profil",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_status",
+    "person",
+    "goal",
+    "education",
+    "experience",
+    "projects",
+    "skills",
+    "evidence",
+    "motivation",
+    "voice",
+    "presentation",
+    "open_questions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "profile_status": { "enum": ["incomplete", "review_ready", "confirmed"] },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "address", "phone", "email", "birth_date", "birth_place", "photo"],
+      "properties": {
+        "name": { "type": "string" },
+        "first_name": { "type": "string" },
+        "last_name": { "type": "string" },
+        "pronouns": { "type": "string" },
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["street", "postal_code", "city", "country"],
+          "properties": {
+            "street": { "type": "string" },
+            "postal_code": { "type": "string" },
+            "city": { "type": "string" },
+            "country": { "type": "string" }
+          }
+        },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "birth_date": { "type": "string", "format": "date" },
+        "birth_place": { "type": "string" },
+        "nationality": { "type": "string" },
+        "photo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "valid", "consent", "crop"],
+          "properties": {
+            "file": { "type": "string" },
+            "valid": { "type": "boolean" },
+            "consent": { "type": "boolean" },
+            "crop": { "enum": ["portrait", "square", "original", "unset"] },
+            "alt": { "type": "string" }
+          }
+        }
+      }
+    },
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apprenticeship", "alternatives", "start", "locations", "radius_km", "relocation", "commuting"],
+      "properties": {
+        "apprenticeship": { "type": "string" },
+        "alternatives": { "type": "array", "items": { "type": "string" } },
+        "start": { "type": "string" },
+        "locations": { "type": "array", "items": { "type": "string" } },
+        "radius_km": { "type": "number", "minimum": 0 },
+        "relocation": { "enum": ["yes", "no", "maybe", "unknown"] },
+        "commuting": { "enum": ["yes", "no", "maybe", "unknown"] }
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/educationEntry" }
+    },
+    "experience": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/experienceEntry" }
+    },
+    "projects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/projectEntry" }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["groups", "languages"],
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "icon", "items"],
+            "properties": {
+              "name": { "type": "string" },
+              "icon": { "type": "string" },
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/skillItem" }
+              }
+            }
+          }
+        },
+        "languages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/skillItem" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "issuer", "date", "file", "kind", "show_in_portfolio", "original", "valid"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "issuer": { "type": "string" },
+          "date": { "type": "string" },
+          "file": { "type": "string" },
+          "kind": { "enum": ["certificate", "reference", "other"] },
+          "show_in_portfolio": { "type": "boolean" },
+          "original": { "enum": ["scan", "copy", "digital_original", "unknown"] },
+          "valid": { "type": "boolean" },
+          "source_status": { "$ref": "#/$defs/sourceStatus" }
+        }
+      }
+    },
+    "motivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "formative_experience", "favorite_project", "learning_goals", "boundaries"],
+      "properties": {
+        "origin": { "type": "string" },
+        "formative_experience": { "type": "string" },
+        "favorite_project": { "type": "string" },
+        "learning_goals": { "type": "array", "items": { "type": "string" } },
+        "boundaries": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "voice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strengths", "solved_problem", "avoid"],
+      "properties": {
+        "strengths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "example"],
+            "properties": {
+              "name": { "type": "string" },
+              "example": { "type": "string" }
+            }
+          }
+        },
+        "solved_problem": { "type": "string" },
+        "avoid": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["footer", "cover_company_name", "skill_display", "timeline_connectors", "page_number_style"],
+      "properties": {
+        "footer": { "const": "name_only" },
+        "cover_company_name": { "const": false },
+        "skill_display": { "const": "bars" },
+        "timeline_connectors": { "const": false },
+        "page_number_style": { "const": "plain_without_total" },
+        "icons": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "path_or_url", "reviewed_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["document", "website", "interview", "other"] },
+          "path_or_url": { "type": "string" },
+          "reviewed_at": { "type": "string", "format": "date" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "question", "severity", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "question": { "type": "string" },
+          "severity": { "enum": ["blocking", "non_blocking", "research_needed"] },
+          "status": { "enum": ["open", "resolved"] },
+          "answer": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceStatus": {
+      "enum": ["confirmed", "inferred", "open", "conflict"]
+    },
+    "dateRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "precision", "is_current"],
+      "properties": {
+        "start": { "type": ["string", "null"] },
+        "end": { "type": ["string", "null"] },
+        "precision": { "enum": ["month", "year", "day", "unknown"] },
+        "is_current": { "type": "boolean" },
+        "approx": { "type": "boolean" }
+      }
+    },
+    "educationEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "institution", "city", "country", "date_range", "program", "qualification", "expected", "source_status"],
+      "properties": {
+        "id": { "type": "string" },
+        "institution": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string" },
+        "date_range": { "$ref": "#/$defs/dateRange" },
+        "program": { "type": "string" },
+        "qualification": { "type": "string" },
+        "expected": { "type": "boolean" },
+        "details": { "type": "array", "items": { "type": "string" } },
+        "source_status": { "$ref": "#/$defs/sourceStatus" },
+        "source_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "experienceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "organization", "city", "kind", "role", "date_range", "tasks", "source_status"],
+      "properties": {
+        "id": { "type": "string" },
+        "organization": { "type": "string" },
+        "city": { "type": "string" },
+        "kind": { "enum": ["internship", "employment", "volunteer", "other"] },
+        "role": { "type": "string" },
+        "date_range": { "$ref": "#/$defs/dateRange" },
+        "tasks": { "type": "array", "items": { "type": "string" } },
+        "outcome": { "type": "string" },
+        "source_status": { "$ref": "#/$defs/sourceStatus" },
+        "source_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "projectEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "date_range", "goal", "own_role", "tools", "result", "images", "source_status"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "date_range": { "$ref": "#/$defs/dateRange" },
+        "goal": { "type": "string" },
+        "own_role": { "type": "string" },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "result": { "type": "string" },
+        "link": { "type": "string" },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "consent", "valid"],
+            "properties": {
+              "file": { "type": "string" },
+              "consent": { "type": "boolean" },
+              "valid": { "type": "boolean" }
+            }
+          }
+        },
+        "source_status": { "$ref": "#/$defs/sourceStatus" },
+        "source_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "skillItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "level", "scale", "evidence", "source_status"],
+      "properties": {
+        "name": { "type": "string" },
+        "level": { "enum": ["learning", "basic", "solid", "advanced", "future", "native"] },
+        "scale": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "evidence": { "type": "string" },
+        "note": { "type": "string" },
+        "source_status": { "$ref": "#/$defs/sourceStatus" }
+      }
+    }
+  }
+}

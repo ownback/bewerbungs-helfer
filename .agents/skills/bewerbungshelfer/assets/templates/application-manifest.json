@@ -1,0 +1,17 @@
+{
+  "company": "",
+  "role": "",
+  "created_at": "",
+  "html": "bewerbungsmappe.html",
+  "sections": [
+    "deckblatt",
+    "anschreiben",
+    "lebenslauf",
+    "motivationsschreiben",
+    "zertifikate",
+    "zeugnisse"
+  ],
+  "assets": [],
+  "status": "draft",
+  "open_questions": []
+}

@@ -1,0 +1,51 @@
+{
+  "source": {
+    "name": "Bundesagentur für Arbeit",
+    "url": "",
+    "retrieved_at": ""
+  },
+  "title": "",
+  "company": "",
+  "apprenticeship": "",
+  "locations": [
+    {
+      "city": "",
+      "street": "",
+      "postal_code": ""
+    }
+  ],
+  "start": "",
+  "duration": "",
+  "deadline": "",
+  "description": "",
+  "requirements": [
+    {
+      "text": "",
+      "evidence": "",
+      "status": "unknown",
+      "profile_evidence": ""
+    }
+  ],
+  "application": {
+    "method": "unknown",
+    "url": "",
+    "email": "",
+    "notes": ""
+  },
+  "contact": {
+    "company": "",
+    "name": "",
+    "role": "",
+    "department": "",
+    "street": "",
+    "postal_code": "",
+    "city": "",
+    "email": "",
+    "phone": "",
+    "source_url": "",
+    "confidence": "unknown"
+  },
+  "benefits": [],
+  "open_questions": [],
+  "company_facts": []
+}

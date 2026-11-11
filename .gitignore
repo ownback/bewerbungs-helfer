@@ -1,0 +1,12 @@
+# Persönliche Daten bleiben lokal
+profile/*
+!profile/README.md
+applications/
+workspace/
+
+# Generierte Exporte
+*.pdf
+
+# Lokale Werkzeugdateien
+.DS_Store
+.taste-skill/

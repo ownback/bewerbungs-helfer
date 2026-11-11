@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ownback.local/schemas/job.schema.json",
+  "title": "Ausbildungsstelle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source",
+    "title",
+    "company",
+    "apprenticeship",
+    "locations",
+    "start",
+    "description",
+    "requirements",
+    "application",
+    "contact",
+    "company_facts",
+    "open_questions"
+  ],
+  "properties": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "url",
+        "retrieved_at"
+      ],
+      "properties": {
+        "name": {
+          "const": "Bundesagentur für Arbeit"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "company": {
+      "type": "string",
+      "minLength": 1
+    },
+    "apprenticeship": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "city"
+        ],
+        "properties": {
+          "city": {
+            "type": "string",
+            "minLength": 1
+          },
+          "street": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "start": {
+      "type": "string"
+    },
+    "duration": {
+      "type": "string"
+    },
+    "deadline": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "evidence",
+          "status"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "met",
+              "partial",
+              "not_met",
+              "unknown"
+            ]
+          },
+          "profile_evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "notes"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "email",
+            "portal",
+            "post",
+            "unknown"
+          ]
+        },
+        "url": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence",
+        "company",
+        "name",
+        "role",
+        "department",
+        "street",
+        "postal_code",
+        "city",
+        "email",
+        "phone",
+        "source_url"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "department": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "confidence": {
+          "enum": [
+            "verified",
+            "partial",
+            "unknown"
+          ]
+        },
+        "company": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        },
+        "postal_code": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        }
+      }
+    },
+    "benefits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "question",
+          "severity"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "enum": [
+              "blocking",
+              "non_blocking",
+              "research_needed"
+            ]
+          }
+        }
+      }
+    },
+    "company_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "statement",
+          "evidence",
+          "source_url",
+          "retrieved_at"
+        ],
+        "properties": {
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    }
+  }
+}

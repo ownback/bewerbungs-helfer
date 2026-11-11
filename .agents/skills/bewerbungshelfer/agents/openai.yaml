@@ -1,0 +1,6 @@
+interface:
+  display_name: "Bewerbungshelfer"
+  short_description: "Ausbildungsbewerbung als fertige Bewerbungsmappe"
+  default_prompt: "Use $bewerbungshelfer to build my profile, find one apprenticeship on Bundesagentur für Arbeit, and prepare a complete German application portfolio."
+policy:
+  allow_implicit_invocation: true

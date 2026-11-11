@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "profile_status": "incomplete",
+  "person": {
+    "name": "",
+    "first_name": "",
+    "last_name": "",
+    "pronouns": "",
+    "address": {
+      "street": "",
+      "postal_code": "",
+      "city": "",
+      "country": "Deutschland"
+    },
+    "phone": "",
+    "email": "",
+    "birth_date": "",
+    "birth_place": "",
+    "nationality": "",
+    "photo": {
+      "file": "",
+      "valid": false,
+      "consent": false,
+      "crop": "unset",
+      "alt": ""
+    }
+  },
+  "goal": {
+    "apprenticeship": "",
+    "alternatives": [],
+    "start": "",
+    "locations": [],
+    "radius_km": 0,
+    "relocation": "unknown",
+    "commuting": "unknown"
+  },
+  "education": [],
+  "experience": [],
+  "projects": [],
+  "skills": {
+    "groups": [],
+    "languages": []
+  },
+  "evidence": [],
+  "motivation": {
+    "origin": "",
+    "formative_experience": "",
+    "favorite_project": "",
+    "learning_goals": [],
+    "boundaries": []
+  },
+  "voice": {
+    "strengths": [],
+    "solved_problem": "",
+    "avoid": []
+  },
+  "presentation": {
+    "footer": "name_only",
+    "cover_company_name": false,
+    "skill_display": "bars",
+    "timeline_connectors": false,
+    "page_number_style": "plain_without_total",
+    "icons": {}
+  },
+  "sources": [],
+  "open_questions": []
+}
