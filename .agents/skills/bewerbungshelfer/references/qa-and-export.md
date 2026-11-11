@@ -4,13 +4,15 @@
 
 ### Profil
 
-- [ ] `profile/master-profile.json` ist gültig
+- [ ] `profile/master-profile.json` ist gegen `assets/schemas/profile.schema.json` gültig
+- [ ] `job.json` ist gegen `assets/schemas/job.schema.json` gültig und hat mindestens einen `company_facts`-Eintrag
+- [ ] `application-manifest.json` ist gegen sein Schema gültig
 - [ ] Profil ist ausdrücklich bestätigt
 - [ ] alle blockierenden offenen Punkte sind geklärt
 - [ ] alle Stationen sind als Praktikum, Anstellung, Schulbildung oder Projekt klassifiziert
 - [ ] Jahres- und Monatsangaben sind plausibel
 - [ ] freigegebene Näherungen sind als `inferred` gespeichert
-- [ ] Foto ist gültig, korrekt zugeordnet und freigegeben
+- [ ] Foto ist gültig, korrekt zugeordnet und freigegeben – oder der Fotoblock fehlt ganz (kein leerer Rahmen)
 
 ### Inhalt
 
@@ -36,7 +38,8 @@
 - [ ] Zeugnisse
 - [ ] jede Seite beginnt auf einer neuen A4-Seite
 - [ ] keine einsame Zeile
-- [ ] nichts abgeschnitten oder über den Rand
+- [ ] nichts abgeschnitten oder über den Rand (Überlaufprüfung unten)
+- [ ] Folgeseiten nur für weitere Nachweise oder Lebenslauf-Fortsetzung, Inhaltsangabe nennt die Startseiten
 - [ ] Nachweise lesbar
 - [ ] keine kaputten Bildsymbole oder Alternativtexte in der A4-Fassung
 - [ ] langer Name bricht nicht in die Sidebar oder über den Satzspiegel
@@ -50,6 +53,24 @@
 - [ ] Desktop-Vorschau bei 1440 × 900 oder 1280 × 800 geprüft
 - [ ] Mobil-Vorschau bei 390 × 844 und 375 × 812 ohne horizontalen Überlauf geprüft
 - [ ] Desktop-, Mobil- und A4-Fassung getrennt beurteilt; keine Vorschaubreite als Ersatz für eine andere verwendet
+
+### Überlauf
+
+Jede `.page` hat eine feste A4-Höhe mit `overflow: hidden`. Zu langer Inhalt verschwindet sonst still. In der Browser-Konsole bei aktivierter Druckemulation (oder in der A4-Vorschau) prüfen:
+
+```js
+[...document.querySelectorAll('.page')].map((p, i) => {
+  const over = p.scrollHeight > p.clientHeight + 1 || p.scrollWidth > p.clientWidth + 1;
+  if (over) p.setAttribute('data-overflow', '');
+  return over ? i + 1 : null;
+}).filter(Boolean)
+```
+
+Das Ergebnis muss `[]` sein. Zusätzlich die Seitenbilder ansehen: Elemente, die innerhalb der Seite aus ihrem Block ragen (z. B. ein langer Name in die Sidebar), erkennt die Abfrage nicht. Ergebnis unter `validation.overflow_pages` im Manifest eintragen.
+
+### A4-Vorschau
+
+Wenn die Druckvorschau des Harness-Browsers nicht nutzbar ist, darf die A4-Fassung mit einem direkten Headless-Aufruf gerendert werden, z. B. `chromium --headless --no-pdf-header-footer --print-to-pdf=<vorschau.pdf> <bewerbungsmappe.html>`, und die Seiten als Bilder geprüft werden. Dabei kein Skript im Repository anlegen. Die Vorschau ist nicht der finale Export und liegt außerhalb des Repos oder im gitignorierten Bewerbungsordner.
 
 ### Druck
 
@@ -85,7 +106,7 @@ applications/<unternehmen>-<beruf>/bewerbungsmappe.pdf
 
 ## PDF prüfen
 
-- [ ] sechs Abschnitte
+- [ ] sechs Abschnitte, Seitenzahl wie im Manifest unter `pages`
 - [ ] keine leeren Seiten
 - [ ] keine abgeschnittenen Zeilen
 - [ ] Text auswählbar

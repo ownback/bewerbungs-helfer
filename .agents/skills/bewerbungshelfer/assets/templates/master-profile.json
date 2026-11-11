@@ -23,7 +23,8 @@
       "consent": false,
       "crop": "unset",
       "alt": ""
-    }
+    },
+    "field_status": {}
   },
   "goal": {
     "apprenticeship": "",
@@ -32,7 +33,8 @@
     "locations": [],
     "radius_km": 0,
     "relocation": "unknown",
-    "commuting": "unknown"
+    "commuting": "unknown",
+    "field_status": {}
   },
   "education": [],
   "experience": [],
@@ -47,12 +49,14 @@
     "formative_experience": "",
     "favorite_project": "",
     "learning_goals": [],
-    "boundaries": []
+    "boundaries": [],
+    "field_status": {}
   },
   "voice": {
     "strengths": [],
     "solved_problem": "",
-    "avoid": []
+    "avoid": [],
+    "field_status": {}
   },
   "presentation": {
     "footer": "name_only",
@@ -60,7 +64,8 @@
     "skill_display": "bars",
     "timeline_connectors": false,
     "page_number_style": "plain_without_total",
-    "icons": {}
+    "icons": {},
+    "show_birth_data": false
   },
   "sources": [],
   "open_questions": []

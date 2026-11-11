@@ -4,8 +4,10 @@
 
 - keine Profil-, Job- oder Bewerbungsdaten im Git
 - `profile/` und `applications/` sind gitignoriert
-- Skill-Validator läuft erfolgreich
-- Skill ist unter `~/.agents/skills/bewerbungshelfer` verlinkt
+- alle JSON-Dateien im Skill sind gültiges JSON: `python3 -m json.tool <datei>`
+- die drei Schemas sind gültige JSON-Schemas (Draft 2020-12), z. B. mit einem lokal installierten `jsonschema`-Paket: `python3 -c "import json,jsonschema; jsonschema.Draft202012Validator.check_schema(json.load(open('<schema>')))"`
+- `git ls-files` enthält nichts unter `profile/` außer `README.md` und `.gitkeep`, nichts unter `applications/` oder `workspace/`
+- optional, je nach Harness: Skill ist unter `~/.agents/skills/bewerbungshelfer` verlinkt
 - alle Dokumentationslinks funktionieren
 
 ## HTML-Vorlage
@@ -14,7 +16,9 @@ Die leere Vorlage unter `.agents/skills/bewerbungshelfer/assets/bewerbungsmappe.
 
 Eine ausgefüllte Mappe wird geprüft:
 
-- sechs A4-Seiten
+- sechs Abschnitte; sechs A4-Seiten im Regelfall, Folgeseiten nur für weitere Nachweise oder Lebenslauf-Fortsetzung
+- keine Seite mit Überlauf (Prüfung siehe `references/qa-and-export.md`)
+- `profile/master-profile.json`, `job.json` und `application-manifest.json` gegen ihre Schemas validiert
 - Reihenfolge: Deckblatt, Anschreiben, Lebenslauf, Motivationsschreiben, Zertifikate, Zeugnisse
 - kein Platzhalter mehr vorhanden
 - echte Nachweise sichtbar oder ausdrücklich fehlend

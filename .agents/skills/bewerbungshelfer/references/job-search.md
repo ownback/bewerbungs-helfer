@@ -2,9 +2,15 @@
 
 ## Suche
 
-Öffne die Bundesagentur-Jobsuche im Browser. Wähle **Ausbildung**. Nutze Suchbegriff, Ort und Umkreis aus dem Master-Profil.
+Öffne die Bundesagentur-Jobsuche im Browser. Wähle **Ausbildung**. Nutze aus dem Master-Profil ausschließlich:
 
-Zeige höchstens zehn Treffer. Der Nutzer wählt genau eine Stelle. Öffne die Detailansicht und lies die vollständige Beschreibung.
+- Suchbegriff (`goal.apprenticeship` oder eine Alternative)
+- Ort oder PLZ (`goal.locations`, keine Straße)
+- Umkreis (`goal.radius_km`)
+
+Name, Kontaktdaten, Geburtsdaten, Lebenslauf und Nachweise werden nie in die Suche eingegeben.
+
+Zeige höchstens zehn Treffer. Der Nutzer wählt genau eine Stelle. Öffne die Detailansicht und lies die vollständige Beschreibung. Die Anzeige im Browser des Harness lesen und den Originaltext übernehmen. Werkzeuge, die Seiten nur zusammenfassen (z. B. WebFetch), liefern keinen wörtlichen Beleg; `evidence` und `company_facts.evidence` müssen wörtlich sein.
 
 ## `job.json`
 
@@ -48,7 +54,7 @@ Unternehmensbezogene Aussagen für die Briefe werden zusätzlich gespeichert:
 - Quell-URL
 - Abrufdatum
 
-Keine Kultur- oder Kundenversprechen ohne Quelle.
+Keine Kultur- oder Kundenversprechen ohne Quelle. `company_facts` braucht mindestens einen Eintrag; Anschreiben und Motivationsschreiben verwenden nur Unternehmensaussagen, die dort stehen. `used_in` hält fest, in welchem Brief eine Aussage verwendet wird.
 
 ### Kontakt
 
@@ -71,7 +77,9 @@ Regeln:
 - Name und Rolle nur übernehmen, wenn sie belegt sind.
 - Allgemeine Bewerbungsadresse unter `application.email`, nicht als persönlicher Kontakt.
 - Telefonnummer nur übernehmen, wenn öffentlich und eindeutig zugeordnet.
+- `confidence: "verified"` nur mit Name und Quell-URL; `partial` nur mit Quell-URL.
 - Bei Unsicherheit `confidence: "unknown"` und offenen Punkt ergänzen.
+- Die verwendete Anrede steht in `contact.salutation`.
 - Wenn kein persönlicher Kontakt belegt ist, nutze „Sehr geehrte Damen und Herren“ und dokumentiere das in `contact-summary.md`.
 - Keine Kontaktdaten von einem ähnlichen Unternehmen übernehmen.
 

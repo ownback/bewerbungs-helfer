@@ -32,7 +32,7 @@ cd bewerbungs-helfer
 Dann im Repo Claude, Codex oder einen anderen Harness starten und den Skill aufrufen. Der Skill-Name ist `bewerbungshelfer`.
 
 - Codex / T3 Code: `$bewerbungshelfer`
-- Claude Code: den Inhalt von `AGENTS.md` lesen lassen und `bewerbungshelfer` starten
+- Claude Code: `CLAUDE.md` lädt `AGENTS.md` automatisch; der Skill ist über `.claude/skills/bewerbungshelfer` als `/bewerbungshelfer` verfügbar
 
 Der Agent gleicht zuerst vorhandene Unterlagen ab, ergänzt das Profil und sucht danach eine Ausbildungsstelle. Anschließend baut er die Mappe.
 

@@ -42,7 +42,7 @@ Der Agent liest die Dateien vollständig und prüft PDFs, DOCX und Bilder auch v
 - Telefon
 - E-Mail
 - gewünschte Anrede
-- Geburtsdatum und Geburtsort
+- Geburtsdatum und Geburtsort (optional; nur nach Freigabe im Lebenslauf)
 - Bewerbungsfoto verwenden?
 - Ist die Bilddatei gültig, aktuell und ausdrücklich freigegeben?
 
@@ -77,7 +77,20 @@ Für jede Station:
 - konkrete Aufgaben
 - belegbares Ergebnis
 
-### 5. Motivation
+### 5. Projekte
+
+Für jedes Projekt:
+
+- Name
+- Zeitraum
+- Ziel
+- eigene Rolle
+- Werkzeuge
+- Ergebnis
+- Link, optional
+- Bild, optional – nur echt, lesbar und ausdrücklich freigegeben
+
+### 6. Motivation
 
 - Wann ist das Interesse entstanden?
 - Welche Erfahrung hat es verstärkt?
@@ -85,7 +98,7 @@ Für jede Station:
 - Was will er in der Ausbildung lernen?
 - Was soll auf keinen Fall in der Bewerbung stehen?
 
-### 6. Fähigkeiten
+### 7. Fähigkeiten
 
 - Sprachen und Niveau
 - fachliche Kenntnisse
@@ -101,7 +114,7 @@ Für jede Fähigkeit:
 
 Die Skala ist eine visuelle Einordnung, kein Prozentwert.
 
-### 7. Nachweise
+### 8. Nachweise
 
 Für jeden Nachweis:
 
@@ -109,19 +122,19 @@ Für jeden Nachweis:
 - Aussteller
 - Datum
 - Datei
-- Zertifikat, Zeugnis oder sonstiger Nachweis?
+- Zertifikat, Schulzeugnis, Arbeits-/Praktikumszeugnis oder sonstiger Nachweis?
 - in der Mappe sichtbar?
 - Original oder Kopie?
 - technisch gültig?
 
-### 8. Stimme
+### 9. Stimme
 
 - drei Stärken mit Beispiel
 - ein Problem, das selbst gelöst wurde
 - ein Projekt, über das der Nutzer gerne spricht
 - Formulierungen, die nicht verwendet werden dürfen
 
-### 9. Darstellung
+### 10. Darstellung
 
 - Sollen Fähigkeiten als Diagramme erscheinen?
 - Welche Icons sollen für wiederkehrende Kategorien verwendet werden?

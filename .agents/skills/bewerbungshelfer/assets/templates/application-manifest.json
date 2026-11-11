@@ -11,7 +11,34 @@
     "zertifikate",
     "zeugnisse"
   ],
+  "pages": [
+    {
+      "number": 1,
+      "section": "deckblatt"
+    },
+    {
+      "number": 2,
+      "section": "anschreiben"
+    },
+    {
+      "number": 3,
+      "section": "lebenslauf"
+    },
+    {
+      "number": 4,
+      "section": "motivationsschreiben"
+    },
+    {
+      "number": 5,
+      "section": "zertifikate"
+    },
+    {
+      "number": 6,
+      "section": "zeugnisse"
+    }
+  ],
   "assets": [],
   "status": "draft",
-  "open_questions": []
+  "open_questions": [],
+  "validation": {}
 }

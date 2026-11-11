@@ -34,7 +34,7 @@ Die gemeinsame HTML-Vorlage liegt unter `.agents/skills/bewerbungshelfer/assets/
 
 Der Nutzer kann sie in Stencil öffnen und Änderungen markieren. Der Agent setzt die Markierungen im HTML um. Beide Fassungen müssen denselben Stand zeigen. Ohne Stencil prüfen Agent und Nutzer die Vorlage direkt im Browser.
 
-Die Basisvorlage wird aus der freigegebenen Designsprache aufgebaut und einmal gestaltet. Unternehmensspezifische Änderungen bleiben in der jeweiligen Bewerbung.
+Die Basisvorlage wird aus der freigegebenen Designsprache aufgebaut und **einmalig** gestaltet. Sie enthält keine persönlichen Daten. Ist sie freigegeben, beginnt jeder Durchlauf mit Schritt 1. Unternehmensspezifische Änderungen bleiben in der jeweiligen Bewerbung.
 
 ## 1. Unterlagen und Profil
 
@@ -45,7 +45,7 @@ Wenn das Profil noch nicht bestätigt ist:
 - lies PDFs, DOCX und Bilder vollständig und visuell,
 - prüfe DOCX auf eingebettete Bilder,
 - erfasse alle Stationen, Zeiträume, Aufgaben und Nachweise,
-- markiere die Angaben als `confirmed`, `inferred`, `open` oder `conflict`,
+- markiere die Angaben als `confirmed`, `inferred`, `open` oder `conflict` (`field_status` bzw. `source_status`),
 - frage nur nach fehlenden, defekten oder widersprüchlichen Punkten,
 - speichere bestätigte Angaben in `profile/master-profile.json`,
 - halte die menschenlesbare Fassung in `profile/master-profile.md` aktuell,
@@ -55,7 +55,7 @@ Defekte Bilder, insbesondere ein leeres Bewerbungsfoto, werden nicht eingebunden
 
 ## 2. Eine Stelle suchen
 
-Der Agent nutzt den Browser des Harness und die öffentliche Bundesagentur-Jobsuche im Bereich **Ausbildung**.
+Der Agent nutzt den Browser des Harness und die öffentliche Bundesagentur-Jobsuche im Bereich **Ausbildung**. Eingegeben werden nur Suchbegriff, Ort oder PLZ und Umkreis.
 
 Er zeigt eine kurze Auswahl. Der Nutzer wählt genau eine Stelle. Die Auswahl wird mit URL und Abrufdatum festgehalten.
 
@@ -99,7 +99,9 @@ Kopiere die Basisvorlage nach:
 applications/<unternehmen>-<beruf>/bewerbungsmappe.html
 ```
 
-Die sechs Seiten bleiben in dieser Reihenfolge:
+Daneben entsteht `application-manifest.json` mit Status `draft`.
+
+Die sechs Abschnitte bleiben in dieser Reihenfolge:
 
 1. Deckblatt
 2. Anschreiben
@@ -116,11 +118,11 @@ Nachweise werden als lokale Dateien in `applications/<...>/assets/` eingebunden.
 
 ## 6. HTML prüfen
 
-Der Agent öffnet die Mappe im Browser und prüft Inhalt und Reihenfolge. Das responsive Bildschirmlayout wird mindestens bei 1440 × 900, 390 × 844 und 375 × 812 geprüft. Der A4-Umbruch wird anschließend separat in der Druckvorschau kontrolliert. Jede generierte Aussage muss durch Profil oder Stellenanzeige belegt sein. Der Nutzer prüft dieselbe Fassung.
+Der Agent öffnet die Mappe im Browser und prüft Inhalt und Reihenfolge. Das responsive Bildschirmlayout wird mindestens bei 1440 × 900, 390 × 844 und 375 × 812 geprüft. Der A4-Umbruch wird anschließend separat in der Druckvorschau oder einer Headless-A4-Vorschau kontrolliert, inklusive Überlaufprüfung jeder Seite. Jede generierte Aussage muss durch Profil oder Stellenanzeige belegt sein. Der Nutzer prüft dieselbe Fassung.
 
 Wenn Stencil verwendet wird, prüft der Nutzer die Markierungen und bestätigt, dass HTML und Stencil denselben Stand zeigen.
 
-Erst nach eindeutiger Freigabe weiter.
+Erst nach eindeutiger Freigabe weiter. Dann Manifest auf `html_approved` setzen.
 
 ## 7. PDF und Versandvorbereitung
 
@@ -136,7 +138,7 @@ Danach erstellt er:
 - `contact-summary.md`
 - `email-draft.md`
 
-Er sendet nichts und füllt kein Portal aus.
+Das Manifest wird auf `pdf_exported` und danach `ready_to_send` gesetzt. Er sendet nichts und füllt kein Portal aus.
 
 ## Abbruchkriterien
 

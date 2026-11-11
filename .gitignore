@@ -1,6 +1,12 @@
 # Persönliche Daten bleiben lokal
 profile/*
 !profile/README.md
+!profile/import/
+!profile/assets/
+profile/import/*
+profile/assets/*
+!profile/import/.gitkeep
+!profile/assets/.gitkeep
 applications/
 workspace/
 

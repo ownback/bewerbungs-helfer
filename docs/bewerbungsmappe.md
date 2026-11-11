@@ -8,7 +8,7 @@ Wenn Stencil verwendet wird, ist Stencil die visuelle Quelle für Markierungen u
 
 ## Aufbau
 
-Die Mappe hat immer sechs Seiten in dieser Reihenfolge:
+Die Mappe hat immer sechs Abschnitte in dieser Reihenfolge:
 
 1. Deckblatt
 2. Anschreiben
@@ -17,7 +17,12 @@ Die Mappe hat immer sechs Seiten in dieser Reihenfolge:
 5. Zertifikate
 6. Zeugnisse
 
-Jede Seite ist ein eigener A4-Abschnitt mit festem Seitenumbruch.
+Jeder Abschnitt beginnt auf einer eigenen A4-Seite mit festem Seitenumbruch. Im Regelfall sind das sechs Seiten. Folgeseiten sind nur erlaubt für:
+
+- weitere Nachweise (höchstens zwei pro Seite),
+- eine Lebenslauf-Fortsetzung, wenn die Stationen nicht auf eine Seite passen.
+
+Folgeseiten tragen denselben Titel mit „Fortsetzung“ und eine fortlaufende Seitenzahl. Die Inhaltsangabe nennt die Startseite jedes Abschnitts. Die Seiten haben eine feste A4-Höhe; Inhalt, der nicht passt, würde abgeschnitten. Deshalb ist die Überlaufprüfung Pflicht.
 
 ## Stabile und variable Inhalte
 
@@ -109,14 +114,14 @@ Details: [asset-handling.md](asset-handling.md)
 - Hintergrundgrafiken an
 - Kopf- und Fußzeile aus
 - Maßstab 100 %
-- sechs Seiten
+- sechs Abschnitte, Folgeseiten nur nach den Regeln oben
 - nichts abgeschnitten
 
 PDF erst nach HTML-Freigabe. Das PDF ist für den E-Mail-Versand gedacht; es wird nicht ausgedruckt oder handschriftlich unterschrieben.
 
 ## Prüfliste
 
-- [ ] sechs Seiten in richtiger Reihenfolge
+- [ ] sechs Abschnitte in richtiger Reihenfolge
 - [ ] Name und Kontaktdaten identisch
 - [ ] Unternehmen und Ausbildung korrekt
 - [ ] Ansprechpartner belegt oder bewusst neutral

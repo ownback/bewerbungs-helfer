@@ -143,10 +143,11 @@ Beide Texte dürfen dieselbe Tatsache nur verwenden, wenn sie damit eine andere 
 
 **Neue Reihenfolge:**
 
+0. Einmalig: datenfreie Basisvorlage gestalten und freigeben (entfällt, wenn bereits freigegeben).
 1. Bestehende Unterlagen visuell und strukturell auswerten.
 2. Profilinterview nur für Lücken und Widersprüche.
 3. Profil strukturiert speichern und bestätigen.
-4. Basisvorlage anhand des bestätigten Profils erzeugen.
+4. Bewerbungsmappe aus Basisvorlage und bestätigtem Profil vorbereiten.
 5. Genau eine Stelle bei der Bundesagentur auswählen und belegen.
 6. Passung und Unternehmensbezug prüfen.
 7. Anschreiben und Motivationsschreiben getrennt entwerfen.

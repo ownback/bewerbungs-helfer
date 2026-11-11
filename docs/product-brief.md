@@ -15,11 +15,11 @@ Ein frischer Clone enthält keine Profil-, Job- oder Bewerbungsdaten. Der Nutzer
 ## Ein erfolgreicher Durchlauf
 
 1. Der Nutzer startet den Skill in einem frischen Clone.
-2. Der Agent führt das Profilinterview und baut `profile/master-profile.md`.
+2. Der Agent gleicht vorhandene Unterlagen ab, führt das Profilinterview für Lücken und speichert `profile/master-profile.json` (primär, schemavalidiert) sowie `profile/master-profile.md` (lesbare Fassung).
 3. Der Agent sucht im Browser eine Ausbildungsstelle bei der Bundesagentur für Arbeit.
 4. Der Nutzer wählt genau eine Stelle.
 5. Der Agent liest die Anzeige und belegt Anforderungen, Kontakt und Bewerbungsweg.
-6. Der Agent erstellt eine sechsseitige Bewerbungsmappe als HTML.
+6. Der Agent erstellt eine Bewerbungsmappe mit sechs Abschnitten als HTML.
 7. Der Nutzer prüft und gibt die HTML-Fassung frei.
 8. Der Agent exportiert per Browser ein PDF sowie Kontaktübersicht und E-Mail-Entwurf.
 
@@ -93,11 +93,11 @@ Wenn die Anzeige keinen Ansprechpartner nennt, sucht der Agent auf der öffentli
 
 Eine Bewerbung ist fertig, wenn:
 
-- alle sechs Seiten vorhanden sind,
+- alle sechs Abschnitte vorhanden sind,
 - Anschreiben und Motivationsschreiben unterschiedliche Aufgaben erfüllen,
 - jede Aussage durch Profil oder Stellenanzeige belegt ist,
 - die Nachweise als echte Scans eingebunden oder klar als fehlend markiert sind,
 - die HTML-Fassung im Browser geprüft und freigegeben ist,
-- das PDF sechs saubere A4-Seiten hat,
+- das PDF saubere A4-Seiten ohne Überlauf hat (sechs im Regelfall, Folgeseiten nur für weitere Nachweise),
 - Kontaktübersicht und E-Mail-Entwurf vorliegen,
 - nichts gesendet wurde.

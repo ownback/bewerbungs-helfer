@@ -8,7 +8,7 @@ Die Bundesagentur-Jobsuche ist die einzige Jobquelle der ersten Version. Der Age
 
 - Suchbereich: **Ausbildung**
 - Suchbegriff aus dem Master-Profil
-- Ort aus dem Master-Profil
+- Ort oder PLZ aus dem Master-Profil (keine Straße)
 - Umkreis aus dem Master-Profil
 - Startzeitpunkt nur als Filter, wenn die Anzeige ihn zuverlässig angibt
 
@@ -71,7 +71,7 @@ Wenn kein verlässlicher persönlicher Kontakt gefunden wird:
 - Keine Massenabfragen
 - Keine Umgehung von Anmeldung oder Bot-Schutz
 - Keine Abhängigkeit von internen Endpunkten
-- Keine Profildaten an die Jobsuche übertragen
+- Außer Suchbegriff, Ort/PLZ und Umkreis keine Profildaten an die Jobsuche übertragen (kein Name, keine Kontaktdaten, keine Geburtsdaten, keine Dokumente)
 - Keine zweite Jobquelle in der ersten Version
 
 ## Änderungen der Website

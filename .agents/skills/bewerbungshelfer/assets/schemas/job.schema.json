@@ -22,131 +22,57 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "url",
-        "retrieved_at"
-      ],
+      "required": ["name", "url", "retrieved_at"],
       "properties": {
-        "name": {
-          "const": "Bundesagentur für Arbeit"
-        },
-        "url": {
-          "type": "string",
-          "format": "uri"
-        },
-        "retrieved_at": {
-          "type": "string",
-          "format": "date"
-        }
+        "name": { "const": "Bundesagentur für Arbeit" },
+        "url": { "type": "string", "format": "uri" },
+        "retrieved_at": { "type": "string", "format": "date" }
       }
     },
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "company": {
-      "type": "string",
-      "minLength": 1
-    },
-    "apprenticeship": {
-      "type": "string",
-      "minLength": 1
-    },
+    "title": { "type": "string", "minLength": 1 },
+    "company": { "type": "string", "minLength": 1 },
+    "apprenticeship": { "type": "string", "minLength": 1 },
     "locations": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "city"
-        ],
+        "required": ["city"],
         "properties": {
-          "city": {
-            "type": "string",
-            "minLength": 1
-          },
-          "street": {
-            "type": "string"
-          },
-          "postal_code": {
-            "type": "string"
-          }
+          "city": { "type": "string", "minLength": 1 },
+          "street": { "type": "string" },
+          "postal_code": { "type": "string" }
         }
       }
     },
-    "start": {
-      "type": "string"
-    },
-    "duration": {
-      "type": "string"
-    },
-    "deadline": {
-      "type": "string"
-    },
-    "description": {
-      "type": "string",
-      "minLength": 1
-    },
+    "start": { "type": "string" },
+    "duration": { "type": "string" },
+    "deadline": { "type": "string" },
+    "description": { "type": "string", "minLength": 1 },
     "requirements": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "text",
-          "evidence",
-          "status"
-        ],
+        "required": ["text", "evidence", "status"],
         "properties": {
-          "text": {
-            "type": "string",
-            "minLength": 1
-          },
-          "evidence": {
-            "type": "string",
-            "minLength": 1
-          },
-          "status": {
-            "enum": [
-              "met",
-              "partial",
-              "not_met",
-              "unknown"
-            ]
-          },
-          "profile_evidence": {
-            "type": "string"
-          }
+          "text": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["met", "partial", "not_met", "unknown"] },
+          "profile_evidence": { "type": "string" }
         }
       }
     },
     "application": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "method",
-        "notes"
-      ],
+      "required": ["method", "notes"],
       "properties": {
-        "method": {
-          "enum": [
-            "email",
-            "portal",
-            "post",
-            "unknown"
-          ]
-        },
-        "url": {
-          "type": "string"
-        },
-        "email": {
-          "type": "string"
-        },
-        "notes": {
-          "type": "string"
-        }
+        "method": { "enum": ["email", "portal", "post", "unknown"] },
+        "url": { "type": "string" },
+        "email": { "type": "string" },
+        "notes": { "type": "string" }
       }
     },
     "contact": {
@@ -166,72 +92,49 @@
         "source_url"
       ],
       "properties": {
-        "name": {
-          "type": "string"
-        },
-        "role": {
-          "type": "string"
-        },
-        "department": {
-          "type": "string"
-        },
-        "email": {
-          "type": "string"
-        },
-        "phone": {
-          "type": "string"
-        },
-        "source_url": {
-          "type": "string"
-        },
-        "confidence": {
-          "enum": [
-            "verified",
-            "partial",
-            "unknown"
-          ]
-        },
-        "company": {
-          "type": "string"
-        },
-        "street": {
-          "type": "string"
-        },
-        "postal_code": {
-          "type": "string"
-        },
-        "city": {
-          "type": "string"
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "department": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "source_url": { "type": "string" },
+        "confidence": { "enum": ["verified", "partial", "unknown"] },
+        "company": { "type": "string" },
+        "street": { "type": "string" },
+        "postal_code": { "type": "string" },
+        "city": { "type": "string" },
+        "salutation": {
+          "type": "string",
+          "description": "Anrede im Anschreiben, z. B. „Sehr geehrte Damen und Herren“ bei confidence unknown."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": {"confidence": {"const": "verified"}} },
+          "then": {
+            "properties": {
+              "source_url": { "type": "string", "format": "uri", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": {"confidence": {"const": "partial"}} },
+          "then": { "properties": {"source_url": {"type": "string", "format": "uri", "minLength": 1}} }
+        }
+      ]
     },
-    "benefits": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
+    "benefits": { "type": "array", "items": {"type": "string"} },
     "open_questions": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "question",
-          "severity"
-        ],
+        "required": ["question", "severity"],
         "properties": {
-          "question": {
-            "type": "string",
-            "minLength": 1
-          },
-          "severity": {
-            "enum": [
-              "blocking",
-              "non_blocking",
-              "research_needed"
-            ]
-          }
+          "question": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["blocking", "non_blocking", "research_needed"] },
+          "impact": { "type": "string" }
         }
       }
     },
@@ -240,31 +143,18 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "statement",
-          "evidence",
-          "source_url",
-          "retrieved_at"
-        ],
+        "required": ["statement", "evidence", "source_url", "retrieved_at"],
         "properties": {
-          "statement": {
-            "type": "string",
-            "minLength": 1
-          },
-          "evidence": {
-            "type": "string",
-            "minLength": 1
-          },
-          "source_url": {
-            "type": "string",
-            "format": "uri"
-          },
-          "retrieved_at": {
-            "type": "string",
-            "format": "date"
-          }
+          "statement": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 },
+          "source_url": { "type": "string", "format": "uri" },
+          "retrieved_at": { "type": "string", "format": "date" },
+          "used_in": { "type": "array", "items": {"enum": ["anschreiben", "motivationsschreiben"]} },
+          "source_kind": { "enum": ["job_ad", "company_website", "other_public"] }
         }
-      }
+      },
+      "minItems": 1,
+      "description": "Nur belegte Aussagen über das Unternehmen. Briefe dürfen ausschließlich diese Aussagen verwenden."
     }
   }
 }

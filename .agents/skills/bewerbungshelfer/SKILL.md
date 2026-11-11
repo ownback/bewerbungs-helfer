@@ -1,15 +1,15 @@
 ---
 name: bewerbungshelfer
-description: Führt ein Profilinterview für deutsche Ausbildungsbewerbungen, sucht genau eine Stelle bei der Bundesagentur für Arbeit, erstellt eine sechsseitige Bewerbungsmappe als HTML und bereitet nach Freigabe PDF, Kontaktübersicht und E-Mail-Entwurf vor.
+description: Führt ein Profilinterview für deutsche Ausbildungsbewerbungen, sucht genau eine Stelle bei der Bundesagentur für Arbeit, erstellt eine Bewerbungsmappe mit sechs Abschnitten als HTML und bereitet nach Freigabe PDF, Kontaktübersicht und E-Mail-Entwurf vor.
 metadata:
-  short-description: Deutsche Ausbildungsbewerbung als sechsseitige Mappe
+  short-description: Deutsche Ausbildungsbewerbung als Mappe mit sechs Abschnitten
 ---
 
 # Bewerbungshelfer
 
 ## Ergebnis
 
-Für **genau eine Ausbildungsstelle** entsteht eine sechsseitige Bewerbungsmappe:
+Für **genau eine Ausbildungsstelle** entsteht eine Bewerbungsmappe mit sechs Abschnitten, im Regelfall sechs A4-Seiten:
 
 1. Deckblatt
 2. Anschreiben
@@ -17,6 +17,8 @@ Für **genau eine Ausbildungsstelle** entsteht eine sechsseitige Bewerbungsmappe
 4. Motivationsschreiben
 5. Zertifikate
 6. Zeugnisse
+
+Folgeseiten sind nur für weitere Nachweise (höchstens zwei pro Seite) oder eine Lebenslauf-Fortsetzung erlaubt. Sie tragen denselben Abschnittstitel mit „Fortsetzung“ und eine fortlaufende Seitenzahl.
 
 Anschreiben und Motivationsschreiben werden pro Stelle neu geschrieben. Die übrigen vier Teile kommen aus dem stabilen Master-Profil und den importierten Nachweisen.
 
@@ -46,7 +48,7 @@ Die Vorlage liegt unter `assets/bewerbungsmappe.html`. Wenn Stencil im Harness v
 
 Die gemeinsame Vorlage liegt unter `assets/bewerbungsmappe.html`. Wenn Stencil im Harness verfügbar ist, öffnet der Nutzer sie dort und markiert gewünschte Änderungen. Der Agent übernimmt freigegebene Markierungen ins HTML. Ohne Stencil prüfen Agent und Nutzer die Vorlage direkt im Browser.
 
-Die Basisvorlage wird einmal gestaltet. Unternehmensspezifische Änderungen bleiben in der jeweiligen Bewerbung.
+Die Basisvorlage wird **einmalig** gestaltet und enthält keine persönlichen Daten. Ist sie bereits freigegeben, beginnt jeder weitere Durchlauf direkt mit Schritt 1. Unternehmensspezifische Änderungen bleiben in der jeweiligen Bewerbung.
 
 ### 1. Profil aufnehmen und ergänzen
 
@@ -56,7 +58,7 @@ Wenn das Profil noch nicht bestätigt ist:
 
 - lies vorhandene Dateien unter `profile/import/` vollständig und visuell,
 - prüfe PDFs, DOCX und Bilder auch auf eingebettete Grafiken,
-- fasse die erkannten Angaben mit Status `confirmed`, `inferred`, `open` oder `conflict` zusammen,
+- fasse die erkannten Angaben mit Status `confirmed`, `inferred`, `open` oder `conflict` zusammen (in `field_status` bzw. `source_status`),
 - frage nur nach fehlenden, defekten oder widersprüchlichen Angaben,
 - speichere erst nach Bestätigung,
 - validiere das JSON gegen `assets/schemas/profile.schema.json`.
@@ -65,13 +67,13 @@ Ein frischer Clone startet ohne Profil. Wenn der Nutzer vorhandene Unterlagen be
 
 ### 2. Eine Stelle auswählen
 
-Nutze den Browser des Harness und die öffentliche Bundesagentur-Jobsuche im Bereich **Ausbildung**.
+Nutze den Browser des Harness und die öffentliche Bundesagentur-Jobsuche im Bereich **Ausbildung**. An die Jobsuche gehen nur Suchbegriff, Ort oder PLZ und Umkreis, keine weiteren Profildaten.
 
 Zeige eine kurze Auswahl mit Titel, Unternehmen, Ort, Entfernung, Beginn und Link. Der Nutzer wählt genau eine Stelle.
 
 ### 3. Stelle belegen
 
-Lies die vollständige Anzeige. Erfasse die Pflichtfelder aus `references/job-search.md` in `job.json`.
+Lies die vollständige Anzeige. Erfasse die Pflichtfelder aus `references/job-search.md` in `job.json` und validiere gegen `assets/schemas/job.schema.json`. Unternehmensaussagen für die Briefe kommen nach `company_facts` (Aussage, wörtlicher Beleg, Quell-URL, Abrufdatum).
 
 Jede Anforderung und jeder Kontakt bekommt eine Quelle. Fehlt ein persönlicher Ansprechpartner, prüfe die öffentliche Unternehmensseite. Rate nichts.
 
@@ -96,9 +98,13 @@ Kopiere die Vorlage nach:
 applications/<unternehmen>-<beruf>/bewerbungsmappe.html
 ```
 
-Ersetze alle Platzhalter. Behalte die sechs Seiten, CSS-Klassen und PDF-Regeln. Wenn Stencil verfügbar ist, übernimm freigegebene visuelle Markierungen aus der Stencil-Fassung in das HTML. Prüfe jede generierte Aussage gegen Profil und Stellenanzeige; unbelegte Formulierungen werden entfernt, nicht geglättet.
+Lege dort `application-manifest.json` nach `assets/templates/application-manifest.json` mit Status `draft` an und trage Seiten (`pages`) und Assets ein.
 
-Die freigegebenen Darstellungsregeln aus `profile.master-profile.json` gelten:
+Ersetze alle Platzhalter. Behalte die sechs Abschnitte, CSS-Klassen und PDF-Regeln. Das Foto erscheint nur, wenn `person.photo.valid` und `consent` true sind; sonst bleibt der Fotoblock weg. Fähigkeitsbalken setzen nur die Klasse `s<scale>` aus dem Profil. Wenn Stencil verfügbar ist, übernimm freigegebene visuelle Markierungen aus der Stencil-Fassung in das HTML. Prüfe jede generierte Aussage gegen Profil und Stellenanzeige; unbelegte Formulierungen werden entfernt, nicht geglättet.
+
+Fehlt das Foto, entfällt der Fotoblock ersatzlos. Läuft der Lebenslauf über, entsteht eine Folgeseite nach dem Kommentar in der Vorlage; Inhaltsangabe und Seitenzahlen werden angepasst. Für Bewerbungen ohne Foto oder Unterschrift wird nichts ersetzt oder generiert.
+
+Die freigegebenen Darstellungsregeln aus `presentation` in `profile/master-profile.json` gelten:
 
 - Fußzeile nur mit Name
 - kein Unternehmensname auf dem Deckblatt
@@ -118,13 +124,15 @@ Prüfe jede Fassung bei der richtigen Auflösung:
 - Mobil: 390 × 844 und 375 × 812
 - PDF: A4 mit 210 × 297 mm
 
+Prüfe in der A4-Fassung jede Seite auf Überlauf (`references/qa-and-export.md`, Abschnitt Überlauf). Abgeschnittener Inhalt blockiert die Freigabe. Trage das Ergebnis unter `validation` im Manifest ein.
+
 Mobil, Desktop und A4 sind drei getrennte Abnahmeflächen. Eine schmale Desktopvorschau ist kein Ersatz für die Mobilansicht. Das responsive Bildschirmlayout ist nicht die Druckfassung.
 
 Frage ausdrücklich:
 
 > Ist diese HTML-Fassung inhaltlich und optisch freigegeben?
 
-Ohne eindeutiges Ja kein PDF.
+Ohne eindeutiges Ja kein PDF. Nach dem Ja: Manifest auf `html_approved` mit `approved_at` setzen.
 
 ### 7. PDF und Versandvorbereitung
 
@@ -133,7 +141,8 @@ Nach der Freigabe:
 - exportiere über den Browser ein A4-PDF,
 - prüfe alle Seiten visuell,
 - schreibe `contact-summary.md` nach `assets/templates/contact-summary.md`,
-- schreibe `email-draft.md` nach `assets/templates/email-draft.md`.
+- schreibe `email-draft.md` nach `assets/templates/email-draft.md`,
+- setze das Manifest nach geprüftem PDF auf `pdf_exported` (`pdf`, `pdf_exported_at`) und nach Kontaktübersicht und E-Mail-Entwurf auf `ready_to_send`. Das heißt nicht, dass gesendet wurde.
 
 Keine Bewerbung senden und kein Portal ausfüllen.
 
@@ -146,7 +155,7 @@ Keine Bewerbung senden und kein Portal ausfüllen.
 - keine erfundenen Qualifikationen, Kontakte oder Nachweise
 - keine unbelegten Aussagen
 - keine externen Ressourcen ohne Freigabe
-- keine Scraping- oder Rendering-Skripte anlegen
+- keine Scraping- oder Rendering-Skripte anlegen (ein direkter Headless-Browser-Aufruf für die A4-Vorschau ist erlaubt)
 - keine persönlichen Daten committen
 - kein PDF vor HTML-Freigabe
 - kein automatisches Absenden

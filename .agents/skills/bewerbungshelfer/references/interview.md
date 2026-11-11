@@ -44,7 +44,7 @@ Defekte Dateien werden nicht als gültig markiert. Eine leere Bilddatei wird aus
 - Telefon
 - E-Mail
 - gewünschte Anrede
-- Geburtsdatum und Geburtsort
+- Geburtsdatum und Geburtsort (optional; nur nach Freigabe im Lebenslauf, `presentation.show_birth_data`)
 - Bewerbungsfoto verwenden?
 - Ist die Bilddatei gültig, aktuell und ausdrücklich freigegeben?
 
@@ -112,7 +112,7 @@ Die Skala ist keine Prozentangabe. Sie dient nur der Darstellung.
 - Aussteller
 - Datum
 - Datei
-- Zertifikat, Zeugnis oder sonstiger Nachweis?
+- Zertifikat, Schulzeugnis, Arbeits-/Praktikumszeugnis oder sonstiger Nachweis?
 - sichtbar in der Mappe?
 - Original oder Kopie?
 - technisch gültig?

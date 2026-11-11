@@ -9,10 +9,12 @@
 - PLZ / Ort:
 - Telefon:
 - E-Mail:
-- Geburtsdatum:
-- Geburtsort:
+- Geburtsdatum (optional):
+- Geburtsort (optional):
+- Geburtsdaten im Lebenslauf zeigen: nein|ja (nur nach Freigabe)
 - Staatsangehörigkeit:
-- Bewerbungsfoto:
+- Bewerbungsfoto: Datei | gültig ja/nein | freigegeben ja/nein
+- Status je Angabe: confirmed|inferred|open|conflict
 
 ## Ziel
 - Ausbildungsberuf:
@@ -69,7 +71,7 @@ Die Skala von 1 bis 5 ist eine visuelle Einordnung, kein Prozentwert.
 - Aussteller:
 - Datum:
 - Datei:
-- Art: Zertifikat|Zeugnis
+- Art: Zertifikat|Schulzeugnis|Arbeits- oder Praktikumszeugnis|Sonstiges
 - In Mappe zeigen:
 
 ## Motivation

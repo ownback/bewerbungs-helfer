@@ -73,7 +73,7 @@ Nur echte, freigegebene Bilder. Keine generierten Mockups als angebliches Projek
 - Name und Kontaktdaten auf allen Seiten identisch
 - Unternehmensname exakt wie in der Anzeige
 - Ansprechpartner nur aus `job.json`
-- Datum im Anschreiben: tatsächliches Erstellungsdatum
+- Ort und Datum im Anschreiben: Wohnort aus dem Profil und tatsächliches Erstellungsdatum
 - korrekte deutsche Anrede und Kommasetzung
 
 ## Prüfung

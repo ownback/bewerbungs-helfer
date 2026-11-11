@@ -149,6 +149,10 @@
       break-after: page;
     }
     .page:last-child { page-break-after: auto; break-after: auto; }
+    /* Folgeseite (z. B. weitere Nachweise oder Lebenslauf-Fortsetzung): gleiche Struktur, Titel mit „Fortsetzung“. */
+    .section-head .continued { margin-left: 2.5mm; color: var(--fg-faint); font-family: var(--sans); font-size: 9pt; letter-spacing: 0; }
+    /* Wird bei der QA gesetzt, wenn Inhalt über die feste A4-Höhe hinausläuft. Darf in keiner Freigabe sichtbar sein. */
+    .page[data-overflow] { outline: 3px solid #c0392b; outline-offset: -3px; }
 
     .section-head {
       position: relative;
@@ -254,10 +258,13 @@
       font-size: 46pt;
       line-height: .94;
       letter-spacing: -.04em;
-      overflow-wrap: normal;
-      word-break: normal;
+      overflow-wrap: break-word;
+      hyphens: manual;
       text-wrap: balance;
     }
+    /* Für Namensteile ab etwa 12 Zeichen: kleinere Stufe statt Überlauf in die Sidebar. */
+    .cover-hero h1.is-long { font-size: 36pt; }
+    .cover-hero h1.is-xlong { font-size: 29pt; }
     .cover-role {
       max-width: 100%;
       margin-top: 6mm;
@@ -417,6 +424,7 @@
     }
     .subject-kicker { display: block; margin-bottom: 2mm; color: var(--fg-muted); font-family: var(--sans); font-size: 8.4pt; font-weight: 400; }
     .subject-title { display: block; font-family: var(--display); font-size: 17pt; line-height: 1.22; letter-spacing: -.012em; }
+    .subject-ref { display: block; margin-top: 1.6mm; color: var(--fg-faint); font-family: var(--sans); font-size: 7.6pt; }
     .letter-copy { font-size: 8.8pt; line-height: 1.58; }
     .letter-copy p { margin-bottom: 3.5mm; }
     .letter-copy p:last-child { margin-bottom: 0; }
@@ -453,6 +461,9 @@
 
     /* Fähigkeiten */
     .skills-band { display: grid; grid-template-columns: 1.2fr 1.2fr .85fr; gap: 7mm; margin-top: 4mm; padding-top: 3mm; border-top: 1px solid var(--line-strong); }
+    /* Vier Gruppen (z. B. drei Fachgruppen + Sprachen): .skills-band.is-four */
+    .skills-band.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5mm; }
+    .skills-band.is-four .skill-row { grid-template-columns: minmax(0, 1fr) 12mm; gap: 1.5mm; }
     .skill-head { display: flex; align-items: center; gap: 2.4mm; margin-bottom: 2mm; color: var(--fg-strong); font-family: var(--display); font-size: 10pt; line-height: 1.2; }
     .skill-head .icon { width: 4mm; height: 4mm; color: var(--accent); }
     .skill-row { display: grid; grid-template-columns: minmax(0, 1fr) 18mm; gap: 2mm; align-items: center; margin-bottom: 1.25mm; }
@@ -460,9 +471,12 @@
     .skill-name small { display: block; color: var(--fg-faint); font-size: 6.6pt; }
     .bars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
     .bars span { height: 2.2mm; border-radius: .5px; background: var(--paper-200); }
-    .bars span.on { background: var(--accent); }
-    .bars span.future { background: var(--bronze-300); }
-    .skill-legend { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 4mm; margin-top: 1mm; color: var(--fg-faint); font-size: 6.6pt; line-height: 1.35; }
+    /* Balken kommen ausschließlich aus skillItem.scale: Klasse s1 … s5. */
+    .bars.s1 span:nth-child(-n+1), .bars.s2 span:nth-child(-n+2), .bars.s3 span:nth-child(-n+3),
+    .bars.s4 span:nth-child(-n+4), .bars.s5 span:nth-child(-n+5) { background: var(--bar-on, var(--accent)); }
+    .bars.is-future { --bar-on: var(--bronze-300); }
+    .skill-tag { display: inline-block; margin-left: 1.2mm; color: var(--accent); font-size: 6.4pt; letter-spacing: .02em; }
+    .skill-legend { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1mm 4mm; margin-top: 1mm; color: var(--fg-faint); font-size: 6.6pt; line-height: 1.35; }
     .skill-legend span { display: inline-flex; align-items: center; gap: 1.5mm; }
     .skill-legend i { display: inline-block; width: 3mm; height: 1.6mm; background: var(--accent); }
 
@@ -479,14 +493,19 @@
     .proof-item .icon-box { width: 7mm; height: 7mm; }
     .proof-item .icon-box .icon { width: 3.2mm; height: 3.2mm; }
     .proof-item strong { display: block; color: var(--fg-strong); font-family: var(--display); font-size: 9.2pt; font-weight: 500; line-height: 1.25; margin-bottom: .7mm; }
-    .proof-item span { display: block; color: var(--fg-muted); font-size: 7.2pt; line-height: 1.38; }
+    .proof-item div > span { display: block; color: var(--fg-muted); font-size: 7.2pt; line-height: 1.38; }
 
     /* Nachweise */
     .evidence-meta { display: grid; grid-template-columns: 1fr; gap: 2mm; margin-bottom: 4mm; }
     .evidence-meta h3 { color: var(--fg-strong); font-size: 14pt; line-height: 1.22; letter-spacing: -.012em; }
     .evidence-meta p { color: var(--fg-muted); font-size: 8.1pt; line-height: 1.45; }
+    .evidence-grid { display: grid; gap: 5mm; }
+    .evidence-grid.is-pair { grid-template-columns: 1fr 1fr; }
+    .evidence-card { min-width: 0; }
+    .evidence-grid.is-pair .evidence-meta h3 { font-size: 11pt; }
+    .evidence-grid.is-pair .document-stage { height: 196mm; }
     .document-stage { height: 206mm; padding: 3mm; border: 1px solid var(--line); background: #fff; box-shadow: inset 0 0 0 1px rgb(27 29 25 / .02); }
-    .document-stage img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+    .document-stage img, .document-stage object { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
     .document-placeholder { display: grid; place-items: center; width: 100%; height: 100%; min-height: 120mm; color: var(--fg-faint); font-family: var(--mono); font-size: 8pt; letter-spacing: .02em; text-align: center; background: #fff; }
     .document-caption { display: flex; align-items: center; justify-content: space-between; gap: 8mm; margin-top: 3.2mm; color: var(--fg-faint); font-size: 7.1pt; }
     .caption-note { display: inline-flex; align-items: center; gap: 2mm; }
@@ -501,7 +520,7 @@
       .cover-page { min-height: 880px; padding: 0; }
       .cover-layout { height: auto; min-height: 880px; grid-template-columns: 1fr; padding: 32px 24px; gap: 30px; }
       .cover-main { min-height: 500px; }
-      .cover-hero h1 { font-size: clamp(48px, 14vw, 72px); }
+      .cover-hero h1, .cover-hero h1.is-long, .cover-hero h1.is-xlong { font-size: clamp(40px, 12vw, 72px); }
       .cover-panel { min-height: 540px; }
       .cover-role { font-size: 22px; }
       .cover-bio { max-width: 560px; font-size: 14px; }
@@ -518,14 +537,16 @@
       .timeline-item { grid-template-columns: 94px 28px 1fr; gap: 10px; }
       .timeline-content h3 { font-size: 18px; }
       .timeline-content p, .timeline-content .timeline-role, .timeline-content .timeline-place, .timeline-date { font-size: 13px; }
-      .skills-band { grid-template-columns: 1fr; gap: 22px; }
+      .skills-band, .skills-band.is-four { grid-template-columns: 1fr; gap: 22px; }
+      .skills-band.is-four .skill-row { grid-template-columns: minmax(0, 1fr) 18mm; }
       .skill-name { font-size: 14px; }
       .skill-name small { font-size: 12px; }
       .bars span { height: 8px; }
       .skill-legend { flex-wrap: wrap; font-size: 11px; }
       .motivation-aside { border-left: 0; border-top: 1px solid var(--line); padding: 18px 0 0; }
       .proof-item { grid-template-columns: 38px 1fr; }
-      .document-stage { height: auto; aspect-ratio: 3 / 4; }
+      .document-stage, .evidence-grid.is-pair .document-stage { height: auto; aspect-ratio: 3 / 4; }
+      .evidence-grid.is-pair { grid-template-columns: 1fr; }
       .page-footer { left: 24px; right: 24px; bottom: 18px; font-size: 10px; }
       .evidence-meta h3 { font-size: 21px; }
       .evidence-meta p, .document-caption { font-size: 13px; }
@@ -602,7 +623,7 @@
 
   <div class="screen-bar lg-glass" aria-hidden="true">
     <span><svg class="icon"><use href="#i-file"/></svg> Bewerbungsmappe</span>
-    <span class="state"><span>HTML-Fassung</span><span class="viewport-proof mobile">Mobil ≤860px</span><span class="viewport-proof desktop">Desktop &gt;860px</span><span>6 Seiten · A4</span></span>
+    <span class="state"><span>HTML-Fassung</span><span class="viewport-proof mobile">Mobil ≤860px</span><span class="viewport-proof desktop">Desktop &gt;860px</span><span>A4</span></span>
   </div>
 
   <!-- Deckblatt -->
@@ -611,11 +632,12 @@
       <div class="cover-main">
         <div class="cover-brand"><svg class="icon"><use href="#i-target"/></svg><span>Bewerbungsmappe</span></div>
         <div class="cover-hero">
+          <!-- Namensteil ab ca. 12 Zeichen: class="is-long", ab ca. 16 Zeichen: class="is-xlong". -->
           <h1 id="cover-title">[VORNAME]<br>[NACHNAME]</h1>
           <p class="cover-role">[AUSBILDUNGSBERUF]<br>[FACHRICHTUNG]</p>
           <p class="cover-bio">[KURZPROFIL: Alter, aktueller Bildungsweg, Zugang zur IT und Ausbildungsziel in zwei bis drei natürlichen Sätzen.]</p>
         </div>
-        <div class="cover-bottom"><span class="pill"><svg class="icon"><use href="#i-target"/></svg> Ausbildung [ABSCHLUSSJAHR]</span></div>
+        <div class="cover-bottom"><span class="pill"><svg class="icon"><use href="#i-target"/></svg> Ausbildung ab [AUSBILDUNGSBEGINN]</span></div>
       </div>
 
       <aside class="cover-panel" aria-label="Kontakt und Inhalt">
@@ -627,8 +649,10 @@
           <div class="contact-item"><span class="icon-box"><svg class="icon"><use href="#i-pin"/></svg></span><span class="contact-value">[STRASSE]<br>[PLZ ORT]</span></div>
         </div>
         <div class="panel-rule"></div>
-        <!-- [FOTO] darf nur durch ein gültiges, freigegebenes <img> ersetzt werden. -->
-        <div class="cover-photo"><span class="photo-placeholder">[FOTO]</span></div>
+        <!-- [FOTO] Nur einfügen, wenn person.photo.valid und person.photo.consent true sind.
+             Sonst diesen Block weglassen; der Abstand darunter füllt die Fläche. Kein Platzhalterrahmen in der Mappe.
+        <figure class="cover-photo"><img src="assets/[FOTODATEI]" alt="Bewerbungsfoto von [VORNAME NACHNAME]"></figure>
+        -->
         <div class="panel-spacer"></div>
         <div class="toc-title"><svg class="icon"><use href="#i-list"/></svg><span>Inhalt</span></div>
         <nav class="toc-list" aria-label="Inhaltsverzeichnis">
@@ -668,6 +692,8 @@
     <div class="letter-subject">
       <span class="subject-kicker">Bewerbung um einen Ausbildungsplatz zum</span>
       <span class="subject-title">[AUSBILDUNGSBERUF]</span>
+      <!-- Optional, wenn die Anzeige eine Referenznummer hat: -->
+      <span class="subject-ref">Ihre Anzeige bei der Bundesagentur für Arbeit, Ref.-Nr. [REFERENZNUMMER]</span>
     </div>
     <div class="letter-copy">
       <p>[ANREDE],</p>
@@ -680,7 +706,7 @@
     </div>
     <div class="signature">
       <!-- [UNTERSCHRIFT] nur mit gültiger, freigegebener Bilddatei ersetzen. -->
-      <div class="signature-name"><strong>[VORNAME NACHNAME]</strong>[AUSBILDUNGSZIEL] · Ausbildung [ABSCHLUSSJAHR]</div>
+      <div class="signature-name"><strong>[VORNAME NACHNAME]</strong>[AUSBILDUNGSZIEL] · Ausbildung ab [AUSBILDUNGSBEGINN]</div>
     </div>
     <footer class="page-footer"><svg class="icon"><use href="#i-user"/></svg>[VORNAME NACHNAME]</footer>
   </section>
@@ -733,27 +759,33 @@
     </section>
 
     <section class="skills-band" aria-labelledby="skills-title">
+      <!-- [FÄHIGKEITSGRUPPEN] aus skills.groups und skills.languages. Pro Zeile: Klasse s[SKALA] = skillItem.scale,
+           Zusatz is-future bei level "future", Tag „Muttersprache“ bei level "native". Keine anderen Werte. -->
       <div class="skill-group">
         <div class="skill-head" id="skills-title"><svg class="icon"><use href="#i-terminal"/></svg><span>Systeme</span></div>
-        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars" aria-label="3 von 5"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span></span></div>
-        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars" aria-label="2 von 5"><span class="on"></span><span class="on"></span><span></span><span></span><span></span></span></div>
+        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars s[SKALA]" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span></div>
+        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars s[SKALA]" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span></div>
       </div>
       <div class="skill-group">
         <div class="skill-head"><svg class="icon"><use href="#i-network"/></svg><span>Infrastruktur</span></div>
-        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars" aria-label="3 von 5"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span></span></div>
-        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars" aria-label="2 von 5"><span class="on"></span><span class="on"></span><span></span><span></span><span></span></span></div>
+        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars s[SKALA]" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span></div>
+        <div class="skill-row"><span class="skill-name">[FÄHIGKEIT]<small>[BELEG]</small></span><span class="bars s[SKALA]" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span></div>
       </div>
       <div class="skill-group">
         <div class="skill-head"><svg class="icon"><use href="#i-globe"/></svg><span>Sprachen</span></div>
-        <div class="skill-row"><span class="skill-name">[SPRACHE]<small>[NIVEAU]</small></span><span class="bars" aria-label="4 von 5"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span></span></div>
-        <div class="skill-row"><span class="skill-name">[SPRACHE]<small>[NIVEAU]</small></span><span class="bars" aria-label="5 von 5"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></span></div>
+        <div class="skill-row"><span class="skill-name">[SPRACHE]<small>[NIVEAU-LABEL]</small></span><span class="bars s[SKALA]" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span></div>
+        <div class="skill-row"><span class="skill-name">[SPRACHE]<small>[NIVEAU-LABEL]</small></span><span class="bars s[SKALA]" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span></div>
       </div>
-      <div class="skill-legend"><span><i></i>Skala 1–5: Lernstand bis sehr sicher</span><span>Keine Prozentangaben</span></div>
+      <div class="skill-legend"><span><i></i>1 Lernwunsch · 2 Grundkenntnisse · 3 sicher · 4 routiniert · 5 sehr sicher</span><span>Selbsteinschätzung, keine Prozentangaben</span></div>
     </section>
 
     <footer class="page-footer"><svg class="icon"><use href="#i-user"/></svg>[VORNAME NACHNAME]</footer>
   </section>
 
+  <!-- Lebenslauf-Fortsetzung (nur wenn die A4-Seite überläuft): eigene Seite direkt nach dem Lebenslauf.
+       Aufteilung ganzer Abschnitte, z. B. Seite 1 = Profil + Praktische Erfahrung, Folgeseite = Schulbildung + Fähigkeiten.
+       Kopf: <h2 id="cv2-title">Lebenslauf<span class="continued">Fortsetzung</span></h2>, Seitenzahl fortlaufend,
+       Fußzeile wie auf allen Seiten. Danach Seitenzahlen der Folgeabschnitte und die Inhaltsangabe auf dem Deckblatt anpassen. -->
   <!-- Motivationsschreiben -->
   <section class="page" aria-labelledby="motivation-title">
     <header class="section-head">
@@ -774,7 +806,7 @@
           <p>Mit freundlichen Grüßen</p>
         </div>
         <div class="signature">
-          <div class="signature-name"><strong>[VORNAME NACHNAME]</strong>Ausbildung [ABSCHLUSSJAHR]</div>
+          <div class="signature-name"><strong>[VORNAME NACHNAME]</strong>Ausbildung ab [AUSBILDUNGSBEGINN]</div>
         </div>
       </div>
       <aside class="motivation-aside" aria-label="Belege aus eigenen Projekten">
@@ -794,9 +826,17 @@
       <h2 id="cert-title">Zertifikate</h2>
       <span class="folio" aria-label="Seite 5">5</span>
     </header>
-    <div class="evidence-meta"><h3>[TITEL DES ZERTIFIKATS]</h3><p>[NUR NÖTIGE METADATEN: AUSSTELLER UND DATUM]</p></div>
-    <div class="document-stage"><div class="document-placeholder">[ZERTIFIKAT-DATEI]<br>Hier wird der echte Scan eingesetzt.</div></div>
-    <div class="document-caption"><span class="caption-note"><svg class="icon"><use href="#i-scan"/></svg>Original-Scan</span><span class="caption-date">Ausgestellt am [DATUM]</span></div>
+    <!-- Ein Nachweis: .evidence-grid. Zwei Nachweise: .evidence-grid.is-pair mit zwei .evidence-card.
+         Mehr Nachweise: Folgeseite mit gleicher Struktur, <span class="continued">Fortsetzung</span> im Titel und fortlaufender Seitenzahl.
+         Bild: <img src="assets/…" alt="…">. PDF: gerenderte Seitenvorschau als <img>, Original separat beilegen (siehe docs/asset-handling.md).
+         Fehlt der Nachweis: Platzhaltertext ersetzen durch „Liegt noch nicht vor“. -->
+    <div class="evidence-grid">
+      <article class="evidence-card">
+        <div class="evidence-meta"><h3>[TITEL DES ZERTIFIKATS]</h3><p>[AUSSTELLER]</p></div>
+        <div class="document-stage"><div class="document-placeholder">[ZERTIFIKAT-DATEI]<br>Hier wird der echte Scan eingesetzt.</div></div>
+        <div class="document-caption"><span class="caption-note"><svg class="icon"><use href="#i-scan"/></svg>[ORIGINAL-SCAN|KOPIE|DIGITALES ORIGINAL]</span><span class="caption-date">Ausgestellt am [DATUM]</span></div>
+      </article>
+    </div>
     <footer class="page-footer"><svg class="icon"><use href="#i-user"/></svg>[VORNAME NACHNAME]</footer>
   </section>
 
@@ -807,9 +847,17 @@
       <h2 id="reference-title">Zeugnisse</h2>
       <span class="folio" aria-label="Seite 6">6</span>
     </header>
-    <div class="evidence-meta"><h3>[TITEL DES ZEUGNISSES]</h3><p>[NUR NÖTIGE METADATEN: AUSSTELLER UND DATUM]</p></div>
-    <div class="document-stage"><div class="document-placeholder">[ZEUGNIS-DATEI]<br>Hier wird der echte Scan eingesetzt.</div></div>
-    <div class="document-caption"><span class="caption-note"><svg class="icon"><use href="#i-scan"/></svg>Original-Scan</span><span class="caption-date">Ausgestellt am [DATUM]</span></div>
+    <!-- Ein Nachweis: .evidence-grid. Zwei Nachweise: .evidence-grid.is-pair mit zwei .evidence-card.
+         Mehr Nachweise: Folgeseite mit gleicher Struktur, <span class="continued">Fortsetzung</span> im Titel und fortlaufender Seitenzahl.
+         Bild: <img src="assets/…" alt="…">. PDF: gerenderte Seitenvorschau als <img>, Original separat beilegen (siehe docs/asset-handling.md).
+         Fehlt der Nachweis: Platzhaltertext ersetzen durch „Liegt noch nicht vor“. -->
+    <div class="evidence-grid">
+      <article class="evidence-card">
+        <div class="evidence-meta"><h3>[TITEL DES ZEUGNISSES]</h3><p>[AUSSTELLER]</p></div>
+        <div class="document-stage"><div class="document-placeholder">[ZEUGNIS-DATEI]<br>Hier wird der echte Scan eingesetzt.</div></div>
+        <div class="document-caption"><span class="caption-note"><svg class="icon"><use href="#i-scan"/></svg>[ORIGINAL-SCAN|KOPIE|DIGITALES ORIGINAL]</span><span class="caption-date">Ausgestellt am [DATUM]</span></div>
+      </article>
+    </div>
     <footer class="page-footer"><svg class="icon"><use href="#i-user"/></svg>[VORNAME NACHNAME]</footer>
   </section>
 </body>

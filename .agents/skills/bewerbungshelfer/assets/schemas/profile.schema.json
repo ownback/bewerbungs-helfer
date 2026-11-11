@@ -25,7 +25,7 @@
     "person": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "address", "phone", "email", "birth_date", "birth_place", "photo"],
+      "required": ["name", "address", "phone", "email", "photo", "field_status"],
       "properties": {
         "name": { "type": "string" },
         "first_name": { "type": "string" },
@@ -44,7 +44,11 @@
         },
         "phone": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "birth_date": { "type": "string", "format": "date" },
+        "birth_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Optional (Datensparsamkeit). Anzeige nur, wenn presentation.show_birth_data true ist."
+        },
         "birth_place": { "type": "string" },
         "nationality": { "type": "string" },
         "photo": {
@@ -57,36 +61,50 @@
             "consent": { "type": "boolean" },
             "crop": { "enum": ["portrait", "square", "original", "unset"] },
             "alt": { "type": "string" }
-          }
-        }
+          },
+          "allOf": [
+            {
+              "if": { "properties": {"valid": {"const": true}} },
+              "then": {
+                "properties": {
+                  "file": { "minLength": 1 },
+                  "consent": { "const": true },
+                  "crop": { "enum": ["portrait", "square", "original"] }
+                }
+              }
+            }
+          ]
+        },
+        "field_status": { "$ref": "#/$defs/fieldStatus" }
       }
     },
     "goal": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["apprenticeship", "alternatives", "start", "locations", "radius_km", "relocation", "commuting"],
+      "required": [
+        "apprenticeship",
+        "alternatives",
+        "start",
+        "locations",
+        "radius_km",
+        "relocation",
+        "commuting",
+        "field_status"
+      ],
       "properties": {
         "apprenticeship": { "type": "string" },
-        "alternatives": { "type": "array", "items": { "type": "string" } },
+        "alternatives": { "type": "array", "items": {"type": "string"} },
         "start": { "type": "string" },
-        "locations": { "type": "array", "items": { "type": "string" } },
+        "locations": { "type": "array", "items": {"type": "string"} },
         "radius_km": { "type": "number", "minimum": 0 },
         "relocation": { "enum": ["yes", "no", "maybe", "unknown"] },
-        "commuting": { "enum": ["yes", "no", "maybe", "unknown"] }
+        "commuting": { "enum": ["yes", "no", "maybe", "unknown"] },
+        "field_status": { "$ref": "#/$defs/fieldStatus" }
       }
     },
-    "education": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/educationEntry" }
-    },
-    "experience": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/experienceEntry" }
-    },
-    "projects": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/projectEntry" }
-    },
+    "education": { "type": "array", "items": {"$ref": "#/$defs/educationEntry"} },
+    "experience": { "type": "array", "items": {"$ref": "#/$defs/experienceEntry"} },
+    "projects": { "type": "array", "items": {"$ref": "#/$defs/projectEntry"} },
     "skills": {
       "type": "object",
       "additionalProperties": false,
@@ -101,17 +119,11 @@
             "properties": {
               "name": { "type": "string" },
               "icon": { "type": "string" },
-              "items": {
-                "type": "array",
-                "items": { "$ref": "#/$defs/skillItem" }
-              }
+              "items": { "type": "array", "items": {"$ref": "#/$defs/skillItem"} }
             }
           }
         },
-        "languages": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/skillItem" }
-        }
+        "languages": { "type": "array", "items": {"$ref": "#/$defs/skillItem"} }
       }
     },
     "evidence": {
@@ -119,37 +131,57 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "title", "issuer", "date", "file", "kind", "show_in_portfolio", "original", "valid"],
+        "required": [
+          "id",
+          "title",
+          "issuer",
+          "date",
+          "file",
+          "kind",
+          "show_in_portfolio",
+          "original",
+          "valid",
+          "source_status"
+        ],
         "properties": {
           "id": { "type": "string" },
           "title": { "type": "string" },
           "issuer": { "type": "string" },
-          "date": { "type": "string" },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$",
+            "description": "YYYY, YYYY-MM oder YYYY-MM-DD"
+          },
           "file": { "type": "string" },
-          "kind": { "enum": ["certificate", "reference", "other"] },
+          "kind": {
+            "enum": ["certificate", "school_report", "work_reference", "other"],
+            "description": "certificate → Seite Zertifikate; school_report und work_reference → Seite Zeugnisse; other nur nach Absprache."
+          },
           "show_in_portfolio": { "type": "boolean" },
           "original": { "enum": ["scan", "copy", "digital_original", "unknown"] },
           "valid": { "type": "boolean" },
-          "source_status": { "$ref": "#/$defs/sourceStatus" }
+          "source_status": { "$ref": "#/$defs/sourceStatus" },
+          "source_ids": { "type": "array", "items": {"type": "string"} }
         }
       }
     },
     "motivation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["origin", "formative_experience", "favorite_project", "learning_goals", "boundaries"],
+      "required": ["origin", "formative_experience", "favorite_project", "learning_goals", "boundaries", "field_status"],
       "properties": {
         "origin": { "type": "string" },
         "formative_experience": { "type": "string" },
         "favorite_project": { "type": "string" },
-        "learning_goals": { "type": "array", "items": { "type": "string" } },
-        "boundaries": { "type": "array", "items": { "type": "string" } }
+        "learning_goals": { "type": "array", "items": {"type": "string"} },
+        "boundaries": { "type": "array", "items": {"type": "string"} },
+        "field_status": { "$ref": "#/$defs/fieldStatus" }
       }
     },
     "voice": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["strengths", "solved_problem", "avoid"],
+      "required": ["strengths", "solved_problem", "avoid", "field_status"],
       "properties": {
         "strengths": {
           "type": "array",
@@ -157,14 +189,12 @@
             "type": "object",
             "additionalProperties": false,
             "required": ["name", "example"],
-            "properties": {
-              "name": { "type": "string" },
-              "example": { "type": "string" }
-            }
+            "properties": { "name": {"type": "string"}, "example": {"type": "string"} }
           }
         },
         "solved_problem": { "type": "string" },
-        "avoid": { "type": "array", "items": { "type": "string" } }
+        "avoid": { "type": "array", "items": {"type": "string"} },
+        "field_status": { "$ref": "#/$defs/fieldStatus" }
       }
     },
     "presentation": {
@@ -177,9 +207,10 @@
         "skill_display": { "const": "bars" },
         "timeline_connectors": { "const": false },
         "page_number_style": { "const": "plain_without_total" },
-        "icons": {
-          "type": "object",
-          "additionalProperties": { "type": "string" }
+        "icons": { "type": "object", "additionalProperties": {"type": "string"} },
+        "show_birth_data": {
+          "type": "boolean",
+          "description": "Geburtsdatum und -ort im Lebenslauf zeigen. Nur nach ausdrücklicher Freigabe true."
         }
       }
     },
@@ -215,25 +246,77 @@
     }
   },
   "$defs": {
-    "sourceStatus": {
-      "enum": ["confirmed", "inferred", "open", "conflict"]
-    },
+    "sourceStatus": { "enum": ["confirmed", "inferred", "open", "conflict"] },
     "dateRange": {
       "type": "object",
       "additionalProperties": false,
       "required": ["start", "end", "precision", "is_current"],
       "properties": {
-        "start": { "type": ["string", "null"] },
-        "end": { "type": ["string", "null"] },
+        "start": { "type": ["string", "null"], "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$" },
+        "end": { "type": ["string", "null"], "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$" },
         "precision": { "enum": ["month", "year", "day", "unknown"] },
         "is_current": { "type": "boolean" },
-        "approx": { "type": "boolean" }
-      }
+        "approx": {
+          "type": "boolean",
+          "description": "true nur für vom Nutzer freigegebene Näherungen; dann source_status inferred."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": {"precision": {"const": "year"}} },
+          "then": {
+            "properties": {
+              "start": { "type": ["string", "null"], "pattern": "^\\d{4}$" },
+              "end": { "type": ["string", "null"], "pattern": "^\\d{4}$" }
+            }
+          }
+        },
+        {
+          "if": { "properties": {"precision": {"const": "month"}} },
+          "then": {
+            "properties": {
+              "start": { "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" },
+              "end": { "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" }
+            }
+          }
+        },
+        {
+          "if": { "properties": {"precision": {"const": "day"}} },
+          "then": {
+            "properties": {
+              "start": { "type": ["string", "null"], "format": "date" },
+              "end": { "type": ["string", "null"], "format": "date" }
+            }
+          }
+        },
+        {
+          "if": { "properties": {"precision": {"enum": ["month", "year", "day"]}} },
+          "then": { "properties": {"start": {"type": "string"}} }
+        },
+        {
+          "if": { "properties": {"is_current": {"const": true}} },
+          "then": { "properties": {"end": {"type": "null"}} },
+          "else": {
+            "if": { "properties": {"precision": {"enum": ["month", "year", "day"]}} },
+            "then": { "properties": {"end": {"type": "string"}} }
+          }
+        }
+      ]
     },
     "educationEntry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "institution", "city", "country", "date_range", "program", "qualification", "expected", "source_status"],
+      "required": [
+        "id",
+        "institution",
+        "city",
+        "country",
+        "date_range",
+        "program",
+        "qualification",
+        "expected",
+        "source_status"
+      ],
       "properties": {
         "id": { "type": "string" },
         "institution": { "type": "string" },
@@ -243,10 +326,16 @@
         "program": { "type": "string" },
         "qualification": { "type": "string" },
         "expected": { "type": "boolean" },
-        "details": { "type": "array", "items": { "type": "string" } },
+        "details": { "type": "array", "items": {"type": "string"} },
         "source_status": { "$ref": "#/$defs/sourceStatus" },
-        "source_ids": { "type": "array", "items": { "type": "string" } }
-      }
+        "source_ids": { "type": "array", "items": {"type": "string"} }
+      },
+      "allOf": [
+        {
+          "if": { "properties": {"date_range": {"properties": {"approx": {"const": true}}, "required": ["approx"]}} },
+          "then": { "properties": {"source_status": {"enum": ["inferred", "conflict", "open"]}} }
+        }
+      ]
     },
     "experienceEntry": {
       "type": "object",
@@ -259,11 +348,17 @@
         "kind": { "enum": ["internship", "employment", "volunteer", "other"] },
         "role": { "type": "string" },
         "date_range": { "$ref": "#/$defs/dateRange" },
-        "tasks": { "type": "array", "items": { "type": "string" } },
+        "tasks": { "type": "array", "items": {"type": "string"} },
         "outcome": { "type": "string" },
         "source_status": { "$ref": "#/$defs/sourceStatus" },
-        "source_ids": { "type": "array", "items": { "type": "string" } }
-      }
+        "source_ids": { "type": "array", "items": {"type": "string"} }
+      },
+      "allOf": [
+        {
+          "if": { "properties": {"date_range": {"properties": {"approx": {"const": true}}, "required": ["approx"]}} },
+          "then": { "properties": {"source_status": {"enum": ["inferred", "conflict", "open"]}} }
+        }
+      ]
     },
     "projectEntry": {
       "type": "object",
@@ -275,7 +370,7 @@
         "date_range": { "$ref": "#/$defs/dateRange" },
         "goal": { "type": "string" },
         "own_role": { "type": "string" },
-        "tools": { "type": "array", "items": { "type": "string" } },
+        "tools": { "type": "array", "items": {"type": "string"} },
         "result": { "type": "string" },
         "link": { "type": "string" },
         "images": {
@@ -284,16 +379,18 @@
             "type": "object",
             "additionalProperties": false,
             "required": ["file", "consent", "valid"],
-            "properties": {
-              "file": { "type": "string" },
-              "consent": { "type": "boolean" },
-              "valid": { "type": "boolean" }
-            }
+            "properties": { "file": {"type": "string"}, "consent": {"type": "boolean"}, "valid": {"type": "boolean"} }
           }
         },
         "source_status": { "$ref": "#/$defs/sourceStatus" },
-        "source_ids": { "type": "array", "items": { "type": "string" } }
-      }
+        "source_ids": { "type": "array", "items": {"type": "string"} }
+      },
+      "allOf": [
+        {
+          "if": { "properties": {"date_range": {"properties": {"approx": {"const": true}}, "required": ["approx"]}} },
+          "then": { "properties": {"source_status": {"enum": ["inferred", "conflict", "open"]}} }
+        }
+      ]
     },
     "skillItem": {
       "type": "object",
@@ -301,12 +398,46 @@
       "required": ["name", "level", "scale", "evidence", "source_status"],
       "properties": {
         "name": { "type": "string" },
-        "level": { "enum": ["learning", "basic", "solid", "advanced", "future", "native"] },
+        "level": {
+          "enum": ["learning", "basic", "solid", "advanced", "future", "native"],
+          "description": "future = Lernwunsch (Skala 1), learning = Lernstand (1–2), basic = Grundkenntnisse (2–3), solid = sicher (3–4), advanced = routiniert (4–5), native = Muttersprache (5)."
+        },
         "scale": { "type": "integer", "minimum": 1, "maximum": 5 },
         "evidence": { "type": "string" },
         "note": { "type": "string" },
         "source_status": { "$ref": "#/$defs/sourceStatus" }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": {"level": {"const": "future"}} },
+          "then": { "properties": {"scale": {"const": 1}} }
+        },
+        {
+          "if": { "properties": {"level": {"const": "learning"}} },
+          "then": { "properties": {"scale": {"maximum": 2}} }
+        },
+        {
+          "if": { "properties": {"level": {"const": "basic"}} },
+          "then": { "properties": {"scale": {"minimum": 2, "maximum": 3}} }
+        },
+        {
+          "if": { "properties": {"level": {"const": "solid"}} },
+          "then": { "properties": {"scale": {"minimum": 3, "maximum": 4}} }
+        },
+        {
+          "if": { "properties": {"level": {"const": "advanced"}} },
+          "then": { "properties": {"scale": {"minimum": 4}} }
+        },
+        {
+          "if": { "properties": {"level": {"const": "native"}} },
+          "then": { "properties": {"scale": {"const": 5}} }
+        }
+      ]
+    },
+    "fieldStatus": {
+      "description": "Status je Angabe dieses Blocks. Schlüssel = Feldname (z. B. \"phone\", \"birth_date\"). Jedes ausgefüllte Feld braucht einen Eintrag.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/sourceStatus" }
     }
   }
 }

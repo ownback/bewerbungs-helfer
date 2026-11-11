@@ -26,6 +26,8 @@ Das Profil enthält:
 - `open`: fehlende oder defekte Angabe
 - `conflict`: widersprüchliche Angabe
 
+Der Status steht je Eintrag in `source_status` (Bildung, Erfahrung, Projekte, Fähigkeiten, Nachweise) und je Angabe in `field_status` (Person, Ziel, Motivation, Stimme). Zeiträume sind nach `precision` geprüft: `YYYY`, `YYYY-MM` oder `YYYY-MM-DD`; `approx: true` verlangt `source_status: inferred`.
+
 Offene Punkte haben eine Auswirkung:
 
 - `blocking`: Workflow stoppt
@@ -41,6 +43,14 @@ Offene Punkte haben eine Auswirkung:
 - persönlichen und allgemeinen Kontakt
 - Bewerbungsweg
 - offene Punkte mit Auswirkung
+
+## Manifest
+
+`application-manifest.json` hält fest:
+
+- die sechs Abschnitte (`sections`) und die tatsächlichen Seiten (`pages`, inklusive Folgeseiten),
+- alle eingebundenen Assets mit Abschnitt und Rolle (Nachweis, Foto, Unterschrift, Projektbild),
+- das Prüfergebnis (`validation`: Schemas, verbleibende Platzhalter, Überlaufseiten, A4-Vorschau).
 
 ## Status der Mappe
 

@@ -9,9 +9,12 @@ Zeugnisse und Zertifikate sind echte, vom Nutzer bereitgestellte Dokumente. Der 
 Der Nutzer legt Dateien unter `profile/import/` ab oder übergibt sie im Harness. Unterstützt werden:
 
 - PDF
+- DOCX (nur als Quelle für Lebenslauf und eingebettete Bilder; wird nicht selbst in die Mappe eingebunden)
 - PNG
 - JPEG
 - WebP
+
+Eingebettete Bilder aus DOCX werden einzeln geprüft. Ein Vorlagen-Platzhalter (z. B. „Foto einfügen“) ist kein Foto.
 
 Der Agent ordnet jede Datei einem Nachweis zu und prüft:
 
@@ -40,6 +43,15 @@ PDFs werden nicht als Screenshot maskiert. Zulässig sind:
 Vor dem PDF-Export prüft der Agent, ob der Browser eingebettete PDFs zuverlässig übernimmt. Wenn nicht, wird eine gerenderte Vorschau verwendet und das Original separat beigelegt.
 
 ## Seitenaufbau
+
+### Mehrere Nachweise
+
+- ein Nachweis pro Seite im Regelfall,
+- zwei Nachweise nebeneinander mit `.evidence-grid.is-pair`, wenn beide lesbar bleiben,
+- mehr Nachweise auf Folgeseiten mit Titel „Fortsetzung“ und fortlaufender Seitenzahl,
+- jede Seite und jedes Asset wird im Manifest unter `pages` bzw. `assets` erfasst.
+
+`certificate` erscheint unter Zertifikate, `school_report` und `work_reference` unter Zeugnisse.
 
 ### Zertifikate
 

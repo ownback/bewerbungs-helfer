@@ -43,9 +43,19 @@
     "email": "",
     "phone": "",
     "source_url": "",
-    "confidence": "unknown"
+    "confidence": "unknown",
+    "salutation": "Sehr geehrte Damen und Herren"
   },
   "benefits": [],
   "open_questions": [],
-  "company_facts": []
+  "company_facts": [
+    {
+      "statement": "",
+      "evidence": "",
+      "source_url": "",
+      "source_kind": "job_ad",
+      "retrieved_at": "",
+      "used_in": []
+    }
+  ]
 }

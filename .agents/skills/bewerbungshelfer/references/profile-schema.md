@@ -10,12 +10,15 @@ Beide Dateien bleiben gitignoriert. Die Vorlage liegt unter `assets/templates/ma
 ## Grundsätze
 
 - Keine Angabe ohne Quelle oder ausdrückliche Bestätigung.
-- Jede Angabe trägt einen Status: `confirmed`, `inferred`, `open` oder `conflict`.
+- Jede Angabe trägt einen Status: `confirmed`, `inferred`, `open` oder `conflict`. Listeneinträge (Bildung, Erfahrung, Projekte, Fähigkeiten, Nachweise) nutzen `source_status`; die Blöcke `person`, `goal`, `motivation` und `voice` nutzen `field_status` mit einem Eintrag je ausgefülltem Feld, z. B. `{"phone": "confirmed", "birth_place": "confirmed"}`.
 - `inferred` ist eine vom Nutzer freigegebene Näherung, keine überprüfte Tatsache.
 - Offene Punkte bleiben sichtbar und werden nicht durch plausible Texte ersetzt.
 - Praktikum, Anstellung, Schulbildung und Projekt werden nie vermischt.
 - Eine Jahresangabe bleibt eine Jahresangabe, wenn kein Monat bekannt ist.
 - Defekte Dateien werden nicht eingebunden. Das gilt besonders für Fotos und Nachweise.
+- `profile_status: "confirmed"` nur, wenn der Nutzer die Zusammenfassung bestätigt hat und kein offener Punkt mit `severity: "blocking"` und kein Eintrag mit Status `conflict` übrig ist. Nicht blockierende offene Punkte dürfen bleiben.
+- Bestätigt der Nutzer eine Näherung, bleibt sie `inferred`; `confirmed` ist für belegte oder ausdrücklich bestätigte Tatsachen.
+- Fähigkeiten ohne erkennbares Niveau im Import (z. B. Icons oder Chips ohne Balken) bekommen kein geratenes Niveau: Niveau erfragen; bis zur Antwort `source_status: "open"` und nicht als Balken zeigen.
 
 ## Zeiträume
 
@@ -31,14 +34,15 @@ Jede Station verwendet:
 }
 ```
 
-- `approx: true` nur nach ausdrücklicher Freigabe einer plausiblen Näherung.
+- `approx: true` nur nach ausdrücklicher Freigabe einer plausiblen Näherung; der Eintrag hat dann `source_status: "inferred"` (das Schema erzwingt das).
+- `precision: "month"` → `YYYY-MM`, `"year"` → `YYYY`, `"day"` → `YYYY-MM-DD`, `"unknown"` → `start`/`end` dürfen `null` sein.
 - `end: null` nur bei einer laufenden Station mit `is_current: true`.
 - Bei `precision: "year"` steht im jeweiligen Feld nur `YYYY`.
 - Die Darstellung im Lebenslauf folgt der gespeicherten Präzision.
 
 ## Person
 
-Enthält Name, Anschrift, Telefon, E-Mail, Geburtsdatum, Geburtsort und Foto.
+Enthält Name, Anschrift, Telefon, E-Mail und Foto. Geburtsdatum und Geburtsort sind optional (Datensparsamkeit) und erscheinen im Lebenslauf nur bei `presentation.show_birth_data: true`.
 
 Das Foto ist nur gültig, wenn:
 
@@ -95,8 +99,18 @@ Ein Projektbild darf niemals als angebliches Projektbild generiert werden.
 Fähigkeiten werden in Gruppen und Sprachen gespeichert. Jede Fähigkeit hat:
 
 - `name`
-- `level`: `learning`, `basic`, `solid`, `advanced`, `future` oder `native`
-- `scale`: ganze Zahl von 1 bis 5 für die visuelle Darstellung
+- `level`: `future`, `learning`, `basic`, `solid`, `advanced` oder `native`
+- `scale`: ganze Zahl von 1 bis 5 für die visuelle Darstellung; das Schema koppelt sie an `level`:
+
+| `level` | Label | erlaubte `scale` |
+|---|---|---|
+| `future` | Lernwunsch | 1 |
+| `learning` | Lernstand | 1–2 |
+| `basic` | Grundkenntnisse | 2–3 |
+| `solid` | sicher | 3–4 |
+| `advanced` | routiniert | 4–5 |
+| `native` | Muttersprache | 5 |
+
 - `evidence`: kurzer Beleg oder ausdrückliche Selbsteinschätzung
 - `source_status`
 
@@ -121,7 +135,7 @@ Jeder Nachweis enthält:
 - Aussteller
 - Datum
 - Datei
-- Art
+- Art: `certificate` (Seite Zertifikate), `school_report` oder `work_reference` (Seite Zeugnisse), `other`
 - Sichtbarkeit in der Mappe
 - Originalstatus
 - technische Gültigkeit
@@ -138,6 +152,7 @@ Nicht vorhandene Nachweise bleiben offen. Es werden keine Ersatzdokumente erzeug
 - Fähigkeiten: Diagramme
 - Timeline-Verbindungslinien: nein
 - Seitenzahlen: einfache Zahl ohne Gesamtseitenzahl
+- Geburtsdaten im Lebenslauf: nur nach Freigabe (`show_birth_data`)
 - Icon-IDs für wiederkehrende Kategorien
 
 ## Offene Punkte
