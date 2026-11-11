@@ -39,6 +39,7 @@ Jede Station verwendet:
 - `end: null` nur bei einer laufenden Station mit `is_current: true`.
 - Bei `precision: "year"` steht im jeweiligen Feld nur `YYYY`.
 - Die Darstellung im Lebenslauf folgt der gespeicherten Präzision.
+- Einträge mit `approx: true` erscheinen in der Mappe mit „ca.“ vor dem Zeitraum, z. B. „ca. 03/2023“.
 
 ## Person
 

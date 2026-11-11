@@ -11,7 +11,7 @@
 - [ ] alle blockierenden offenen Punkte sind geklärt
 - [ ] alle Stationen sind als Praktikum, Anstellung, Schulbildung oder Projekt klassifiziert
 - [ ] Jahres- und Monatsangaben sind plausibel
-- [ ] freigegebene Näherungen sind als `inferred` gespeichert
+- [ ] freigegebene Näherungen sind als `inferred` gespeichert und in der Mappe mit „ca.“ gekennzeichnet
 - [ ] Foto ist gültig, korrekt zugeordnet und freigegeben – oder der Fotoblock fehlt ganz (kein leerer Rahmen)
 
 ### Inhalt
