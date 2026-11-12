@@ -1,183 +1,132 @@
 ---
 name: bewerbungshelfer
-description: Führt ein Profilinterview für deutsche Ausbildungsbewerbungen, sucht genau eine Stelle bei der Bundesagentur für Arbeit, erstellt eine Bewerbungsmappe mit sechs Abschnitten als HTML und bereitet nach Freigabe PDF, Kontaktübersicht und E-Mail-Entwurf vor.
+description: Baut deutsche Bewerbungsmappen (Ausbildung, Job, Praktikum) aus einem lokalen Profil und Stellen der Bundesagentur für Arbeit. Ein Profil pro Durchlauf, mehrere Bewerbungen parallel. Profil anlegen oder wählen, Lücken erfragen, Profilvorlage bauen, BA-Suche im Browser, pro Stelle Anschreiben, Motivationsschreiben, E-Mail und HTML-Mappe, PDF nach Freigabe, Ledger und Versandablage.
 metadata:
-  short-description: Deutsche Ausbildungsbewerbung als Mappe mit sechs Abschnitten
+  short-description: Deutsche Bewerbungsmappen aus Profil und BA-Stellen
 ---
 
 # Bewerbungshelfer
 
 ## Ergebnis
 
-Für **genau eine Ausbildungsstelle** entsteht eine Bewerbungsmappe mit sechs Abschnitten, im Regelfall sechs A4-Seiten:
+Für **ein Profil** und **eine oder mehrere Stellen** der Bundesagentur für Arbeit (BA) entsteht pro Stelle ein eigener Ordner mit:
 
-1. Deckblatt
-2. Anschreiben
-3. Lebenslauf
-4. Motivationsschreiben
-5. Zertifikate
-6. Zeugnisse
+- `job_information/ba_scrape.md` (wörtliche Anzeige) und `job.json` (strukturiert),
+- `text_generation/anschreiben.md`, `motivationsschreiben.md`, `kontaktdaten.md`,
+- `application/bewerbungsmappe - <vorname.nachname>.html`, nach Freigabe `.pdf`, dazu `email.md` und `application-manifest.json`.
 
-Folgeseiten sind nur für weitere Nachweise (höchstens zwei pro Seite) oder eine Lebenslauf-Fortsetzung erlaubt. Sie tragen denselben Abschnittstitel mit „Fortsetzung“ und eine fortlaufende Seitenzahl.
+Die Mappe hat sechs Abschnitte: Deckblatt, Anschreiben, Lebenslauf, Motivationsschreiben, Zertifikate, Zeugnisse. Deckblatt, Lebenslauf und Nachweise kommen aus der freigegebenen **Profilvorlage** und sind für alle Bewerbungen gleich. Anschreiben, Motivationsschreiben und E-Mail werden pro Stelle neu geschrieben. Nichts wird gesendet.
 
-Anschreiben und Motivationsschreiben werden pro Stelle neu geschrieben. Die übrigen vier Teile kommen aus dem stabilen Master-Profil und den importierten Nachweisen.
+## Referenzen
 
-Nach der HTML-Freigabe entstehen ein A4-PDF per Browser-Export, eine Kontaktübersicht und ein E-Mail-Entwurf. Die Mappe ist für den E-Mail-Versand gedacht, nicht zum Ausdrucken und handschriftlichen Unterschreiben. Es wird nichts gesendet.
+Nur lesen, was der aktuelle Schritt braucht:
 
-## Zuerst lesen
+| Schritt | Referenz |
+|---|---|
+| Profil wählen, Import, Interview | `references/interview.md` |
+| Profildaten und Schema | `references/profile-schema.md` |
+| Vorlage, Seiten, Design, Datenvertrag | `references/template.md` |
+| Vorlage visuell prüfen und ändern (Tencil) | `references/tencil.md` |
+| BA-Suche und Erfassung im Browser | `references/job-search.md` |
+| Ordner, Namen, Ledger, Status, Statistik | `references/applications.md` |
+| Paralleles Schreiben mit Subagenten | `references/fan-out.md` |
+| Anschreiben, Motivation, E-Mail, Kontaktdaten | `references/writing.md` |
+| Build, QA, Freigabe, PDF, Datenschutz | `references/qa-and-export.md` |
 
-Im Repository:
-
-1. `AGENTS.md`
-2. `docs/workflow.md`
-3. `docs/bewerbungsmappe.md`
-
-Aus diesem Skill nur die benötigte Referenz:
-
-- Profil oder Fragebogen: `references/interview.md`
-- Profilstruktur und Datenvertrag: `references/profile-schema.md`
-- Jobsuche und Unternehmensbelege: `references/job-search.md`
-- Schreiben: `references/writing.md`
-- Prüfung und Export: `references/qa-and-export.md`
-
-Die Vorlage liegt unter `assets/bewerbungsmappe.html`. Wenn Stencil im Harness verfügbar ist, kann der Nutzer sie dort visuell markieren; HTML und Stencil sind dann gemeinsam die Quelle der Wahrheit. Ohne Stencil bleibt das HTML maßgeblich.
+Vorlagen und Schemas: `assets/bewerbungsmappe.html`, `assets/templates/`, `assets/schemas/`. Das Werkzeug für Bau und Prüfung ist `tools/build_mappe.py` im Repository (nur Python-Standardbibliothek, Chromium für A4).
 
 ## Ablauf
 
-### 0. Basisvorlage gestalten
+### 1. Profil wählen oder anlegen
 
-Die gemeinsame Vorlage liegt unter `assets/bewerbungsmappe.html`. Wenn Stencil im Harness verfügbar ist, öffnet der Nutzer sie dort und markiert gewünschte Änderungen. Der Agent übernimmt freigegebene Markierungen ins HTML. Ohne Stencil prüfen Agent und Nutzer die Vorlage direkt im Browser.
+Liste die Ordner unter `profile/` (ohne `import/` und `assets/`). Frage, welches Profil dieser Durchlauf nutzt; pro Durchlauf genau eines.
 
-Die Basisvorlage wird **einmalig** gestaltet und enthält keine persönlichen Daten. Ist sie bereits freigegeben, beginnt jeder weitere Durchlauf direkt mit Schritt 1. Unternehmensspezifische Änderungen bleiben in der jeweiligen Bewerbung.
+Neues Profil: Der Nutzer legt seine Unterlagen in `profile/import/`. Lege `profile/<vorname.nachname>/` nach `references/applications.md` an und verschiebe die Dateien in die passenden Unterordner (`assets/documents/old/` für den alten Lebenslauf, `assets/documents/` für Zeugnisse und Zertifikate, `assets/photos/cv/`, `assets/signature/`). Dateinamen: `<vorname.nachname>_<inhalt>.<endung>`.
 
-### 1. Profil aufnehmen und ergänzen
+### 2. Interview und Profil
 
-Prüfe `profile/master-profile.json` und `profile/master-profile.md`.
+Nach `references/interview.md`:
 
-Wenn das Profil noch nicht bestätigt ist:
+- Unterlagen aus `assets/documents/old/` vollständig und visuell lesen und in `assets/documents/old/extracted_information.md` festhalten.
+- Nur nach Lücken, Widersprüchen und defekten Dateien fragen. Nichts erfinden, nichts raten.
+- Bestätigte Angaben in `assets/profile/<name>_profile.json` speichern, `<name>_profile.md` als lesbare Fassung pflegen.
+- Prüfen: `python3 tools/build_mappe.py validate profile/<name>` (braucht `jsonschema`, siehe `references/qa-and-export.md`).
 
-- lies vorhandene Dateien unter `profile/import/` vollständig und visuell,
-- prüfe PDFs, DOCX und Bilder auch auf eingebettete Grafiken,
-- fasse die erkannten Angaben mit Status `confirmed`, `inferred`, `open` oder `conflict` zusammen (in `field_status` bzw. `source_status`),
-- frage nur nach fehlenden, defekten oder widersprüchlichen Angaben,
-- speichere erst nach Bestätigung,
-- validiere das JSON gegen `assets/schemas/profile.schema.json`.
+### 3. Profilvorlage bauen und freigeben
 
-Ein frischer Clone startet ohne Profil. Wenn der Nutzer vorhandene Unterlagen bereitstellt, sind sie der Ausgangspunkt; der Fragebogen ergänzt sie, statt sie zu wiederholen. Defekte Dateien, besonders ein leeres Bewerbungsfoto, werden ausdrücklich als offener Punkt gemeldet und nicht eingebunden.
-
-### 2. Eine Stelle auswählen
-
-Nutze den Browser des Harness und die öffentliche Bundesagentur-Jobsuche im Bereich **Ausbildung**. An die Jobsuche gehen nur Suchbegriff, Ort oder PLZ und Umkreis, keine weiteren Profildaten.
-
-Zeige eine kurze Auswahl mit Titel, Unternehmen, Ort, Entfernung, Beginn und Link. Der Nutzer wählt genau eine Stelle.
-
-### 3. Stelle belegen
-
-Lies die vollständige Anzeige. Erfasse die Pflichtfelder aus `references/job-search.md` in `job.json` und validiere gegen `assets/schemas/job.schema.json`. Unternehmensaussagen für die Briefe kommen nach `company_facts` (Aussage, wörtlicher Beleg, Quell-URL, Abrufdatum).
-
-Jede Anforderung und jeder Kontakt bekommt eine Quelle. Fehlt ein persönlicher Ansprechpartner, prüfe die öffentliche Unternehmensseite. Rate nichts.
-
-### 4. Passung prüfen
-
-Bewerte jede Anforderung gegen das Profil:
-
-- `met`
-- `partial`
-- `not_met`
-- `unknown`
-
-Belege zusätzlich jede geplante Aussage über das Unternehmen mit Quelle und Datum. Nur belegte Stärken dürfen im Anschreiben stehen. Lücken werden nicht wegformuliert.
-
-Das Anschreiben beantwortet, warum der Bewerber für die Ausbildung geeignet ist und sie wahrscheinlich erfolgreich abschließen wird. Das Motivationsschreiben beantwortet, warum er diesen Weg gehen will und warum ihn das Thema beschäftigt. Prüfe vor der Freigabe, dass beide Texte keine Hauptargumente, Anekdoten oder Projektgeschichten doppelt erzählen.
-
-### 5. Mappe bauen
-
-Kopiere die Vorlage nach:
-
-```text
-applications/<unternehmen>-<beruf>/bewerbungsmappe.html
+```bash
+python3 tools/build_mappe.py profile-template profile/<name> --qa --pdf
 ```
 
-Lege dort `application-manifest.json` nach `assets/templates/application-manifest.json` mit Status `draft` an und trage Seiten (`pages`) und Assets ein.
+Das erzeugt `assets/profile/<name>_template.html` und die A4-Vorschau `<name>_template.pdf`: Skill-Vorlage plus stabile Teile (Deckblatt, Absender, Lebenslauf, Zertifikate, Zeugnisse); Anschreiben und Motivationsschreiben bleiben Platzhalter. Zeige dem Nutzer die Vorschau und frage, ob sie passt.
 
-Ersetze alle Platzhalter. Behalte die sechs Abschnitte, CSS-Klassen und PDF-Regeln. Das Foto erscheint nur, wenn `person.photo.valid` und `consent` true sind; sonst bleibt der Fotoblock weg. Fähigkeitsbalken setzen nur die Klasse `s<scale>` aus dem Profil. Wenn Stencil verfügbar ist, übernimm freigegebene visuelle Markierungen aus der Stencil-Fassung in das HTML. Prüfe jede generierte Aussage gegen Profil und Stellenanzeige; unbelegte Formulierungen werden entfernt, nicht geglättet.
+- Das Skript meldet den Füllgrad der Lebenslauf-Seiten und ausgeblendete Schulen; die Aufteilung folgt `references/template.md` (Lebenslauf).
+- Inhaltliche Änderungen: im Profil-JSON, dann neu bauen.
+- Designänderungen: nur in der Skill-Vorlage `assets/bewerbungsmappe.html`, visuell über Tencil (`references/tencil.md`), dann neu bauen.
+- Generiertes HTML nie von Hand bearbeiten.
 
-Fehlt das Foto, entfällt der Fotoblock ersatzlos. Läuft der Lebenslauf über, entsteht eine Folgeseite nach dem Kommentar in der Vorlage; Inhaltsangabe und Seitenzahlen werden angepasst. Für Bewerbungen ohne Foto oder Unterschrift wird nichts ersetzt oder generiert.
+Schleife, bis der Nutzer zufrieden ist. Jede spätere Profiländerung braucht einen neuen Bau und einen neuen Blick des Nutzers.
 
-Die freigegebenen Darstellungsregeln aus `presentation` in `profile/master-profile.json` gelten:
+### 4. Stellen suchen und erfassen
 
-- Fußzeile nur mit Name
-- kein Unternehmensname auf dem Deckblatt
-- Fähigkeiten als Diagramme
-- keine Timeline-Verbindungslinien
-- Seitenzahlen ohne führende Nullen und ohne Gesamtseitenzahl
+Nach `references/job-search.md` im Browser des Harness (kein Skript). Ablauf und Selektoren stehen dort. Kurz:
 
-Schreibe Anschreiben und Motivationsschreiben nach `references/writing.md`. Binde echte Zertifikate und Zeugnisse aus `profile/import/` oder den bereitgestellten Dateien als lokale Assets ein. Fehlende Nachweise werden ausdrücklich markiert.
+1. Suche mit Beruf, Zielort und Umkreis (Vorgabe des Nutzers, sonst „ganzer Ort“; ohne Treffer erst fragen, dann vorsichtig erweitern).
+2. Treffer kurz zeigen (Titel, Firma, Ort, Entfernung, Beginn, Veröffentlichung). Der Nutzer wählt eine oder mehrere Stellen.
+3. Duplikate prüfen: gleiche Referenznummer oder gleiche Firma + Titel im Ledger → Nutzer warnen (`references/applications.md`).
+4. Ränge nach Entfernung vom Suchort vergeben (`NN`), Ordner anlegen.
+5. Jede Anzeige **nacheinander** vollständig erfassen: `ba_scrape.md` wörtlich, `job.json` strukturiert. Für die Kontaktdaten zum Captcha scrollen und den **Nutzer** bitten, es zu lösen. Kurze Websuche zur Firma ist erlaubt (Fakten mit Quelle).
+6. `job.json` gegen das Schema prüfen.
 
-### 6. HTML prüfen und freigeben
+Browserarbeit bleibt beim Hauptagenten; Subagenten haben oft keinen Browser.
 
-Öffne die Mappe im Browser. Prüfe Inhalt, Reihenfolge, Kontaktdaten, Anrede und Nachweise.
+### 5. Pro Stelle schreiben, bauen, prüfen (parallel)
 
-Prüfe jede Fassung bei der richtigen Auflösung:
+Nach `references/fan-out.md`: pro Stelle ein Subagent (Claude Code: `bewerbung-writer`, danach `bewerbung-qa`). Jeder Subagent arbeitet nur in seinem Stellenordner:
 
-- Desktop: 1440 × 900 oder 1280 × 800
-- Mobil: 390 × 844 und 375 × 812
-- PDF: A4 mit 210 × 297 mm
+1. Passung prüfen (`requirements[].status` in `job.json`).
+2. `anschreiben.md`, `motivationsschreiben.md`, `email.md` nach `references/writing.md` schreiben, `kontaktdaten.md` aus `job.json` erstellen.
+3. Skill `humanizer` auf Anschreiben, Motivationsschreiben und E-Mail anwenden (nicht auf `kontaktdaten.md`). Fehlt der Skill, das sagen und seine Grundsätze von Hand anwenden.
+4. Bauen und prüfen: `python3 tools/build_mappe.py application <stellenordner> --qa`. Bei Überlauf Text kürzen oder `dichte: dicht` setzen, nie das HTML ändern. Bei Bewerbungsweg `email` meldet die QA einen fehlenden oder unvollständigen `email.md`-Entwurf als Fehler; der Entwurf gehört vor die Freigabe.
+5. QA-Durchgang mit Faktencheck gegen Profil und Anzeige (`references/qa-and-export.md`).
 
-Prüfe in der A4-Fassung jede Seite auf Überlauf (`references/qa-and-export.md`, Abschnitt Überlauf). Abgeschnittener Inhalt blockiert die Freigabe. Trage das Ergebnis unter `validation` im Manifest ein.
+Ohne Subagenten: dieselben Schritte nacheinander pro Stelle.
 
-Mobil, Desktop und A4 sind drei getrennte Abnahmeflächen. Eine schmale Desktopvorschau ist kein Ersatz für die Mobilansicht. Das responsive Bildschirmlayout ist nicht die Druckfassung.
+### 6. Freigabe pro Mappe
 
-Frage ausdrücklich:
+Zeige jede Mappe (HTML im Browser, A4-Vorschau als Bild oder PDF in `.tmp/`). Frage einzeln:
 
-> Ist diese HTML-Fassung inhaltlich und optisch freigegeben?
+> Ist die HTML-Fassung für <Firma> inhaltlich und optisch freigegeben?
 
-Ohne eindeutiges Ja kein PDF. Nach dem Ja: Manifest auf `html_approved` mit `approved_at` setzen.
+Nur bei eindeutigem Ja:
 
-### 7. PDF und Versandvorbereitung
+```bash
+python3 tools/build_mappe.py status <stellenordner> html_approved
+python3 tools/build_mappe.py application <stellenordner> --qa --pdf
+```
 
-Nach der Freigabe:
+Das Skript verweigert das PDF ohne Freigabe, mit QA-Befund oder bei Bewerbungsweg `email` ohne gültigen Entwurf `email.md`. Ändert sich danach ein Text, fällt der Status auf `draft` zurück und die Freigabe ist neu einzuholen.
 
-- exportiere über den Browser ein A4-PDF,
-- prüfe alle Seiten visuell,
-- schreibe `contact-summary.md` nach `assets/templates/contact-summary.md`,
-- schreibe `email-draft.md` nach `assets/templates/email-draft.md`,
-- setze das Manifest nach geprüftem PDF auf `pdf_exported` (`pdf`, `pdf_exported_at`) und nach Kontaktübersicht und E-Mail-Entwurf auf `ready_to_send`. Das heißt nicht, dass gesendet wurde.
+### 7. Versand durch den Nutzer und Ablage
 
-Keine Bewerbung senden und kein Portal ausfüllen.
+Der Nutzer sendet selbst (E-Mail-Entwurf in `email.md`, Kontaktdaten in `kontaktdaten.md`). Kein Portal ausfüllen, nichts hochladen, nichts senden. Erst wenn der Nutzer bestätigt, dass die Bewerbung raus ist:
+
+```bash
+python3 tools/build_mappe.py mark-sent <stellenordner> --channel email|post|portal
+```
+
+Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status, Datum und Kanal. `status … sent` gibt es nicht: nur `mark-sent` setzt „gesendet“, weil es Ordner und Ledger zusammen aktualisiert. Spätere Rückmeldungen: `status <ordner> interview|offer|rejected|withdrawn`. Statistik: `stats profile/<name>` (`references/applications.md`).
 
 ## Harte Regeln
 
-- Deutsch
-- nur Ausbildung
-- nur Bundesagentur für Arbeit
-- eine Stelle pro Durchlauf
-- keine erfundenen Qualifikationen, Kontakte oder Nachweise
-- keine unbelegten Aussagen
-- keine externen Ressourcen ohne Freigabe
-- keine Scraping- oder Rendering-Skripte anlegen (ein direkter Headless-Browser-Aufruf für die A4-Vorschau ist erlaubt)
-- keine persönlichen Daten committen
-- kein PDF vor HTML-Freigabe
-- kein automatisches Absenden
-- bei fehlenden Fakten stoppen und fragen
-- keine defekten oder fremden Bilder einbinden
-- freigegebene Näherungen als `inferred` kennzeichnen
-- Diagramme nur aus gespeicherten Niveaus erzeugen
-
-## Ordner
-
-```text
-profile/
-  import/
-  assets/
-  master-profile.json
-  master-profile.md
-applications/<unternehmen>-<beruf>/
-  job.json
-  application-manifest.json
-  bewerbungsmappe.html
-  bewerbungsmappe.pdf
-  contact-summary.md
-  email-draft.md
-  assets/
-```
+- Ein Profil pro Durchlauf; mehrere Stellen sind erlaubt.
+- Einzige Jobquelle: Bundesagentur für Arbeit, im Browser des Harness. Kein Scraping-Skript. Websuche nur für kurze Firmenfakten mit Quelle und, als letzter Ausweg, für Kontaktdaten.
+- An die BA-Suche gehen nur Beruf, Ort und Umkreis, keine weiteren Profildaten.
+- Keine erfundenen Tatsachen, Kontaktdaten, Qualifikationen, Niveaus, Noten oder Nachweise. Bei fehlenden Fakten stoppen und fragen.
+- Freigegebene Näherungen bleiben `inferred` und erscheinen mit „ca.“.
+- Kein automatisches Senden, kein Portal ausfüllen, kein Upload.
+- Finales PDF erst nach ausdrücklicher HTML-Freigabe.
+- Keine Fotos fremder Personen, keine generierten Porträts oder Projektbilder; defekte Dateien nicht einbinden.
+- Generiertes HTML nie von Hand bearbeiten; Design nur in der Skill-Vorlage.
+- Entscheidungen des Nutzers, die die Ausgabe prägen, gehören in ein Profilfeld (mit Interviewfrage) oder in Vorlage und Referenzen, nie nur in ein Gespräch oder in `.tmp/`. Ein neuer Durchlauf aus demselben Profil muss dieselbe Mappe ergeben.
+- Persönliche Daten nur in `profile/` und `.tmp/`; nichts davon committen.

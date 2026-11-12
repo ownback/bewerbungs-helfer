@@ -1,12 +1,36 @@
 {
+  "type": "apprenticeships",
+  "reference_number": "",
   "source": {
     "name": "Bundesagentur für Arbeit",
     "url": "",
     "retrieved_at": ""
   },
+  "search": {
+    "area": "Ausbildung",
+    "query": "",
+    "city": "",
+    "radius": "",
+    "sort": "Neueste Veröffentlichung",
+    "filters": [],
+    "result_url": "",
+    "rank": 1,
+    "distance_km": null
+  },
   "title": "",
   "company": "",
+  "occupation": "",
   "apprenticeship": "",
+  "offer_type": "",
+  "employment_type": "",
+  "school_degree": "",
+  "published": {
+    "text": "",
+    "date": ""
+  },
+  "start": "",
+  "start_text": "",
+  "place": "",
   "locations": [
     {
       "city": "",
@@ -14,7 +38,6 @@
       "postal_code": ""
     }
   ],
-  "start": "",
   "duration": "",
   "deadline": "",
   "description": "",
@@ -26,14 +49,26 @@
       "profile_evidence": ""
     }
   ],
+  "employer": {
+    "headquarters": "",
+    "description": "",
+    "homepage": "",
+    "career_page": "",
+    "logo_url": ""
+  },
+  "benefits": [],
+  "managed_by_ba": null,
   "application": {
     "method": "unknown",
     "url": "",
     "email": "",
+    "required_documents": "",
     "notes": ""
   },
   "contact": {
+    "confidence": "unknown",
     "company": "",
+    "honorific": "",
     "name": "",
     "role": "",
     "department": "",
@@ -43,11 +78,15 @@
     "email": "",
     "phone": "",
     "source_url": "",
-    "confidence": "unknown",
+    "source": "ba_captcha",
     "salutation": "Sehr geehrte Damen und Herren"
   },
-  "benefits": [],
-  "open_questions": [],
+  "commute": {
+    "home_city": "",
+    "distance_km": null,
+    "over_50_km": false,
+    "source": ""
+  },
   "company_facts": [
     {
       "statement": "",
@@ -57,5 +96,6 @@
       "retrieved_at": "",
       "used_in": []
     }
-  ]
+  ],
+  "open_questions": []
 }

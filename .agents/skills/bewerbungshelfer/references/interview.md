@@ -1,150 +1,124 @@
-# Profilinterview
+# Profil wählen, Unterlagen auswerten, Interview
 
-## Ausgangspunkt
+## Profil wählen
 
-Ein frischer Clone enthält kein Profil. Prüfe zuerst:
+1. Ordner unter `profile/` auflisten (`import/` und `assets/` sind keine Profile).
+2. Fragen, mit welchem Profil gearbeitet wird. Pro Durchlauf genau ein Profil.
+3. Bei einem bestehenden Profil: `assets/profile/<name>_profile.json` lesen, offene Punkte (`open_questions` mit `status: open`) und `profile_status` zeigen. Ist es bestätigt und nichts Blockierendes offen, weiter mit der Profilvorlage.
 
-- `profile/master-profile.json`
-- `profile/master-profile.md`
-- alle vom Nutzer bereitgestellten Dateien unter `profile/import/`
+## Neues Profil anlegen
 
-Übernimm nichts ungeprüft aus einem Lebenslauf. Fasse erkannte Angaben zusammen und lass sie bestätigen.
+Einstieg:
 
-Beginne mit:
+> Ich lege dein Profil an. Es bleibt lokal auf deinem Rechner und wird nur für deine Bewerbungsmappen verwendet. Leg bitte deine Unterlagen in `profile/import/`: alten Lebenslauf, Zeugnisse, Zertifikate, Bewerbungsfoto und Unterschrift, soweit vorhanden. Danach frage ich nur, was fehlt oder unklar ist.
 
-> Ich baue mit dir dein Master-Profil. Das bleibt lokal und wird nur für deine Bewerbungsmappen verwendet. Wir gleichen zuerst deine vorhandenen Unterlagen ab und fragen nur, was noch fehlt oder unklar ist.
+Dann:
 
-## Unterlagen zuerst
+1. Ordnername aus Vor- und Nachname: Kleinbuchstaben, ASCII, `ä→ae`, `ö→oe`, `ü→ue`, `ß→ss`, Leerzeichen im Vornamen als Bindestrich, Punkt zwischen Vor- und Nachname, z. B. `max.mustermann`, `anna-lena.mueller`.
+2. Ordnerstruktur nach `references/applications.md` anlegen (`assets/{documents/old,photos/cv,photos/project,signature,profile}`, `applications/{apprenticeships,jobs,internships,sent/…}`).
+3. Dateien aus `profile/import/` verschieben und umbenennen (`<name>_<inhalt>.<endung>`):
+   - alter Lebenslauf (PDF, DOCX) → `assets/documents/old/`
+   - Zeugnisse, Zertifikate (Bild) → `assets/documents/`; PDF-Nachweise zusätzlich als PNG rendern (`pdftoppm -png -r 150`), das PDF bleibt daneben
+   - Bewerbungsfoto → `assets/photos/cv/`, Projektfotos → `assets/photos/project/`
+   - Unterschrift → `assets/signature/`
+4. `assets/templates/profile.json` und `profile.md` aus dem Skill als Startpunkt kopieren.
 
-Wenn der Nutzer einen Lebenslauf, ein Zeugnis, ein Zertifikat oder ein Foto bereitstellt:
+## Unterlagen auswerten
 
-1. Prüfe jede Datei technisch.
-2. Lies PDFs, DOCX und Bilder auch visuell, nicht nur als Text.
-3. Prüfe DOCX auf eingebettete Bilder.
-4. Erfasse alle Stationen, Zeiträume, Aufgaben, Nachweise und Kontaktdaten.
-5. Ordne jede Angabe als `confirmed`, `inferred`, `open` oder `conflict` ein.
-6. Zeige eine kompakte Abweichungsliste: fehlt, widersprüchlich, unklar, zusätzlich erkannt.
-7. Frage nur zu diesen Punkten nach.
+Für jede Datei:
 
-Defekte Dateien werden nicht als gültig markiert. Eine leere Bilddatei wird ausdrücklich als offen gemeldet.
+1. Technisch prüfen: lesbar, nicht leer (0 Byte), richtiges Format.
+2. PDFs, DOCX und Bilder **visuell** lesen, nicht nur per Textextraktion. Entscheidende Angaben stehen oft in Grafiken.
+3. DOCX auf eingebettete Bilder prüfen. Ein Vorlagen-Platzhalter („Foto einfügen“) ist kein Foto.
+4. Alle Stationen, Zeiträume, Aufgaben, Nachweise und Kontaktdaten erfassen.
+5. Jede Angabe einordnen: `confirmed`, `inferred`, `open` oder `conflict`.
 
-## Block 1: Ziel
+Ergebnis in `assets/documents/old/extracted_information.md` nach `assets/templates/extracted_information.md`: je Quelle die erkannten Angaben mit Fundstelle, dazu eine Abweichungsliste (fehlt, widersprüchlich, unklar, zusätzlich erkannt). Diese Datei ist die Arbeitsgrundlage für das Interview, nicht das Profil selbst.
 
-- Welche Ausbildung?
-- Welche Alternativen sind akzeptabel?
-- Frühester Beginn?
-- Welche Orte?
-- Welcher Umkreis?
-- Umzug oder Pendeln?
+Defekte Dateien werden ausdrücklich als offen gemeldet und nie eingebunden, besonders ein leeres oder fremdes Bewerbungsfoto.
 
-## Block 2: Identität, Kontakt und Foto
+## Interview
 
-- Name
-- Anschrift
-- Telefon
-- E-Mail
-- gewünschte Anrede
-- Geburtsdatum und Geburtsort (optional; nur nach Freigabe im Lebenslauf, `presentation.show_birth_data`)
-- Bewerbungsfoto verwenden?
-- Ist die Bilddatei gültig, aktuell und ausdrücklich freigegeben?
+Nur zu den Punkten der Abweichungsliste und zu Feldern, die das Profil braucht und keine Quelle haben. In kleinen Blöcken fragen.
 
-## Block 3: Schulbildung
+### Block 1: Ziel
 
-Für jeden Abschluss oder laufenden Bildungsgang:
+- Art: Ausbildung, Job oder Praktikum (`goal.type`)
+- Beruf, Alternativen, frühester Beginn
+- Zielorte und Umkreis (Vorgabe für die BA-Suche)
+- Umzug oder Pendeln? (wichtig für die E-Mail bei Stellen über 50 km)
 
-- Einrichtung
-- Ort
-- offizieller Bildungsgang
-- Abschluss oder Abschlussziel
-- Zeitraum
-- Besonderheiten, die zur Einordnung nötig sind
+### Block 2: Person und Kontakt
 
-Klassenbezeichnungen nur als Detail erfassen, nicht als Bildungsgang.
+- Name, Anrede im eigenen Absender (`person.salutation`): „Herr“, „Frau“ oder ohne. Standard ist ohne; die Anrede vor dem eigenen Namen ist im deutschen Geschäftsbrief unüblich und steht nur auf ausdrücklichen Wunsch.
+- Anschrift: Straße ausgeschrieben („Straße“, nicht „Str.“), ohne Punkt und Komma am Ende, PLZ und Ort getrennt
+- Telefon (so speichern, wie es erscheinen soll, z. B. „+49 …“), E-Mail für Bewerbungen
+- Geburtsdatum und Geburtsort (optional; Ort in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land; im Lebenslauf nur mit `presentation.show_birth_data: true`)
+- Bewerbungsfoto: gültig, aktuell, zum Nutzer gehörend, ausdrücklich freigegeben? Mindestens 600 × 750 px. Den Ausschnitt (`photo.focus`) wählt der Agent mit dem Nutzer an der Vorschau.
+- Unterschrift als Bild: gültig und freigegeben?
 
-## Block 4: Werdegang
+### Block 3: Schulbildung
 
-Für jede Station:
+Je Abschluss oder laufendem Bildungsgang: Einrichtung, Ort, offizieller Bildungsgang, Kurzform „Schulform · Profil“ (Ableitung in `references/profile-schema.md`), Abschluss oder Abschlussziel, Zeitraum, ob der Abschluss noch aussteht. Klassenbezeichnungen sind kein Bildungsgang.
 
-- Art: Praktikum, Anstellung, Ehrenamt oder Sonstiges
-- Organisation
-- Rolle
-- Ort
-- Zeitraum
-- konkrete Aufgaben
-- belegbares Ergebnis
-- Quelle
+Grundschulen: Liegt ein weiterführender Abschluss vor (z. B. Mittlere Reife), bleiben Grundschulen standardmäßig aus dem Lebenslauf. Der Agent schlägt das vor und lässt es bestätigen; die Antwort steht als `show_in_cv: false` am Eintrag, der Eintrag bleibt im Profil. Ohne weiterführenden Abschluss bleibt der Standard `true`.
 
-Keine Aufgabe erfinden, nur weil sie zur Ausbildung passt. Wenn der Nutzer typische Aufgaben ausdrücklich freigibt, werden sie als bestätigt gespeichert.
+### Block 4: Werdegang
 
-## Block 5: Projekte
+Je Station: Art (Praktikum, Anstellung mit Vollzeit/Teilzeit, Ehrenamt, Sonstiges), Organisation, Rolle, Ort, Zeitraum, konkrete Aufgaben, belegbares Ergebnis. Keine Aufgabe erfinden, nur weil sie zum Beruf passt. Gibt der Nutzer typische Aufgaben ausdrücklich frei, werden sie `confirmed` gespeichert.
 
-- Name
-- Zeitraum
-- Ziel
-- eigene Rolle
-- Werkzeuge
-- Ergebnis
-- Link oder Bild
-- Bildfreigabe
+### Block 5: Projekte
 
-Frage nach Entscheidungen und Problemen, nicht nach Werbesätzen. Ein Projektbild muss echt, lesbar und freigegeben sein.
+Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, Link, echtes Bild mit Freigabe. Nach Entscheidungen und Problemen fragen, nicht nach Werbesätzen.
 
-## Block 6: Fähigkeiten
+Lebenslauf: Soll ein Projekt im Block „Eigene Projekte“ erscheinen? Das kostet ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag, also meist eine zusätzliche Seitenaufteilung. Wenn ja: Reihenfolge, ein belegter Satz (`cv_summary`, höchstens 160 Zeichen), vier bis sechs Werkzeuge als Chips, Titel des Blocks (`presentation.cv_projects`). Details: `references/profile-schema.md`.
+
+### Block 6: Fähigkeiten
 
 - Sprachen mit Niveau
-- fachliche Kenntnisse
-- Werkzeuge
-- Methoden
+- Fachliche Kenntnisse in Gruppen (z. B. Systeme, Netzwerk, Entwicklung)
+- je Zeile Technologien gleichen Themas und gleichen Niveaus zusammenfassen und das Niveau (`future`, `learning`, `basic`, `solid`, `advanced`, `native`) und die Skala 1–5 **je Zeile** erfragen, nicht je Technologie; Technologien als kommagetrennte Liste in `evidence`
+- `future` ist ein Lernwunsch (noch nicht angewandt) und erscheint als Skala 1 ohne Zusatztext
 - Führerschein und Mobilität
-- Soft Skills nur mit Beispiel
 
-Für jede Fähigkeit:
+Fähigkeiten ohne erkennbares Niveau (z. B. Icons ohne Balken im alten Lebenslauf) bekommen kein geratenes Niveau: nachfragen, bis dahin `open` und nicht anzeigen. Technologien, die der Nutzer nicht genannt hat, nie ergänzen, auch wenn ein Logo vorhanden ist; bei Anregungen (z. B. gängige Netzwerk-Werkzeuge) fragen, ob und auf welchem Niveau sie stimmen.
 
-- Niveau: `learning`, `basic`, `solid`, `advanced`, `future` oder `native`
-- visuelle Skala 1–5
-- kurzer Beleg oder ausdrückliche Selbsteinschätzung
+Gruppen, Zeilenbezeichnungen, Icons und Chips leitet der Agent aus diesen Antworten ab (Regeln in `references/profile-schema.md`) und zeigt sie in der Profilvorlage zur Freigabe.
 
-Die Skala ist keine Prozentangabe. Sie dient nur der Darstellung.
+### Block 7: Nachweise
 
-## Block 7: Nachweise
+Je Nachweis: Titel, Aussteller, Datum, Datei, Art (Zertifikat, Schulzeugnis, Arbeits- oder Praktikumszeugnis), in der Mappe zeigen, Original-Scan oder Kopie, technisch gültig.
 
-- Titel
-- Aussteller
-- Datum
-- Datei
-- Zertifikat, Schulzeugnis, Arbeits-/Praktikumszeugnis oder sonstiger Nachweis?
-- sichtbar in der Mappe?
-- Original oder Kopie?
-- technisch gültig?
+### Block 8: Motivation und Stimme
 
-## Block 8: Motivation und Stimme
-
-- Wann entstand das Interesse?
-- Welche Erfahrung hat es verstärkt?
-- Welches Projekt beschäftigt den Nutzer noch?
+- Wann und wodurch entstand das Interesse?
+- Welche Erfahrung hat es verstärkt? Welches Projekt beschäftigt den Nutzer?
 - Was will er lernen?
-- Drei Stärken mit Beispiel
+- Drei Stärken mit je einem Beispiel; ein selbst gelöstes Problem
 - Was darf nicht in der Bewerbung stehen?
 
-## Block 9: Darstellung
+### Block 9: Darstellung
 
-- Sollen Fähigkeiten als Diagramme erscheinen?
-- Welche Icons sollen für wiederkehrende Kategorien verwendet werden?
-- Unternehmensname auf dem Deckblatt?
-- Nur der Name in der Fußzeile?
+- Kurzprofil für das Deckblatt (`portfolio.cover_bio`: zwei bis drei natürliche Sätze, Vorschlag des Agenten nach den Regeln in `references/profile-schema.md`, Freigabe durch den Nutzer)
+- Berufsbezeichnung auf dem Deckblatt (`portfolio.cover_role`), ggf. auf zwei Zeilen
+- Geburtsdaten im Lebenslauf zeigen? (`presentation.show_birth_data`, Standard nein)
+- Eigene Projekte im Lebenslauf und Grundschulen im Lebenslauf: siehe Block 5 und Block 3
 
-Die Entscheidungen werden in `presentation` gespeichert und gelten für künftige Mappen.
+Nicht erfragt, sondern feste Vorgaben der Vorlage: keine Fußzeile, Seitenzahl im Registerreiter, Skalen statt Prozentwerte, kein Firmenname auf dem Deckblatt, kein Kurzprofil im Lebenslauf, Betreff in gemischter Schreibung, kein Rücksendezeilen-Block, keine Timeline-Linien (`references/template.md`). Wünscht der Nutzer etwas anderes, ist das eine Designänderung an der Skill-Vorlage, kein Profilfeld.
+
+Die Aufteilung des Lebenslaufs auf Seiten (`presentation.cv_layout`) wählt der Agent nach der Regel in `references/template.md`; der Nutzer sieht das Ergebnis in der Profilvorlage.
 
 ## Gesprächsregeln
 
-- In kleinen Blöcken fragen.
 - Nicht nach bereits bestätigten Angaben fragen.
-- Widersprüche genau einmal ansprechen.
-- Zusammenfassen und bestätigen lassen.
-- Unbekanntes als offen markieren.
-- Erst nach Bestätigung in das Profil schreiben.
-- Keine persönlichen Daten in Git speichern.
+- Widersprüche genau einmal ansprechen und die Entscheidung mit Quelle speichern.
+- Zusammenfassen und bestätigen lassen; erst dann ins Profil schreiben.
+- Eine Jahresangabe bleibt eine Jahresangabe. Plausible Näherungen nur nach ausdrücklicher Freigabe, dann `approx: true` und `inferred`.
+- Unbekanntes bleibt `open` und erscheint als offener Punkt.
 
 ## Ergebnis
 
-`profile/master-profile.json` nach `assets/schemas/profile.schema.json` und `profile/master-profile.md` als lesbare Zusammenfassung.
+- `assets/profile/<name>_profile.json`, gültig gegen `assets/schemas/profile.schema.json`
+- `assets/profile/<name>_profile.md` als lesbare Zusammenfassung
+- `assets/documents/old/extracted_information.md`
+- `profile_status: confirmed` erst, wenn der Nutzer die Zusammenfassung bestätigt hat und nichts Blockierendes oder Widersprüchliches offen ist.

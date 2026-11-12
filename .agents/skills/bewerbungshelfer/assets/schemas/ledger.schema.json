@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ownback.local/schemas/ledger.schema.json",
+  "title": "Bewerbungs-Ledger",
+  "description": "Eine Datei pro Profil: profile/<vorname.nachname>/applications/ledger.json. Ein Eintrag pro Bewerbung. Vor jeder Generierung auf Duplikate prüfen (gleiche Referenznummer oder gleiche Firma + Titel).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile", "entries"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "profile": { "type": "string", "pattern": "^[a-z0-9-]+\\.[a-z0-9.-]+$", "description": "Ordnername des Profils, z. B. vorname.nachname." },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reference_number", "company", "title", "type", "folder", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "reference_number": { "type": "string", "description": "BA-Referenznummer; leer nur, wenn die Anzeige keine hat." },
+          "company": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "occupation": { "type": "string" },
+          "type": { "enum": ["apprenticeships", "jobs", "internships"] },
+          "folder": {
+            "type": "string",
+            "pattern": "^applications/(sent/)?(apprenticeships|jobs|internships)/[^/]+/[^/]+/\\d{2}-[a-z0-9-]+$",
+            "description": "Pfad relativ zum Profilordner."
+          },
+          "search_city": { "type": "string" },
+          "rank": { "type": "integer", "minimum": 1 },
+          "status": { "enum": ["draft", "html_approved", "pdf_exported", "sent", "interview", "offer", "rejected", "withdrawn"] },
+          "created_at": { "type": "string", "format": "date" },
+          "html_approved_at": { "type": "string", "format": "date" },
+          "pdf_exported_at": { "type": "string", "format": "date" },
+          "sent_at": { "type": "string", "format": "date" },
+          "channel": { "enum": ["email", "post", "portal", "unknown"] },
+          "contact": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "email": { "type": "string" },
+              "phone": { "type": "string" }
+            }
+          },
+          "application_email": { "type": "string" },
+          "source_url": { "type": "string" },
+          "notes": { "type": "string" },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["date", "status"],
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "status": { "enum": ["draft", "html_approved", "pdf_exported", "sent", "interview", "offer", "rejected", "withdrawn"] },
+                "note": { "type": "string" }
+              }
+            }
+          }
+        },
+        "allOf": [
+          { "if": { "properties": {"status": {"const": "sent"}} }, "then": { "required": ["sent_at", "channel"] } }
+        ]
+      }
+    }
+  }
+}

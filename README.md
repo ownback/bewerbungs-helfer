@@ -1,84 +1,71 @@
 # Bewerbungshelfer
 
-Ein lokales, agent-agnostisches Repository für deutsche Ausbildungsbewerbungen.
+Ein lokales Werkzeug, das mit einem KI-Agenten (Claude Code, Codex oder einem anderen Harness mit Datei- und Browserzugriff) deutsche Bewerbungsmappen baut: für Ausbildungsplätze, Jobs und Praktika.
 
-Der Workflow startet in einem frischen Clone ohne Profil- oder Bewerbungsdaten, gleicht zuerst vorhandene Unterlagen ab und fragt nur echte Lücken ab. Danach sucht er im Browser genau eine Ausbildungsstelle bei der Bundesagentur für Arbeit und baut daraus eine vollständige Bewerbungsmappe als HTML. Nach der Freigabe wird die HTML-Datei über den Browser als A4-PDF exportiert.
+Du sprichst mit dem Agenten. Er gleicht deine vorhandenen Unterlagen ab, fragt nur nach, was fehlt, sucht passende Stellen bei der Bundesagentur für Arbeit und baut für jede ausgewählte Stelle eine eigene Mappe als HTML und nach deiner Freigabe als A4-PDF. Abschicken tust du selbst.
 
-Die Mappe ist für den Versand per E-Mail gedacht. Es wird nichts ausgedruckt und nichts handschriftlich unterschrieben.
-
-## Die sechs Seiten
+## Was eine Mappe enthält
 
 1. Deckblatt
-2. Anschreiben
+2. Anschreiben (pro Stelle neu: warum das Unternehmen dich nehmen sollte)
 3. Lebenslauf
-4. Motivationsschreiben
+4. Motivationsschreiben (pro Stelle neu: warum dich das Fach begeistert)
 5. Zertifikate
 6. Zeugnisse
 
-**Pro Stelle neu:** Anschreiben und Motivationsschreiben.  
-**Stabil:** Deckblatt, Lebenslauf, Zertifikate und Zeugnisse.
+Deckblatt, Lebenslauf, Zertifikate und Zeugnisse kommen aus deiner persönlichen Profilvorlage und bleiben für alle Bewerbungen gleich. Zu jeder Mappe gibt es eine Kontaktübersicht und einen E-Mail-Entwurf.
 
-Das **Anschreiben** beantwortet, warum der Bewerber fachlich und persönlich zur Ausbildung passt. Das **Motivationsschreiben** erklärt, warum er diesen Weg gehen will und warum ihn das Thema beschäftigt.
+## Voraussetzungen
 
-Das **Deckblatt** ist eine gestaltete Titelseite mit Inhaltsangabe, optionalem großem Bewerbungsfoto, Name, Ausbildungsziel, Kontakt und Kurzprofil.
+- ein Agent-Harness mit Dateizugriff, Shell und Browser, z. B. [Claude Code](https://claude.com/claude-code) oder Codex
+- Python 3.10 oder neuer (nur Standardbibliothek)
+- Chromium oder Google Chrome für A4-Prüfung und PDF-Export
+- optional: `pdftoppm` (Poppler) für Seitenbilder, `jsonschema` für die Schemaprüfung
 
-## Start
+## Starten
 
 ```bash
 git clone https://github.com/ownback/bewerbungs-helfer
 cd bewerbungs-helfer
 ```
 
-Dann im Repo Claude, Codex oder einen anderen Harness starten und den Skill aufrufen. Der Skill-Name ist `bewerbungshelfer`.
+Dann im Ordner den Agenten starten und den Skill aufrufen:
 
-- Codex / T3 Code: `$bewerbungshelfer`
-- Claude Code: `CLAUDE.md` lädt `AGENTS.md` automatisch; der Skill ist über `.claude/skills/bewerbungshelfer` als `/bewerbungshelfer` verfügbar
+- Claude Code: `/bewerbungshelfer`
+- Codex: `$bewerbungshelfer`
 
-Der Agent gleicht zuerst vorhandene Unterlagen ab, ergänzt das Profil und sucht danach eine Ausbildungsstelle. Anschließend baut er die Mappe.
+Beim ersten Mal legst du deine vorhandenen Unterlagen (alter Lebenslauf, Zeugnisse, Zertifikate, Bewerbungsfoto, Unterschrift) in `profile/import/`. Der Agent legt daraus dein Profil unter `profile/<vorname.nachname>/` an.
 
-Vorhandene Unterlagen können unter `profile/import/` abgelegt werden. Der Agent liest sie und fragt nur nach fehlenden Angaben.
+## So läuft ein Durchlauf
 
-## Dokumentation
+1. Profil wählen oder neu anlegen.
+2. Kurzes Interview, nur zu fehlenden oder unklaren Angaben.
+3. Der Agent baut deine Profilvorlage (Deckblatt, Lebenslauf, Nachweise). Du prüfst sie, bis sie passt.
+4. Gemeinsame Suche bei der Bundesagentur für Arbeit. Du wählst eine oder mehrere Stellen. Für die Kontaktdaten löst du jeweils das Captcha im Browser.
+5. Der Agent schreibt pro Stelle Anschreiben, Motivationsschreiben und E-Mail und baut die Mappe.
+6. Du prüfst jede Mappe. Erst nach deinem ausdrücklichen Ja entsteht das PDF.
+7. Du schickst die Bewerbung selbst ab und sagst dem Agenten Bescheid. Er verschiebt sie nach `sent/` und führt Buch.
 
-- [Produktbrief](docs/product-brief.md)
-- [Workflow](docs/workflow.md)
-- [Profil und Fragebogen](docs/questionnaire.md)
-- [Bundesagentur](docs/bundesagentur.md)
-- [HTML-Mappe](docs/bewerbungsmappe.md)
-- [Nachweise und Bilder](docs/asset-handling.md)
-- [Designsystem](docs/design-system.md)
-- [Datenverträge](docs/schemas.md)
-- [Datenschutz](docs/privacy.md)
-- [Warum Skill statt Skripte](docs/skill-vs-scripts.md)
-- [Stencil](docs/stencil.md)
-- [Prüfung](docs/testing.md)
-- [Änderungsliste](docs/change-list.md)
+## Deine Daten
 
-## Repo-Aufbau
+Alles Persönliche bleibt auf deinem Rechner: `profile/` und `.tmp/` sind gitignoriert und landen nie im Repository. Der Agent erfindet keine Angaben, sendet nichts und füllt keine Portale aus.
+
+## Aufbau
 
 ```text
-.agents/skills/bewerbungshelfer/   Workflow, Referenzen, Vorlagen, Schemas, HTML-Basis
-docs/                              Planung und Entscheidungen
-profile/                           Lokales Profil, nicht versioniert
-applications/                      Lokale Bewerbungen, nicht versioniert
+CLAUDE.md                          Anweisungen für Agenten (AGENTS.md verweist darauf)
+.agents/skills/bewerbungshelfer/   Skill: Ablauf, Referenzen, HTML-Vorlage, Schemas, Textvorlagen
+.claude/agents/                    Subagenten für Claude Code (Texte + Mappe, QA)
+tools/build_mappe.py               Baut, prüft und exportiert die Mappen
+tools/devicon_symbols.py           Wandelt Logo-SVGs in Vorlagen-Symbole (nur für neue Logos)
+profile/                           deine Profile und Bewerbungen (lokal, nicht versioniert)
 ```
+
+Die Werkzeuge im Detail: `python3 tools/build_mappe.py --help`.
 
 ## Grenzen
 
-- Deutsch
-- nur Ausbildung
-- nur Bundesagentur für Arbeit
-- eine Stelle pro Durchlauf
-- keine Scraping- oder PDF-Skripte
-- kein automatisches Absenden
-- keine automatischen Portalausfüllungen
-- keine erfundenen Qualifikationen oder Nachweise
-- keine Demo-Daten im Repository
-
-## Stencil
-
-Die Basisvorlage kann in Stencil geöffnet, markiert und kommentiert werden. HTML und Stencil sind gemeinsam die Quelle der Wahrheit: HTML für Struktur und PDF-Export, Stencil für visuelle Markierungen und freigegebene Designänderungen. Details stehen in [docs/stencil.md](docs/stencil.md).
-
-## Erster echter Durchlauf
-
-Es sind keine Profil-, Job- oder Bewerbungsdaten im Repository. Der Agent startet nach dem Klonen mit einem leeren Profil, führt das Interview, sucht eine Stelle und baut daraus die erste Bewerbungsmappe.
+- nur Deutsch
+- nur Stellen der Bundesagentur für Arbeit
+- kein automatisches Absenden, kein Ausfüllen von Bewerbungsportalen
+- keine erfundenen Qualifikationen, Kontakte oder Nachweise

@@ -1,91 +1,359 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ownback.local/schemas/application-manifest.schema.json",
-  "title": "Bewerbungsmappe",
+  "title": "Bewerbungsmappe (Manifest)",
+  "description": "application/application-manifest.json im Stellenordner. Wird von tools/build_mappe.py geschrieben; Status nur nach Nutzerentscheidung ändern.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["company", "role", "created_at", "html", "sections", "assets", "status", "pages"],
+  "required": [
+    "profile",
+    "type",
+    "company",
+    "role",
+    "created_at",
+    "html",
+    "sections",
+    "pages",
+    "assets",
+    "status"
+  ],
   "properties": {
-    "company": { "type": "string", "minLength": 1 },
-    "role": { "type": "string", "minLength": 1 },
-    "created_at": { "type": "string", "format": "date" },
-    "html": { "type": "string", "minLength": 1 },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "enum": [
+        "apprenticeships",
+        "jobs",
+        "internships"
+      ]
+    },
+    "reference_number": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "html": {
+      "type": "string",
+      "pattern": "^bewerbungsmappe - [^/]+\\.html$"
+    },
+    "pdf": {
+      "type": "string",
+      "pattern": "^bewerbungsmappe - [^/]+\\.pdf$"
+    },
+    "email_draft": {
+      "type": "string"
+    },
     "sections": {
       "type": "array",
       "prefixItems": [
-        { "const": "deckblatt" },
-        { "const": "anschreiben" },
-        { "const": "lebenslauf" },
-        { "const": "motivationsschreiben" },
-        { "const": "zertifikate" },
-        { "const": "zeugnisse" }
+        {
+          "const": "deckblatt"
+        },
+        {
+          "const": "anschreiben"
+        },
+        {
+          "const": "lebenslauf"
+        },
+        {
+          "const": "motivationsschreiben"
+        },
+        {
+          "const": "zertifikate"
+        },
+        {
+          "const": "zeugnisse"
+        }
       ],
       "minItems": 6,
-      "maxItems": 6,
-      "description": "Die sechs Abschnitte in fester Reihenfolge. Seiten können mehr sein (Folgeseiten), siehe pages."
+      "maxItems": 6
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 6,
+      "description": "Tatsächliche A4-Seiten. Folgeseiten nur für Lebenslauf-Fortsetzung oder weitere Nachweise.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "section"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "section": {
+            "enum": [
+              "deckblatt",
+              "anschreiben",
+              "lebenslauf",
+              "motivationsschreiben",
+              "zertifikate",
+              "zeugnisse"
+            ]
+          },
+          "continuation": {
+            "type": "boolean"
+          }
+        }
+      }
     },
     "assets": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["file", "kind", "section", "source", "role"],
+        "required": [
+          "file",
+          "kind",
+          "section",
+          "source",
+          "role"
+        ],
         "properties": {
-          "file": { "type": "string" },
-          "kind": { "enum": ["image", "pdf"] },
-          "section": {
-            "enum": ["deckblatt", "anschreiben", "lebenslauf", "motivationsschreiben", "zertifikate", "zeugnisse"]
+          "file": {
+            "type": "string"
           },
-          "source": { "type": "string" },
-          "caption": { "type": "string" },
-          "role": { "enum": ["evidence", "photo", "signature", "project_image"] },
-          "evidence_id": { "type": "string", "description": "ID aus profile.evidence" }
+          "kind": {
+            "enum": [
+              "image",
+              "pdf"
+            ]
+          },
+          "section": {
+            "enum": [
+              "deckblatt",
+              "anschreiben",
+              "lebenslauf",
+              "motivationsschreiben",
+              "zertifikate",
+              "zeugnisse"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "evidence",
+              "photo",
+              "signature",
+              "project_image"
+            ]
+          },
+          "evidence_id": {
+            "type": "string"
+          }
         }
       }
     },
-    "status": { "enum": ["draft", "html_approved", "pdf_exported", "ready_to_send"] },
-    "approved_at": { "type": "string", "format": "date-time" },
-    "open_questions": { "type": "array", "items": {"type": "string"} },
-    "pages": {
-      "type": "array",
-      "minItems": 6,
-      "description": "Tatsächliche A4-Seiten in Reihenfolge. Folgeseiten nur für weitere Nachweise oder eine Lebenslauf-Fortsetzung.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["number", "section"],
-        "properties": {
-          "number": { "type": "integer", "minimum": 1 },
-          "section": {
-            "enum": ["deckblatt", "anschreiben", "lebenslauf", "motivationsschreiben", "zertifikate", "zeugnisse"]
-          },
-          "continuation": { "type": "boolean" }
-        }
-      }
+    "status": {
+      "enum": [
+        "draft",
+        "html_approved",
+        "pdf_exported",
+        "sent",
+        "interview",
+        "offer",
+        "rejected",
+        "withdrawn"
+      ]
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pdf_exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sent_at": {
+      "type": "string"
+    },
+    "channel": {
+      "enum": [
+        "email",
+        "post",
+        "portal"
+      ]
     },
     "validation": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "profile_schema_valid": { "type": "boolean" },
-        "job_schema_valid": { "type": "boolean" },
-        "placeholders_remaining": { "type": "integer", "minimum": 0 },
-        "overflow_pages": { "type": "array", "items": {"type": "integer"} },
-        "a4_preview": { "type": "string", "description": "Pfad zur A4-Vorschau (PDF oder Seitenbilder)" },
-        "checked_at": { "type": "string", "format": "date-time" }
+        "placeholders_remaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overflow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "overflow_pages": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "html_pages": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "a4_pages": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hscroll_mobile": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Größter horizontaler Überlauf (px) der Mobilbreiten 390 und 375."
+        },
+        "hscroll": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Horizontaler Überlauf in px je QA-Breite (Fenster 1440×900, 390×844, 375×812); null = nicht messbar.",
+          "properties": {
+            "1440": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "390": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "375": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "cv_fill": {
+          "type": "string",
+          "description": "Füllgrad der Lebenslauf-Seiten, z. B. „S3 95 % (+13.9 mm) · S4 85 % (+38.3 mm)“."
+        },
+        "missing_assets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "words_letter": {
+          "type": "integer"
+        },
+        "words_motivation": {
+          "type": "integer"
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "email_draft": {
+          "enum": [
+            "ok",
+            "missing",
+            "empty",
+            "placeholders",
+            "not_required"
+          ],
+          "description": "Zustand von application/email.md; Pflicht (nicht not_required) bei application.method email."
+        }
       }
     },
-    "pdf": { "type": "string" },
-    "pdf_exported_at": { "type": "string", "format": "date-time" }
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
   },
   "allOf": [
     {
-      "if": { "properties": {"status": {"enum": ["html_approved", "pdf_exported", "ready_to_send"]}} },
-      "then": { "required": ["approved_at"] }
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "html_approved",
+              "pdf_exported",
+              "sent",
+              "interview",
+              "offer",
+              "rejected"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "approved_at"
+        ]
+      }
     },
     {
-      "if": { "properties": {"status": {"enum": ["pdf_exported", "ready_to_send"]}} },
-      "then": { "required": ["pdf", "pdf_exported_at"] }
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "pdf_exported",
+              "sent",
+              "interview",
+              "offer",
+              "rejected"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "pdf",
+          "pdf_exported_at"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "sent"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "sent_at",
+          "channel"
+        ]
+      }
     }
   ]
 }

@@ -1,10 +1,11 @@
-# Master-Profil
+# Profil
 
 > Ausfüllen durch den Bewerbungshelfer nach bestätigten Angaben. Unbekanntes bleibt offen.
 
 ## Person
 - Name:
 - Pronomen:
+- Anrede im Absender: Herr|Frau|ohne
 - Straße:
 - PLZ / Ort:
 - Telefon:
@@ -13,11 +14,13 @@
 - Geburtsort (optional):
 - Geburtsdaten im Lebenslauf zeigen: nein|ja (nur nach Freigabe)
 - Staatsangehörigkeit:
-- Bewerbungsfoto: Datei | gültig ja/nein | freigegeben ja/nein
+- Bewerbungsfoto: Datei | gültig ja/nein | freigegeben ja/nein | Ausschnitt
+- Unterschrift: Datei | gültig ja/nein | freigegeben ja/nein
 - Status je Angabe: confirmed|inferred|open|conflict
 
 ## Ziel
-- Ausbildungsberuf:
+- Art: Ausbildung|Job|Praktikum
+- Beruf:
 - Alternativen:
 - Frühester Beginn:
 - Orte:
@@ -31,13 +34,15 @@
 - Ort:
 - Zeitraum:
 - Offizieller Bildungsgang:
+- Kurzform im Lebenslauf (Schulform · Profil):
+- Im Lebenslauf zeigen: ja|nein (Grundschulen nach weiterführendem Abschluss: nein, nach Bestätigung)
 - Abschluss voraussichtlich:
 - Status: confirmed|inferred|open|conflict
 - Quellen:
 
 ## Werdegang
 ### Rolle, Organisation
-- Art: Praktikum|Anstellung|Ehrenamt|Sonstiges
+- Art: Praktikum|Anstellung (Vollzeit/Teilzeit)|Ehrenamt|Sonstiges
 - Ort:
 - Zeitraum:
 - Aufgaben:
@@ -63,8 +68,8 @@ Die Skala von 1 bis 5 ist eine visuelle Einordnung, kein Prozentwert.
 ### Sprachen
 - Name | Niveau: learning|basic|solid|advanced|future|native | Skala 1–5 | Beleg
 
-### Fachlich
-- Name | Niveau: learning|basic|solid|advanced|future|native | Skala 1–5 | Beleg
+### Fachlich (Gruppe mit Icon)
+- Name (Kategorie im Lebenslauf) | Niveau: learning|basic|solid|advanced|future|native | Skala 1–5 | Technologien/Beleg | Chips mit Logo
 
 ## Nachweise
 ### Nachweis
@@ -85,13 +90,18 @@ Die Skala von 1 bis 5 ist eine visuelle Einordnung, kein Prozentwert.
 - Gelöstes Problem:
 - Nicht verwenden:
 
+## Deckblatt
+- Berufsbezeichnung (Zeilen):
+- Kurzprofil:
+
 ## Darstellung
-- Fußzeile: nur Name
+- Fußzeile: keine
+- Lebenslauf-Seiten: Blöcke je Seite, Kompaktmodus ja/nein
 - Unternehmensname auf Deckblatt: nein
-- Fähigkeiten: Diagramme
+- Fähigkeiten: Skalen
+- Geburtsdaten im Lebenslauf: ja|nein
 - Timeline-Verbindungslinien: nein
 - Seitenzahlen: einfache Zahl ohne Gesamtseitenzahl
-- Icon-Präferenzen:
 
 ## Offene Punkte
 - ...

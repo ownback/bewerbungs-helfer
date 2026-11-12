@@ -1,6 +1,6 @@
 interface:
   display_name: "Bewerbungshelfer"
-  short_description: "Ausbildungsbewerbung als fertige Bewerbungsmappe"
-  default_prompt: "Use $bewerbungshelfer to build my profile, find one apprenticeship on Bundesagentur für Arbeit, and prepare a complete German application portfolio."
+  short_description: "Deutsche Bewerbungsmappen aus Profil und BA-Stellen"
+  default_prompt: "Use $bewerbungshelfer: pick or create my profile under profile/, fill gaps in an interview, build and review my profile template, search the Bundesagentur für Arbeit with me, then build one application folder per chosen posting (spawn one sub-agent per posting as described in references/fan-out.md). Never send anything."
 policy:
   allow_implicit_invocation: true

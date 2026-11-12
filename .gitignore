@@ -7,8 +7,9 @@ profile/import/*
 profile/assets/*
 !profile/import/.gitkeep
 !profile/assets/.gitkeep
-applications/
-workspace/
+
+# Lokale Arbeitsdateien (Designhistorie, Renders, Handoffs)
+.tmp/
 
 # Generierte Exporte
 *.pdf
@@ -16,3 +17,4 @@ workspace/
 # Lokale Werkzeugdateien
 .DS_Store
 .taste-skill/
+__pycache__/

@@ -1,11 +1,12 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "profile_status": "incomplete",
   "person": {
     "name": "",
     "first_name": "",
     "last_name": "",
     "pronouns": "",
+    "salutation": "",
     "address": {
       "street": "",
       "postal_code": "",
@@ -24,9 +25,15 @@
       "crop": "unset",
       "alt": ""
     },
+    "signature": {
+      "file": "",
+      "valid": false,
+      "consent": false
+    },
     "field_status": {}
   },
   "goal": {
+    "type": "apprenticeships",
     "apprenticeship": "",
     "alternatives": [],
     "start": "",
@@ -58,14 +65,29 @@
     "avoid": [],
     "field_status": {}
   },
+  "portfolio": {
+    "cover_role": [],
+    "cover_bio": ""
+  },
   "presentation": {
-    "footer": "name_only",
+    "footer": "none",
     "cover_company_name": false,
     "skill_display": "bars",
     "timeline_connectors": false,
     "page_number_style": "plain_without_total",
     "icons": {},
-    "show_birth_data": false
+    "show_birth_data": false,
+    "cv_layout": {
+      "compact": false,
+      "pages": [
+        [
+          "experience",
+          "education",
+          "skills",
+          "languages"
+        ]
+      ]
+    }
   },
   "sources": [],
   "open_questions": []

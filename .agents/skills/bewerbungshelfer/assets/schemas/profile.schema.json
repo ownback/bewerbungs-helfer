@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ownback.local/schemas/profile.schema.json",
-  "title": "Master-Profil",
+  "title": "Profil",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,62 +20,193 @@
     "open_questions"
   ],
   "properties": {
-    "schema_version": { "const": "1.0" },
-    "profile_status": { "enum": ["incomplete", "review_ready", "confirmed"] },
+    "schema_version": {
+      "const": "1.1"
+    },
+    "profile_status": {
+      "enum": [
+        "incomplete",
+        "review_ready",
+        "confirmed"
+      ]
+    },
     "person": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "address", "phone", "email", "photo", "field_status"],
+      "required": [
+        "name",
+        "address",
+        "phone",
+        "email",
+        "photo",
+        "field_status"
+      ],
       "properties": {
-        "name": { "type": "string" },
-        "first_name": { "type": "string" },
-        "last_name": { "type": "string" },
-        "pronouns": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "pronouns": {
+          "type": "string"
+        },
+        "salutation": {
+          "enum": [
+            "Herr",
+            "Frau",
+            ""
+          ],
+          "description": "Anrede vor dem eigenen Namen im Absender des Anschreibens; leer = ohne Anrede."
+        },
         "address": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["street", "postal_code", "city", "country"],
+          "required": [
+            "street",
+            "postal_code",
+            "city",
+            "country"
+          ],
           "properties": {
-            "street": { "type": "string" },
-            "postal_code": { "type": "string" },
-            "city": { "type": "string" },
-            "country": { "type": "string" }
+            "street": {
+              "type": "string"
+            },
+            "postal_code": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            }
           }
         },
-        "phone": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
         "birth_date": {
           "type": "string",
           "format": "date",
           "description": "Optional (Datensparsamkeit). Anzeige nur, wenn presentation.show_birth_data true ist."
         },
-        "birth_place": { "type": "string" },
-        "nationality": { "type": "string" },
+        "birth_place": {
+          "type": "string"
+        },
+        "nationality": {
+          "type": "string"
+        },
         "photo": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["file", "valid", "consent", "crop"],
+          "required": [
+            "file",
+            "valid",
+            "consent",
+            "crop"
+          ],
           "properties": {
-            "file": { "type": "string" },
-            "valid": { "type": "boolean" },
-            "consent": { "type": "boolean" },
-            "crop": { "enum": ["portrait", "square", "original", "unset"] },
-            "alt": { "type": "string" }
+            "file": {
+              "type": "string"
+            },
+            "valid": {
+              "type": "boolean"
+            },
+            "consent": {
+              "type": "boolean"
+            },
+            "crop": {
+              "enum": [
+                "portrait",
+                "square",
+                "original",
+                "unset"
+              ]
+            },
+            "alt": {
+              "type": "string"
+            },
+            "focus": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Ausschnitt im 4:5-Rahmen: --photo-x/--photo-y (z. B. \"50%\", \"30%\") und --photo-zoom (1 bis ca. 1.2).",
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "y": {
+                  "type": "string"
+                },
+                "zoom": {
+                  "type": [
+                    "number",
+                    "string"
+                  ]
+                }
+              }
+            }
           },
           "allOf": [
             {
-              "if": { "properties": {"valid": {"const": true}} },
+              "if": {
+                "properties": {
+                  "valid": {
+                    "const": true
+                  }
+                }
+              },
               "then": {
                 "properties": {
-                  "file": { "minLength": 1 },
-                  "consent": { "const": true },
-                  "crop": { "enum": ["portrait", "square", "original"] }
+                  "file": {
+                    "minLength": 1
+                  },
+                  "consent": {
+                    "const": true
+                  },
+                  "crop": {
+                    "enum": [
+                      "portrait",
+                      "square",
+                      "original"
+                    ]
+                  }
                 }
               }
             }
           ]
         },
-        "field_status": { "$ref": "#/$defs/fieldStatus" }
+        "field_status": {
+          "$ref": "#/$defs/fieldStatus"
+        },
+        "signature": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "valid",
+            "consent"
+          ],
+          "description": "Eingescannte Unterschrift (PNG mit transparentem oder weißem Grund). Nur mit valid und consent im Anschreiben.",
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "valid": {
+              "type": "boolean"
+            },
+            "consent": {
+              "type": "boolean"
+            }
+          }
+        }
       }
     },
     "goal": {
@@ -92,38 +223,116 @@
         "field_status"
       ],
       "properties": {
-        "apprenticeship": { "type": "string" },
-        "alternatives": { "type": "array", "items": {"type": "string"} },
-        "start": { "type": "string" },
-        "locations": { "type": "array", "items": {"type": "string"} },
-        "radius_km": { "type": "number", "minimum": 0 },
-        "relocation": { "enum": ["yes", "no", "maybe", "unknown"] },
-        "commuting": { "enum": ["yes", "no", "maybe", "unknown"] },
-        "field_status": { "$ref": "#/$defs/fieldStatus" }
+        "type": {
+          "enum": [
+            "apprenticeships",
+            "jobs",
+            "internships"
+          ],
+          "description": "Hauptziel; bestimmt Suchbereich und Formulierungen der Profilvorlage."
+        },
+        "apprenticeship": {
+          "type": "string",
+          "description": "Zielberuf (bei Jobs und Praktika der gesuchte Beruf)."
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "start": {
+          "type": "string"
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "radius_km": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relocation": {
+          "enum": [
+            "yes",
+            "no",
+            "maybe",
+            "unknown"
+          ]
+        },
+        "commuting": {
+          "enum": [
+            "yes",
+            "no",
+            "maybe",
+            "unknown"
+          ]
+        },
+        "field_status": {
+          "$ref": "#/$defs/fieldStatus"
+        }
       }
     },
-    "education": { "type": "array", "items": {"$ref": "#/$defs/educationEntry"} },
-    "experience": { "type": "array", "items": {"$ref": "#/$defs/experienceEntry"} },
-    "projects": { "type": "array", "items": {"$ref": "#/$defs/projectEntry"} },
+    "education": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/educationEntry"
+      }
+    },
+    "experience": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/experienceEntry"
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/projectEntry"
+      }
+    },
     "skills": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["groups", "languages"],
+      "required": [
+        "groups",
+        "languages"
+      ],
       "properties": {
         "groups": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "icon", "items"],
+            "required": [
+              "name",
+              "icon",
+              "items"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "icon": { "type": "string" },
-              "items": { "type": "array", "items": {"$ref": "#/$defs/skillItem"} }
+              "name": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/skillItem"
+                }
+              }
             }
           }
         },
-        "languages": { "type": "array", "items": {"$ref": "#/$defs/skillItem"} }
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skillItem"
+          }
+        }
       }
     },
     "evidence": {
@@ -144,73 +353,265 @@
           "source_status"
         ],
         "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "issuer": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "issuer": {
+            "type": "string"
+          },
           "date": {
             "type": "string",
             "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$",
             "description": "YYYY, YYYY-MM oder YYYY-MM-DD"
           },
-          "file": { "type": "string" },
+          "file": {
+            "type": "string",
+            "description": "Bilddatei (PNG/JPEG/WebP), repo-relativ (profile/<name>/assets/documents/…). PDF vorher als PNG rendern."
+          },
           "kind": {
-            "enum": ["certificate", "school_report", "work_reference", "other"],
+            "enum": [
+              "certificate",
+              "school_report",
+              "work_reference",
+              "other"
+            ],
             "description": "certificate → Seite Zertifikate; school_report und work_reference → Seite Zeugnisse; other nur nach Absprache."
           },
-          "show_in_portfolio": { "type": "boolean" },
-          "original": { "enum": ["scan", "copy", "digital_original", "unknown"] },
-          "valid": { "type": "boolean" },
-          "source_status": { "$ref": "#/$defs/sourceStatus" },
-          "source_ids": { "type": "array", "items": {"type": "string"} }
+          "show_in_portfolio": {
+            "type": "boolean"
+          },
+          "original": {
+            "enum": [
+              "scan",
+              "copy",
+              "digital_original",
+              "unknown"
+            ]
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "source_status": {
+            "$ref": "#/$defs/sourceStatus"
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pair": {
+            "type": "boolean",
+            "description": "Zwei aufeinanderfolgende Nachweise mit pair true teilen sich eine Seite (nur kurze Dokumente)."
+          }
         }
       }
     },
     "motivation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["origin", "formative_experience", "favorite_project", "learning_goals", "boundaries", "field_status"],
+      "required": [
+        "origin",
+        "formative_experience",
+        "favorite_project",
+        "learning_goals",
+        "boundaries",
+        "field_status"
+      ],
       "properties": {
-        "origin": { "type": "string" },
-        "formative_experience": { "type": "string" },
-        "favorite_project": { "type": "string" },
-        "learning_goals": { "type": "array", "items": {"type": "string"} },
-        "boundaries": { "type": "array", "items": {"type": "string"} },
-        "field_status": { "$ref": "#/$defs/fieldStatus" }
+        "origin": {
+          "type": "string"
+        },
+        "formative_experience": {
+          "type": "string"
+        },
+        "favorite_project": {
+          "type": "string"
+        },
+        "learning_goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "boundaries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "field_status": {
+          "$ref": "#/$defs/fieldStatus"
+        }
       }
     },
     "voice": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["strengths", "solved_problem", "avoid", "field_status"],
+      "required": [
+        "strengths",
+        "solved_problem",
+        "avoid",
+        "field_status"
+      ],
       "properties": {
         "strengths": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "example"],
-            "properties": { "name": {"type": "string"}, "example": {"type": "string"} }
+            "required": [
+              "name",
+              "example"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "example": {
+                "type": "string"
+              }
+            }
           }
         },
-        "solved_problem": { "type": "string" },
-        "avoid": { "type": "array", "items": {"type": "string"} },
-        "field_status": { "$ref": "#/$defs/fieldStatus" }
+        "solved_problem": {
+          "type": "string"
+        },
+        "avoid": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "field_status": {
+          "$ref": "#/$defs/fieldStatus"
+        }
+      }
+    },
+    "portfolio": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Freigegebene Texte für die stabilen Seiten. Fehlt ein Wert, setzt das Build-Skript einen Platzhalter, den die QA meldet.",
+      "properties": {
+        "cover_role": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "description": "Berufsbezeichnung auf dem Deckblatt, eine Zeile pro Eintrag; leer = goal.apprenticeship in einer Zeile."
+        },
+        "cover_bio": {
+          "type": "string",
+          "description": "Kurzprofil auf dem Deckblatt: zwei bis drei natürliche Sätze."
+        },
+        "cover_start": {
+          "type": "string",
+          "description": "Optional, sonst „Ausbildung ab <Monat Jahr>“ aus goal.start."
+        },
+        "cv_goal": {
+          "type": "string",
+          "description": "Optional, sonst „Ausbildungsziel: <goal.apprenticeship>“."
+        }
       }
     },
     "presentation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["footer", "cover_company_name", "skill_display", "timeline_connectors", "page_number_style"],
+      "required": [
+        "footer",
+        "cover_company_name",
+        "skill_display",
+        "timeline_connectors",
+        "page_number_style"
+      ],
       "properties": {
-        "footer": { "const": "name_only" },
-        "cover_company_name": { "const": false },
-        "skill_display": { "const": "bars" },
-        "timeline_connectors": { "const": false },
-        "page_number_style": { "const": "plain_without_total" },
-        "icons": { "type": "object", "additionalProperties": {"type": "string"} },
+        "footer": {
+          "const": "none",
+          "description": "Seit Runde 4 keine Fußzeile; Seitenzahl im Registerreiter."
+        },
+        "cover_company_name": {
+          "const": false
+        },
+        "skill_display": {
+          "const": "bars"
+        },
+        "timeline_connectors": {
+          "const": false
+        },
+        "page_number_style": {
+          "const": "plain_without_total"
+        },
+        "icons": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Ohne Wirkung (veraltet). Icons stehen je Gruppe (skills.groups[].icon) und je Chip."
+        },
         "show_birth_data": {
           "type": "boolean",
           "description": "Geburtsdatum und -ort im Lebenslauf zeigen. Nur nach ausdrücklicher Freigabe true."
+        },
+        "cv_layout": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Verteilung der Lebenslauf-Blöcke auf A4-Seiten. Lesereihenfolge experience, education, skills, languages (Sprachen zuletzt); projects optional irgendwo nach experience. Standard: eine Seite mit experience, education, skills, languages.",
+          "properties": {
+            "compact": {
+              "description": "class=\"page cv-compact\": true/false für alle Lebenslaufseiten oder eine Liste je Seite (z. B. [false, true]).",
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "boolean"
+                  }
+                }
+              ]
+            },
+            "pages": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "enum": [
+                    "experience",
+                    "projects",
+                    "education",
+                    "skills",
+                    "languages"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "cv_projects": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Titel und Icon des optionalen Blocks „Eigene Projekte“.",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Standard „Eigene Projekte“, z. B. „Homelab und eigene Projekte“."
+            },
+            "icon": {
+              "type": "string",
+              "pattern": "^i-",
+              "description": "Linien-Icon, Standard i-layers (z. B. i-server)."
+            }
+          }
         }
       }
     },
@@ -219,13 +620,34 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "kind", "path_or_url", "reviewed_at"],
+        "required": [
+          "id",
+          "kind",
+          "path_or_url",
+          "reviewed_at"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "kind": { "enum": ["document", "website", "interview", "other"] },
-          "path_or_url": { "type": "string" },
-          "reviewed_at": { "type": "string", "format": "date" },
-          "notes": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "document",
+              "website",
+              "interview",
+              "other"
+            ]
+          },
+          "path_or_url": {
+            "type": "string"
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "notes": {
+            "type": "string"
+          }
         }
       }
     },
@@ -234,28 +656,83 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "question", "severity", "status"],
+        "required": [
+          "id",
+          "question",
+          "severity",
+          "status"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "question": { "type": "string" },
-          "severity": { "enum": ["blocking", "non_blocking", "research_needed"] },
-          "status": { "enum": ["open", "resolved"] },
-          "answer": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "blocking",
+              "non_blocking",
+              "research_needed"
+            ]
+          },
+          "status": {
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "answer": {
+            "type": "string"
+          }
         }
       }
     }
   },
   "$defs": {
-    "sourceStatus": { "enum": ["confirmed", "inferred", "open", "conflict"] },
+    "sourceStatus": {
+      "enum": [
+        "confirmed",
+        "inferred",
+        "open",
+        "conflict"
+      ]
+    },
     "dateRange": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["start", "end", "precision", "is_current"],
+      "required": [
+        "start",
+        "end",
+        "precision",
+        "is_current"
+      ],
       "properties": {
-        "start": { "type": ["string", "null"], "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$" },
-        "end": { "type": ["string", "null"], "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$" },
-        "precision": { "enum": ["month", "year", "day", "unknown"] },
-        "is_current": { "type": "boolean" },
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+        },
+        "precision": {
+          "enum": [
+            "month",
+            "year",
+            "day",
+            "unknown"
+          ]
+        },
+        "is_current": {
+          "type": "boolean"
+        },
         "approx": {
           "type": "boolean",
           "description": "true nur für vom Nutzer freigegebene Näherungen; dann source_status inferred."
@@ -263,42 +740,140 @@
       },
       "allOf": [
         {
-          "if": { "properties": {"precision": {"const": "year"}} },
+          "if": {
+            "properties": {
+              "precision": {
+                "const": "year"
+              }
+            }
+          },
           "then": {
             "properties": {
-              "start": { "type": ["string", "null"], "pattern": "^\\d{4}$" },
-              "end": { "type": ["string", "null"], "pattern": "^\\d{4}$" }
+              "start": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}$"
+              },
+              "end": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}$"
+              }
             }
           }
         },
         {
-          "if": { "properties": {"precision": {"const": "month"}} },
+          "if": {
+            "properties": {
+              "precision": {
+                "const": "month"
+              }
+            }
+          },
           "then": {
             "properties": {
-              "start": { "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" },
-              "end": { "type": ["string", "null"], "pattern": "^\\d{4}-(0[1-9]|1[0-2])$" }
+              "start": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+              },
+              "end": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+              }
             }
           }
         },
         {
-          "if": { "properties": {"precision": {"const": "day"}} },
+          "if": {
+            "properties": {
+              "precision": {
+                "const": "day"
+              }
+            }
+          },
           "then": {
             "properties": {
-              "start": { "type": ["string", "null"], "format": "date" },
-              "end": { "type": ["string", "null"], "format": "date" }
+              "start": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "end": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              }
             }
           }
         },
         {
-          "if": { "properties": {"precision": {"enum": ["month", "year", "day"]}} },
-          "then": { "properties": {"start": {"type": "string"}} }
+          "if": {
+            "properties": {
+              "precision": {
+                "enum": [
+                  "month",
+                  "year",
+                  "day"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "start": {
+                "type": "string"
+              }
+            }
+          }
         },
         {
-          "if": { "properties": {"is_current": {"const": true}} },
-          "then": { "properties": {"end": {"type": "null"}} },
+          "if": {
+            "properties": {
+              "is_current": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "end": {
+                "type": "null"
+              }
+            }
+          },
           "else": {
-            "if": { "properties": {"precision": {"enum": ["month", "year", "day"]}} },
-            "then": { "properties": {"end": {"type": "string"}} }
+            "if": {
+              "properties": {
+                "precision": {
+                  "enum": [
+                    "month",
+                    "year",
+                    "day"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "end": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       ]
@@ -318,126 +893,479 @@
         "source_status"
       ],
       "properties": {
-        "id": { "type": "string" },
-        "institution": { "type": "string" },
-        "city": { "type": "string" },
-        "country": { "type": "string" },
-        "date_range": { "$ref": "#/$defs/dateRange" },
-        "program": { "type": "string" },
-        "qualification": { "type": "string" },
-        "expected": { "type": "boolean" },
-        "details": { "type": "array", "items": {"type": "string"} },
-        "source_status": { "$ref": "#/$defs/sourceStatus" },
-        "source_ids": { "type": "array", "items": {"type": "string"} }
+        "id": {
+          "type": "string"
+        },
+        "institution": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "date_range": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "program": {
+          "type": "string"
+        },
+        "qualification": {
+          "type": "string"
+        },
+        "expected": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_status": {
+          "$ref": "#/$defs/sourceStatus"
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "program_short": {
+          "type": "string",
+          "description": "Kurzform für den Lebenslauf: „Schulform · Profil“, ohne Zusätze wie „zur Fachschulreife führende“ oder „Bereich“; ohne Profil nur die Schulform."
+        },
+        "show_in_cv": {
+          "type": "boolean",
+          "default": true,
+          "description": "Eintrag im Lebenslauf zeigen (Standard true). false für Grundschulen, sobald ein weiterführender Abschluss vorliegt; der Eintrag bleibt im Profil."
+        }
       },
       "allOf": [
         {
-          "if": { "properties": {"date_range": {"properties": {"approx": {"const": true}}, "required": ["approx"]}} },
-          "then": { "properties": {"source_status": {"enum": ["inferred", "conflict", "open"]}} }
+          "if": {
+            "properties": {
+              "date_range": {
+                "properties": {
+                  "approx": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "approx"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_status": {
+                "enum": [
+                  "inferred",
+                  "conflict",
+                  "open"
+                ]
+              }
+            }
+          }
         }
       ]
     },
     "experienceEntry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "organization", "city", "kind", "role", "date_range", "tasks", "source_status"],
+      "required": [
+        "id",
+        "organization",
+        "city",
+        "kind",
+        "role",
+        "date_range",
+        "tasks",
+        "source_status"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "organization": { "type": "string" },
-        "city": { "type": "string" },
-        "kind": { "enum": ["internship", "employment", "volunteer", "other"] },
-        "role": { "type": "string" },
-        "date_range": { "$ref": "#/$defs/dateRange" },
-        "tasks": { "type": "array", "items": {"type": "string"} },
-        "outcome": { "type": "string" },
-        "source_status": { "$ref": "#/$defs/sourceStatus" },
-        "source_ids": { "type": "array", "items": {"type": "string"} }
+        "id": {
+          "type": "string"
+        },
+        "organization": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "internship",
+            "employment",
+            "volunteer",
+            "other"
+          ]
+        },
+        "role": {
+          "type": "string"
+        },
+        "date_range": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "source_status": {
+          "$ref": "#/$defs/sourceStatus"
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "employment_type": {
+          "type": "string",
+          "description": "Nur bei kind employment: z. B. „Vollzeit“, „Teilzeit“, „Minijob“. Erscheint als „Anstellung (Vollzeit)“."
+        }
       },
       "allOf": [
         {
-          "if": { "properties": {"date_range": {"properties": {"approx": {"const": true}}, "required": ["approx"]}} },
-          "then": { "properties": {"source_status": {"enum": ["inferred", "conflict", "open"]}} }
+          "if": {
+            "properties": {
+              "date_range": {
+                "properties": {
+                  "approx": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "approx"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_status": {
+                "enum": [
+                  "inferred",
+                  "conflict",
+                  "open"
+                ]
+              }
+            }
+          }
         }
       ]
     },
     "projectEntry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "date_range", "goal", "own_role", "tools", "result", "images", "source_status"],
+      "required": [
+        "id",
+        "name",
+        "date_range",
+        "goal",
+        "own_role",
+        "tools",
+        "result",
+        "images",
+        "source_status"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "date_range": { "$ref": "#/$defs/dateRange" },
-        "goal": { "type": "string" },
-        "own_role": { "type": "string" },
-        "tools": { "type": "array", "items": {"type": "string"} },
-        "result": { "type": "string" },
-        "link": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "date_range": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "own_role": {
+          "type": "string"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "result": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string"
+        },
         "images": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["file", "consent", "valid"],
-            "properties": { "file": {"type": "string"}, "consent": {"type": "boolean"}, "valid": {"type": "boolean"} }
+            "required": [
+              "file",
+              "consent",
+              "valid"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "consent": {
+                "type": "boolean"
+              },
+              "valid": {
+                "type": "boolean"
+              }
+            }
           }
         },
-        "source_status": { "$ref": "#/$defs/sourceStatus" },
-        "source_ids": { "type": "array", "items": {"type": "string"} }
+        "source_status": {
+          "$ref": "#/$defs/sourceStatus"
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "show_in_cv": {
+          "type": "boolean",
+          "description": "Projekt im optionalen Lebenslauf-Block „Eigene Projekte“ zeigen (Block projects in presentation.cv_layout)."
+        },
+        "cv_summary": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Ein kurzer Satz für den Lebenslauf; sonst erscheint own_role."
+        },
+        "chips": {
+          "type": "array",
+          "maxItems": 8,
+          "description": "Werkzeuge als Technik-Chips im Lebenslauf (ca. 4–6), nur aus tools; sonst Text-Chips aus tools.",
+          "items": {
+            "$ref": "#/$defs/chip"
+          }
+        }
       },
       "allOf": [
         {
-          "if": { "properties": {"date_range": {"properties": {"approx": {"const": true}}, "required": ["approx"]}} },
-          "then": { "properties": {"source_status": {"enum": ["inferred", "conflict", "open"]}} }
+          "if": {
+            "properties": {
+              "date_range": {
+                "properties": {
+                  "approx": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "approx"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_status": {
+                "enum": [
+                  "inferred",
+                  "conflict",
+                  "open"
+                ]
+              }
+            }
+          }
         }
       ]
     },
     "skillItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "level", "scale", "evidence", "source_status"],
+      "required": [
+        "name",
+        "level",
+        "scale",
+        "evidence",
+        "source_status"
+      ],
       "properties": {
-        "name": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
         "level": {
-          "enum": ["learning", "basic", "solid", "advanced", "future", "native"],
+          "enum": [
+            "learning",
+            "basic",
+            "solid",
+            "advanced",
+            "future",
+            "native"
+          ],
           "description": "future = Lernwunsch (Skala 1), learning = Lernstand (1–2), basic = Grundkenntnisse (2–3), solid = sicher (3–4), advanced = routiniert (4–5), native = Muttersprache (5)."
         },
-        "scale": { "type": "integer", "minimum": 1, "maximum": 5 },
-        "evidence": { "type": "string" },
-        "note": { "type": "string" },
-        "source_status": { "$ref": "#/$defs/sourceStatus" }
+        "scale": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Technologien als kommagetrennte Liste (Quelle der Chips, wenn chips fehlt), nie das Niveauwort wie „Lernwunsch“."
+        },
+        "note": {
+          "type": "string",
+          "description": "Kleiner Zusatz unter dem Zeilennamen. Ohne Angabe „Lernstand“ bei level learning (leerer String = keiner); bei future nie ein Zusatz; sonst knapper Beleg wie „eigene Projekte“."
+        },
+        "source_status": {
+          "$ref": "#/$defs/sourceStatus"
+        },
+        "label": {
+          "type": "string",
+          "description": "Kurze Kategorie als Zeilenname im Lebenslauf (ein bis zwei Wörter, höchstens ca. 16 Zeichen, z. B. „Frontend“); sonst name."
+        },
+        "chips": {
+          "type": "array",
+          "description": "Technik-Chips im Lebenslauf. Nur Technologien aus evidence. logo = Logo-Symbol der Vorlage (dv-… Devicon, si-… Simple Icons), icon = Linien-Icon (i-…).",
+          "items": {
+            "$ref": "#/$defs/chip"
+          }
+        }
       },
       "allOf": [
         {
-          "if": { "properties": {"level": {"const": "future"}} },
-          "then": { "properties": {"scale": {"const": 1}} }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "future"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scale": {
+                "const": 1
+              }
+            }
+          }
         },
         {
-          "if": { "properties": {"level": {"const": "learning"}} },
-          "then": { "properties": {"scale": {"maximum": 2}} }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "learning"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scale": {
+                "maximum": 2
+              }
+            }
+          }
         },
         {
-          "if": { "properties": {"level": {"const": "basic"}} },
-          "then": { "properties": {"scale": {"minimum": 2, "maximum": 3}} }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "basic"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scale": {
+                "minimum": 2,
+                "maximum": 3
+              }
+            }
+          }
         },
         {
-          "if": { "properties": {"level": {"const": "solid"}} },
-          "then": { "properties": {"scale": {"minimum": 3, "maximum": 4}} }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "solid"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scale": {
+                "minimum": 3,
+                "maximum": 4
+              }
+            }
+          }
         },
         {
-          "if": { "properties": {"level": {"const": "advanced"}} },
-          "then": { "properties": {"scale": {"minimum": 4}} }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "advanced"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scale": {
+                "minimum": 4
+              }
+            }
+          }
         },
         {
-          "if": { "properties": {"level": {"const": "native"}} },
-          "then": { "properties": {"scale": {"const": 5}} }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "native"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scale": {
+                "const": 5
+              }
+            }
+          }
         }
       ]
     },
     "fieldStatus": {
       "description": "Status je Angabe dieses Blocks. Schlüssel = Feldname (z. B. \"phone\", \"birth_date\"). Jedes ausgefüllte Feld braucht einen Eintrag.",
       "type": "object",
-      "additionalProperties": { "$ref": "#/$defs/sourceStatus" }
+      "additionalProperties": {
+        "$ref": "#/$defs/sourceStatus"
+      }
+    },
+    "chip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "logo": {
+          "type": "string",
+          "pattern": "^(dv|si)-",
+          "description": "Logo-Symbol der Vorlage: dv-… (Devicon) oder si-… (Simple Icons); Liste in references/template.md."
+        },
+        "icon": {
+          "type": "string",
+          "pattern": "^i-"
+        }
+      }
     }
-  }
+  },
+  "description": "profile/<vorname.nachname>/assets/profile/<vorname.nachname>_profile.json. Primäre, bestätigte Quelle für Deckblatt, Lebenslauf, Nachweise und Absender."
 }

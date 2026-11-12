@@ -1,24 +1,38 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ownback.local/schemas/job.schema.json",
-  "title": "Ausbildungsstelle",
+  "title": "Stelle (Bundesagentur für Arbeit)",
+  "description": "Strukturierte Fassung einer Stellenanzeige. Der wörtliche Seiteninhalt steht daneben in job_information/ba_scrape.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "type",
+    "reference_number",
     "source",
+    "search",
     "title",
     "company",
-    "apprenticeship",
+    "occupation",
     "locations",
     "start",
     "description",
     "requirements",
     "application",
     "contact",
+    "commute",
     "company_facts",
     "open_questions"
   ],
   "properties": {
+    "type": {
+      "enum": ["apprenticeships", "jobs", "internships"],
+      "description": "Bestimmt den Ordner applications/<type>/ und den Betreff."
+    },
+    "reference_number": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Referenz-Nr. aus dem Fuß der BA-Anzeige (#detail-footer-referenznummer). Schlüssel für die Duplikatprüfung im Ledger."
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
@@ -29,12 +43,49 @@
         "retrieved_at": { "type": "string", "format": "date" }
       }
     },
-    "title": { "type": "string", "minLength": 1 },
-    "company": { "type": "string", "minLength": 1 },
-    "apprenticeship": { "type": "string", "minLength": 1 },
+    "search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["city", "rank"],
+      "description": "Suchanfrage, aus der die Stelle stammt. rank = Rangfolge nach Entfernung vom Suchort (01 = am nächsten), Präfix des Ordnernamens.",
+      "properties": {
+        "area": { "enum": ["Jobs", "Ausbildung"] },
+        "query": { "type": "string" },
+        "city": { "type": "string", "minLength": 1 },
+        "radius": { "type": "string", "description": "Wert aus #umkreis-dropdown, z. B. „ganzer Ort“ oder „25 km“." },
+        "sort": { "type": "string" },
+        "filters": { "type": "array", "items": {"type": "string"} },
+        "result_url": { "type": "string" },
+        "rank": { "type": "integer", "minimum": 1 },
+        "distance_km": { "type": ["number", "null"], "description": "Entfernung laut Trefferliste, sonst null." }
+      }
+    },
+    "title": { "type": "string", "minLength": 1, "description": "#detail-kopfbereich-titel, wörtlich." },
+    "company": { "type": "string", "minLength": 1, "description": "#detail-kopfbereich-firma, wörtlich." },
+    "occupation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Beruf für Betreff und Lebenslauf, z. B. „Fachinformatiker für Systemintegration“."
+    },
+    "apprenticeship": { "type": "string", "description": "Feld „Ausbildungsberuf“ der Anzeige, falls vorhanden." },
+    "offer_type": { "type": "string", "description": "Angebotsart." },
+    "employment_type": { "type": "string", "description": "Anstellungsart, z. B. Vollzeit." },
+    "school_degree": { "type": "string", "description": "Benötigter Schulabschluss (#detail-kopfbereich-bildungsabschluss)." },
+    "published": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "description": "Sichtbarer Text, z. B. „vor 3 Tagen“." },
+        "date": { "type": "string", "description": "Exaktes Datum aus dem title-Attribut." }
+      }
+    },
+    "start": { "type": "string", "description": "Beginn als JJJJ-MM-TT, wenn eindeutig, sonst der Text der Anzeige." },
+    "start_text": { "type": "string", "description": "Beginn wörtlich (#detail-kopfbereich-eintrittsdatum-mit-datum)." },
+    "place": { "type": "string", "description": "Ort im Kopfbereich (#detail-kopfbereich-arbeitsort)." },
     "locations": {
       "type": "array",
       "minItems": 1,
+      "description": "Arbeitsorte (#detail-arbeitsorte-arbeitsort-*).",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -46,10 +97,9 @@
         }
       }
     },
-    "start": { "type": "string" },
     "duration": { "type": "string" },
-    "deadline": { "type": "string" },
-    "description": { "type": "string", "minLength": 1 },
+    "deadline": { "type": "string", "description": "Nur ein ausdrücklich genanntes Datum." },
+    "description": { "type": "string", "minLength": 1, "description": "Stellenausschreibung wörtlich." },
     "requirements": {
       "type": "array",
       "items": {
@@ -64,14 +114,29 @@
         }
       }
     },
+    "employer": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Arbeitgeberbereich der Anzeige.",
+      "properties": {
+        "headquarters": { "type": "string" },
+        "description": { "type": "string" },
+        "homepage": { "type": "string" },
+        "career_page": { "type": "string" },
+        "logo_url": { "type": "string" }
+      }
+    },
+    "benefits": { "type": "array", "items": {"type": "string"}, "description": "„Vorteile für Mitarbeitende“, wörtlich." },
+    "managed_by_ba": { "type": ["boolean", "null"], "description": "„Stelle betreut durch die BA“." },
     "application": {
       "type": "object",
       "additionalProperties": false,
       "required": ["method", "notes"],
       "properties": {
-        "method": { "enum": ["email", "portal", "post", "unknown"] },
-        "url": { "type": "string" },
-        "email": { "type": "string" },
+        "method": { "enum": ["email", "post", "portal", "unknown"] },
+        "url": { "type": "string", "description": "Bewerbung über die Arbeitgeber-Website (#detail-bewerbung-url)." },
+        "email": { "type": "string", "description": "Allgemeine Bewerbungsadresse." },
+        "required_documents": { "type": "string", "description": "„Sonstige Angaben zur Bewerbung“ (#detail-bewerbung-anlagen)." },
         "notes": { "type": "string" }
       }
     },
@@ -92,20 +157,25 @@
         "source_url"
       ],
       "properties": {
+        "confidence": { "enum": ["verified", "partial", "unknown"] },
+        "company": { "type": "string" },
+        "honorific": { "enum": ["Frau", "Herr", ""], "description": "Nur, wenn aus der Anzeige belegt." },
         "name": { "type": "string" },
         "role": { "type": "string" },
         "department": { "type": "string" },
+        "street": { "type": "string", "description": "Straße ausgeschrieben mit Hausnummer, z. B. „Musterstraße 3“." },
+        "postal_code": { "type": "string" },
+        "city": { "type": "string" },
         "email": { "type": "string" },
         "phone": { "type": "string" },
         "source_url": { "type": "string" },
-        "confidence": { "enum": ["verified", "partial", "unknown"] },
-        "company": { "type": "string" },
-        "street": { "type": "string" },
-        "postal_code": { "type": "string" },
-        "city": { "type": "string" },
+        "source": {
+          "enum": ["ba_captcha", "ba_page", "company_website", "web_search"],
+          "description": "web_search nur als letzter Ausweg."
+        },
         "salutation": {
           "type": "string",
-          "description": "Anrede im Anschreiben, z. B. „Sehr geehrte Damen und Herren“ bei confidence unknown."
+          "description": "Anrede ohne Komma, z. B. „Sehr geehrte Frau Muster“ oder „Sehr geehrte Damen und Herren“."
         }
       },
       "allOf": [
@@ -124,7 +194,36 @@
         }
       ]
     },
-    "benefits": { "type": "array", "items": {"type": "string"} },
+    "commute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["home_city", "over_50_km"],
+      "description": "Entfernung Wohnort → Arbeitsort. over_50_km true: E-Mail nennt geplanten Umzug in den Suchort.",
+      "properties": {
+        "home_city": { "type": "string" },
+        "distance_km": { "type": ["number", "null"] },
+        "over_50_km": { "type": "boolean" },
+        "source": { "type": "string" }
+      }
+    },
+    "company_facts": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Nur belegte Aussagen über das Unternehmen. Briefe dürfen ausschließlich diese Aussagen verwenden.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["statement", "evidence", "source_url", "retrieved_at"],
+        "properties": {
+          "statement": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 },
+          "source_url": { "type": "string", "format": "uri" },
+          "retrieved_at": { "type": "string", "format": "date" },
+          "used_in": { "type": "array", "items": {"enum": ["anschreiben", "motivationsschreiben", "email"]} },
+          "source_kind": { "enum": ["job_ad", "company_website", "other_public"] }
+        }
+      }
+    },
     "open_questions": {
       "type": "array",
       "items": {
@@ -137,24 +236,6 @@
           "impact": { "type": "string" }
         }
       }
-    },
-    "company_facts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["statement", "evidence", "source_url", "retrieved_at"],
-        "properties": {
-          "statement": { "type": "string", "minLength": 1 },
-          "evidence": { "type": "string", "minLength": 1 },
-          "source_url": { "type": "string", "format": "uri" },
-          "retrieved_at": { "type": "string", "format": "date" },
-          "used_in": { "type": "array", "items": {"enum": ["anschreiben", "motivationsschreiben"]} },
-          "source_kind": { "enum": ["job_ad", "company_website", "other_public"] }
-        }
-      },
-      "minItems": 1,
-      "description": "Nur belegte Aussagen über das Unternehmen. Briefe dürfen ausschließlich diese Aussagen verwenden."
     }
   }
 }

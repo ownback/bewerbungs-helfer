@@ -1,154 +1,139 @@
-# Prüfung und Export
+# Bauen, prüfen, freigeben, exportieren
 
-## Vor der HTML-Freigabe
+## Werkzeug
 
-### Profil
+`tools/build_mappe.py` (Python-Standardbibliothek; Chromium für A4, optional `pdftoppm` für Seitenbilder). Übersicht: `python3 tools/build_mappe.py --help`.
 
-- [ ] `profile/master-profile.json` ist gegen `assets/schemas/profile.schema.json` gültig
-- [ ] `job.json` ist gegen `assets/schemas/job.schema.json` gültig und hat mindestens einen `company_facts`-Eintrag
-- [ ] `application-manifest.json` ist gegen sein Schema gültig
-- [ ] Profil ist ausdrücklich bestätigt
-- [ ] alle blockierenden offenen Punkte sind geklärt
-- [ ] alle Stationen sind als Praktikum, Anstellung, Schulbildung oder Projekt klassifiziert
-- [ ] Jahres- und Monatsangaben sind plausibel
-- [ ] freigegebene Näherungen sind als `inferred` gespeichert und in der Mappe mit „ca.“ gekennzeichnet
-- [ ] Foto ist gültig, korrekt zugeordnet und freigegeben – oder der Fotoblock fehlt ganz (kein leerer Rahmen)
+| Befehl | Zweck |
+|---|---|
+| `profile-template <profil> [--qa] [--pdf]` | Profilvorlage bauen; `--pdf` = A4-Vorschau `<name>_template.pdf` |
+| `application <stelle> [--qa] [--pdf]` | Mappe bauen, Manifest und Ledger aktualisieren; `--pdf` nur nach Freigabe |
+| `qa <html>` | Prüfung einer beliebigen Mappe (liegt sie in `<stelle>/application/`, zusätzlich der E-Mail-Entwurf) |
+| `preview <html> <ordner>` | A4-PDF und PNG-Seiten zum Ansehen, Ziel immer unter `.tmp/` |
+| `validate <profil|stelle>` | Schemaprüfung (braucht `jsonschema`), Asset-Pfade des Profils und bei Bewerbungsweg `email` der E-Mail-Entwurf `application/email.md` |
+| `check-duplicate`, `status`, `mark-sent`, `stats` | Ledger, siehe `references/applications.md`; `status sent` gibt es nicht, nur `mark-sent` |
+
+Exit-Codes: 0 ok, 1 Fehler, 2 QA meldet Probleme, 3 Duplikat bzw. `jsonschema` fehlt.
+
+Schemaprüfung ohne installiertes Paket:
+
+```bash
+python3 -m venv .tmp/venv && .tmp/venv/bin/pip install jsonschema
+.tmp/venv/bin/python tools/build_mappe.py validate profile/<name>
+```
+
+## Was `--qa` prüft
+
+- **Überlauf** mit dem QA-Snippet aus der Vorlage (Kommentar `QA-SNIPPET`), bei 1440 × 900 nach dem Laden aller Bilder: Seite läuft über, Element ragt in den unteren Rand, Element seitlich aus dem Satzspiegel (außer Deckblatt), Wort zu lang für seinen Block. Ergebnis muss leer sein.
+- **Seitenzahl:** Anzahl der `.page`-Abschnitte = Seiten im A4-PDF (sonst bricht etwas um).
+- **Füllgrad der Lebenslauf-Seiten:** nur Information (Richtwert 90–98 %), Grundlage für `presentation.cv_layout` (`references/template.md`, Lebenslauf).
+- **Bildschirmbreiten:** kein horizontaler Überlauf bei 1440 (Desktop, Fenster 1440 × 900), 390 (390 × 844) und 375 px (375 × 812). Die Ausgabe nennt immer alle drei Werte: `Horizontaler Überlauf (px): 1440: 0 · 390: 0 · 375: 0`; im Manifest steht `validation.hscroll` je Breite, `hscroll_mobile` ist der größere der beiden Mobilwerte. Headless-Chromium erzwingt mindestens ca. 500 px Fensterbreite, deshalb misst das Skript die beiden Mobilbreiten in einem iframe exakter Breite (Media-Queries gelten dort für die Iframe-Breite); stimmt die gemessene Breite nicht, gilt die Messung als Fehler.
+- **E-Mail-Entwurf:** ist der Bewerbungsweg in `job.json` (`application.method`) `email`, muss `application/email.md` existieren, darf nicht leer sein und keine offenen `[Platzhalter]` enthalten (Vorlage `assets/templates/email.md`). Sonst meldet `application --qa` (und `qa <html>` im Bewerbungsordner) einen FEHLER mit Exit-Code 2, `validate` meldet FEHLER, und `application --pdf` verweigert den Export. Das HTML wird trotzdem gebaut (Entwürfe bleiben möglich); die Freigabe (`status … html_approved`) warnt, bis der Entwurf vorliegt. Bei `post`, `portal` und `unknown` ist kein Entwurf nötig. Ergebnis im Manifest: `validation.email_draft` (`ok`, `missing`, `empty`, `placeholders`, `not_required`).
+- **Platzhalter:** keine `[GROSSBUCHSTABEN …]` außerhalb von Kommentaren (in der Profilvorlage sind die Platzhalter in Anschreiben und Motivationsschreiben gewollt).
+- **Bilder:** alle lokalen Bilder vorhanden.
+- **Datenvertrag:** Hinweis auf Klassen, die die Vorlage nicht kennt.
+- **Wörter:** Anschreiben und Motivationsschreiben mit Richtwerten.
+
+Das Ergebnis steht im Manifest unter `validation`. Die automatische Prüfung ersetzt nicht den Blick auf die Seiten: Elemente, die innerhalb der Seite aus ihrem Block ragen (z. B. ein langer Name in die Glasleiste), erkennt sie nicht. Deshalb immer:
+
+```bash
+python3 tools/build_mappe.py preview "<html>" .tmp/previews/<stelle>
+```
+
+und jede PNG-Seite ansehen.
+
+## Bei Problemen
+
+- Überlauf im Anschreiben oder Motivationsschreiben: Text in der `.md` kürzen oder `dichte: dicht` setzen, neu bauen.
+- Überlauf im Lebenslauf: `presentation.cv_layout` im Profil anpassen (`references/template.md`, Lebenslauf), Profilvorlage neu bauen und vom Nutzer prüfen lassen.
+- Darstellungsfehler, die jede Mappe betreffen: Skill-Vorlage über Tencil ändern, dann Profilvorlage und Mappen neu bauen.
+- Nie das generierte HTML bearbeiten.
+
+## Prüfliste vor der HTML-Freigabe
+
+### Daten
+
+- [ ] Profil, `job.json`, Manifest und Ledger gültig (`validate`)
+- [ ] Profil vom Nutzer bestätigt, nichts Blockierendes offen
+- [ ] Profilvorlage aktuell (kein Hinweis „Profil ist neuer als die Profilvorlage“)
+- [ ] Kein Duplikat im Ledger oder vom Nutzer ausdrücklich gewollt
+- [ ] Näherungen als `inferred` gespeichert und mit „ca.“ dargestellt
+- [ ] Adressen ausgeschrieben („Straße“), zweizeilig, ohne Punkt und Komma (das Skript warnt bei „Str.“)
+- [ ] Lebenslauf: nur Einträge mit `show_in_cv` ungleich `false`; Seiten ausgewogen (Füllgrad), Verdichtung nur wo nötig
+- [ ] Foto gültig und freigegeben oder der Fotoblock fehlt ganz
+- [ ] Asset-Pfade im Profil liegen unter `profile/<name>/assets/` (kein `..`, kein Symlink hinaus, keine gleichen Dateinamen in verschiedenen Ordnern); das Skript bricht sonst mit dem Profilfeld ab
 
 ### Inhalt
 
-- [ ] genau eine Stelle
-- [ ] Unternehmen und Titel stimmen mit der Quelle überein
-- [ ] Ansprechpartner belegt oder bewusst neutral
-- [ ] keine erfundenen Qualifikationen
-- [ ] keine offenen Platzhalter
-- [ ] jede Unternehmensaussage ist belegt
-- [ ] Anschreiben zeigt Eignung
-- [ ] Motivationsschreiben zeigt persönlichen Antrieb
-- [ ] keine Wiederholung der Hauptargumente zwischen den Schreiben
-- [ ] Frist und Bewerbungsweg stimmen
-- [ ] Kontaktdaten auf allen Seiten identisch
+- [ ] Firma, Titel, Referenznummer stimmen mit der Anzeige überein
+- [ ] Ansprechpartner belegt oder bewusst neutrale Anrede; Briefkopf-Zeilen nicht erfunden
+- [ ] jede Aussage über den Bewerber im Profil belegt, jede über die Firma in `company_facts`
+- [ ] Anschreiben zeigt Fähigkeiten, Motivationsschreiben zeigt Begeisterung; keine Geschichte doppelt
+- [ ] Humanizer auf Anschreiben, Motivationsschreiben und E-Mail angewendet (oder Fehlen gemeldet)
+- [ ] Wortgrenzen eingehalten bzw. passende Dichte gewählt
+- [ ] E-Mail bei Bewerbungsweg `email`: `application/email.md` vorhanden, nicht leer, ohne Platzhalter (QA und `validate` schlagen sonst fehl); richtige Adresse, Betreff mit Referenznummer, Umzugssatz nur bei über 50 km
+- [ ] Bewerbungsweg und Frist stimmen; Kontaktdaten überall identisch
 
 ### Seiten
 
-- [ ] Deckblatt
-- [ ] Anschreiben
-- [ ] Lebenslauf
-- [ ] Motivationsschreiben
-- [ ] Zertifikate
-- [ ] Zeugnisse
-- [ ] jede Seite beginnt auf einer neuen A4-Seite
-- [ ] keine einsame Zeile
-- [ ] nichts abgeschnitten oder über den Rand (Überlaufprüfung unten)
-- [ ] Folgeseiten nur für weitere Nachweise oder Lebenslauf-Fortsetzung, Inhaltsangabe nennt die Startseiten
-- [ ] Nachweise lesbar
-- [ ] keine kaputten Bildsymbole oder Alternativtexte in der A4-Fassung
-- [ ] langer Name bricht nicht in die Sidebar oder über den Satzspiegel
-- [ ] Seitenzahlen ohne führende Nullen und ohne Gesamtseitenzahl
-- [ ] keine vertikale Dekorlinie
-- [ ] Fußzeile enthält nur den Namen
-- [ ] Unternehmensname steht nicht auf dem Deckblatt
-- [ ] Timeline hat keine Verbindungslinien
-- [ ] Fähigkeiten erscheinen als Diagramme mit gespeicherten Niveaus
-- [ ] Icons sind vorhanden, konsistent und optisch zentriert
-- [ ] Desktop-Vorschau bei 1440 × 900 oder 1280 × 800 geprüft
-- [ ] Mobil-Vorschau bei 390 × 844 und 375 × 812 ohne horizontalen Überlauf geprüft
-- [ ] Desktop-, Mobil- und A4-Fassung getrennt beurteilt; keine Vorschaubreite als Ersatz für eine andere verwendet
-
-### Überlauf
-
-Jede `.page` hat eine feste A4-Höhe mit `overflow: hidden`. Zu langer Inhalt verschwindet sonst still. In der Browser-Konsole bei aktivierter Druckemulation (oder in der A4-Vorschau) prüfen:
-
-```js
-[...document.querySelectorAll('.page')].map((p, i) => {
-  const over = p.scrollHeight > p.clientHeight + 1 || p.scrollWidth > p.clientWidth + 1;
-  if (over) p.setAttribute('data-overflow', '');
-  return over ? i + 1 : null;
-}).filter(Boolean)
-```
-
-Das Ergebnis muss `[]` sein. Zusätzlich die Seitenbilder ansehen: Elemente, die innerhalb der Seite aus ihrem Block ragen (z. B. ein langer Name in die Sidebar), erkennt die Abfrage nicht. Ergebnis unter `validation.overflow_pages` im Manifest eintragen.
-
-### A4-Vorschau
-
-Wenn die Druckvorschau des Harness-Browsers nicht nutzbar ist, darf die A4-Fassung mit einem direkten Headless-Aufruf gerendert werden, z. B. `chromium --headless --no-pdf-header-footer --print-to-pdf=<vorschau.pdf> <bewerbungsmappe.html>`, und die Seiten als Bilder geprüft werden. Dabei kein Skript im Repository anlegen. Die Vorschau ist nicht der finale Export und liegt außerhalb des Repos oder im gitignorierten Bewerbungsordner.
-
-### Druck
-
-- [ ] `@page` ist A4
-- [ ] keine externen Fonts oder Bilder
-- [ ] Links als Text lesbar
-- [ ] Hintergründe druckbar
-- [ ] Kontrast ausreichend
+- [ ] sechs Abschnitte in der richtigen Reihenfolge, Folgeseiten nur für Lebenslauf oder Nachweise
+- [ ] QA ohne Befund, alle Seiten als Bild angesehen
+- [ ] Inhaltsangabe und Reiter-Seitenzahlen stimmen
+- [ ] keine Fußzeile, keine Dekorlinie, keine Timeline-Linien, kein Firmenname auf dem Deckblatt
+- [ ] Fähigkeiten nur mit gespeicherten Skalen; nur Technologien aus dem Profil; alle Logos lokal
+- [ ] Nachweise lesbar; Nachweis-Paar nur bei kurzen Dokumenten
+- [ ] Desktop- und Mobilansicht (1440, 390, 375 px) von der QA ohne Überlauf; die Bildschirmansicht ist nicht die Druckfassung
 
 ## Freigabe
 
-Prüfe die HTML-Fassung auf unbelegte Aussagen, erfundene Details, falsche Unternehmensangaben und Platzhalter. Entferne oder korrigiere sie. Prüfe das responsive Bildschirmlayout mindestens auf Desktop- und Mobilbreite. Zeige die Fassung im Browser und frage:
+Mappe im Browser zeigen (HTML) und die A4-Seiten als Bilder oder Vorschau-PDF aus `.tmp/`. Dann einzeln fragen:
 
-> Ist diese HTML-Fassung inhaltlich und optisch freigegeben? Erst danach erzeuge ich das PDF.
+> Ist die HTML-Fassung für <Firma> inhaltlich und optisch freigegeben? Erst danach erzeuge ich das PDF.
 
-Das Bildschirmlayout ersetzt nicht die Prüfung der festen A4-Fassung. Ohne eindeutiges Ja kein PDF.
+Ohne eindeutiges Ja kein PDF. Schweigen oder „sieht gut aus, aber …“ ist kein Ja. Nach dem Ja:
+
+```bash
+python3 tools/build_mappe.py status <stelle> html_approved
+```
 
 ## PDF
 
-Browser-PDF-Export (nicht ausdrucken):
-
-- Ziel: PDF
-- Papier: A4
-- Hintergrundgrafiken: an
-- Kopf- und Fußzeile: aus
-- Maßstab: 100 %
-
-Exportieren als:
-
-```text
-applications/<unternehmen>-<beruf>/bewerbungsmappe.pdf
+```bash
+python3 tools/build_mappe.py application <stelle> --qa --pdf
 ```
 
-## PDF prüfen
+Chromium druckt A4 ohne Kopf- und Fußzeile mit Hintergründen nach `application/bewerbungsmappe - <name>.pdf`; das Manifest wechselt auf `pdf_exported`. Das Skript verweigert den Export ohne Freigabe, mit QA-Befund oder bei Bewerbungsweg `email` ohne gültigen `email.md`-Entwurf. Danach prüfen:
 
-- [ ] sechs Abschnitte, Seitenzahl wie im Manifest unter `pages`
-- [ ] keine leeren Seiten
-- [ ] keine abgeschnittenen Zeilen
-- [ ] Text auswählbar
-- [ ] Kontaktdaten lesbar
-- [ ] Bilder scharf
-- [ ] Reihenfolge korrekt
+- [ ] Seitenzahl wie im Manifest (`pages`), keine leeren oder abgeschnittenen Seiten
+- [ ] Text auswählbar, Bilder scharf, Reihenfolge korrekt
+- [ ] Schrift eingebettet als TrueType, nicht Type 3: `pdffonts "<pdf>"` zeigt nur `Inter-…` mit Typ `CID TrueType`; `pdftotext "<pdf>" - | head` liefert lesbaren Text
+- [ ] `email.md` nennt den richtigen Anhang
 
-## Kontaktübersicht
+Seit Runde 5 ist Inter statisch in der Vorlage eingebettet; Chromium schreibt die Schrift als TrueType (CID) ins PDF, Text bleibt auswählbar und für ATS auswertbar. Taucht `Type 3` auf, wurde eine andere Schrift (variable Systemschrift) verwendet: Vorlage prüfen.
 
-`contact-summary.md` wird aus `assets/templates/contact-summary.md` erstellt und enthält:
+## Abschlussbericht pro Durchlauf
 
-- Unternehmen
-- Stellenbezeichnung
-- Quelle
-- Ansprechpartner
-- Rolle oder Abteilung
-- E-Mail
-- Telefon
-- Bewerbungsweg
-- Frist
-- offene Fragen
-- fehlende Unterlagen
+Für jede Stelle: Firma, Titel, Referenznummer, Ordner, Status, nicht belegte Anforderungen, offene Punkte, Pfade zu HTML, PDF, `email.md` und `kontaktdaten.md`, und der Satz, dass nichts gesendet wurde.
 
-## E-Mail-Entwurf
+## Datenschutzprüfung
 
-`email-draft.md` wird aus `assets/templates/email-draft.md` erstellt und enthält:
+Persönliche Daten bleiben in `profile/` und `.tmp/` (beide gitignoriert). Der Bewerbungshelfer darf öffentliche Anzeigen lesen, öffentliche Firmenkontakte recherchieren und Entwürfe vorbereiten. Er darf nicht ohne ausdrückliche Freigabe senden, Portale ausfüllen, Dateien hochladen oder persönliche Daten an weitere Dienste geben.
 
-- Empfänger
-- Betreff
-- kurzer Text
-- Anhänge
-- Hinweis: Entwurf, nicht gesendet
+Vor jedem Commit:
 
-Keine Anhänge nennen, die nicht existieren.
+```bash
+git status --short
+git ls-files profile/            # nur profile/README.md und .gitkeep
+git ls-files | xargs grep -n -i -e '<nachname>' -e '<telefon>' -e '<e-mail>' -e '<straße>'
+```
 
-## Abschlussbericht
+Platzhalter durch die echten Werte des Nutzers ersetzen (aus dem Profil lesen, nicht in eine Datei schreiben). Jeder Treffer blockiert den Commit. Commit und Push nur mit Zustimmung des Nutzers.
 
-Nenne:
+## Repository-Prüfung
 
-- Stelle und Quelle
-- verwendete Profilbelege
-- nicht belegte Anforderungen
-- Freigabestatus
-- Pfade zu HTML, PDF, Kontaktübersicht und E-Mail-Entwurf
-- dass nichts gesendet wurde
+- keine Profil-, Stellen- oder Bewerbungsdaten im Git; `.tmp/` nicht getrackt
+- alle JSON-Dateien im Skill gültig: `python3 -m json.tool <datei>`
+- alle Schemas gültig (Draft 2020-12): `python3 -c "import json,jsonschema; jsonschema.Draft202012Validator.check_schema(json.load(open('<schema>')))"`
+- `python3 tools/build_mappe.py --help` läuft
+- Symbole der Vorlage reproduzierbar: `python3 tools/devicon_symbols.py` auf den Quellen aus `assets/icons/README.md` liefert die 33 Symbole der SVG-Bibliothek Byte für Byte
+- Verweise zwischen SKILL.md, Referenzen und Vorlagen stimmen

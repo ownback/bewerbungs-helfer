@@ -1,10 +1,30 @@
-# Lokales Profil
+# Lokale Profile
 
-Hier entstehen beim ersten Durchlauf:
+Alles in diesem Ordner außer dieser Datei und den `.gitkeep`-Platzhaltern ist gitignoriert.
 
-- `master-profile.json` – das bestätigte Master-Profil, primäre Quelle, validiert gegen `.agents/skills/bewerbungshelfer/assets/schemas/profile.schema.json`
-- `master-profile.md` – lesbare Zusammenfassung für die gemeinsame Prüfung
-- `import/` – optional vom Nutzer bereitgestellte Lebensläufe, Zeugnisse und Zertifikate
-- `assets/` – lokale Bild- und Dokumentdateien
+```text
+profile/
+  import/                          neue Unterlagen hier ablegen (alter Lebenslauf, Zeugnisse, Foto, Unterschrift)
+  assets/                          frei für gemeinsame, nicht personenbezogene Dateien (derzeit leer)
+  <vorname.nachname>/
+    assets/
+      documents/                   Zeugnisse und Zertifikate (<name>_….png)
+        old/                       alter Lebenslauf (PDF/DOCX) und extracted_information.md
+      photos/cv/                   Bewerbungsfoto
+      photos/project/              Projektfotos
+      signature/                   Unterschrift
+      profile/
+        <name>_profile.json        Profil (Schema: assets/schemas/profile.schema.json im Skill)
+        <name>_profile.md          lesbare Fassung
+        <name>_template.html       Profilvorlage (gebaut, nicht von Hand bearbeiten)
+        <name>_template.pdf        A4-Vorschau der Profilvorlage
+    applications/
+      ledger.json                  alle Bewerbungen mit Status
+      apprenticeships|jobs|internships/<beruf>/<suchort>/<NN>-<ort>-<firma>/
+        job_information/           ba_scrape.md, job.json
+        text_generation/           anschreiben.md, motivationsschreiben.md, kontaktdaten.md
+        application/               bewerbungsmappe - <name>.html/.pdf, email.md, application-manifest.json, assets/
+      sent/apprenticeships|jobs|internships/…   gesendete Bewerbungen
+```
 
-Der gesamte Inhalt ist gitignoriert; nur diese Datei und leere `.gitkeep`-Platzhalter für `import/` und `assets/` sind versioniert. Das Repository startet ohne Profil-, Job- oder Bewerbungsdaten.
+Details: `.agents/skills/bewerbungshelfer/references/applications.md` und `references/profile-schema.md`.

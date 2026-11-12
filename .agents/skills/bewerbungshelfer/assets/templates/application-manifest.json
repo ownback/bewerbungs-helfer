@@ -1,8 +1,12 @@
 {
+  "profile": "vorname.nachname",
+  "type": "apprenticeships",
+  "reference_number": "",
   "company": "",
   "role": "",
   "created_at": "",
-  "html": "bewerbungsmappe.html",
+  "html": "bewerbungsmappe - vorname.nachname.html",
+  "email_draft": "email.md",
   "sections": [
     "deckblatt",
     "anschreiben",
@@ -11,34 +15,8 @@
     "zertifikate",
     "zeugnisse"
   ],
-  "pages": [
-    {
-      "number": 1,
-      "section": "deckblatt"
-    },
-    {
-      "number": 2,
-      "section": "anschreiben"
-    },
-    {
-      "number": 3,
-      "section": "lebenslauf"
-    },
-    {
-      "number": 4,
-      "section": "motivationsschreiben"
-    },
-    {
-      "number": 5,
-      "section": "zertifikate"
-    },
-    {
-      "number": 6,
-      "section": "zeugnisse"
-    }
-  ],
+  "pages": [],
   "assets": [],
   "status": "draft",
-  "open_questions": [],
-  "validation": {}
+  "open_questions": []
 }
