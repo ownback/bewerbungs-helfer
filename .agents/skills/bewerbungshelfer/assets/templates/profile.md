@@ -12,6 +12,7 @@
 - E-Mail:
 - Geburtsdatum (optional):
 - Geburtsort (optional):
+- Führerschein (optional, z. B. Klasse B; erscheint im Lebenslauf):
 - Geburtsdaten im Lebenslauf zeigen: nein|ja (nur nach Freigabe)
 - Staatsangehörigkeit:
 - Bewerbungsfoto: Datei | gültig ja/nein | freigegeben ja/nein | Ausschnitt

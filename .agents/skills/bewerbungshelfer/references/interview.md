@@ -46,7 +46,7 @@ Nur zu den Punkten der Abweichungsliste und zu Feldern, die das Profil braucht u
 - Art: Ausbildung, Job oder Praktikum (`goal.type`)
 - Beruf, Alternativen, frühester Beginn
 - Zielorte und Umkreis (Vorgabe für die BA-Suche)
-- Umzug oder Pendeln? (wichtig für die E-Mail bei Stellen über 50 km)
+- Umzug oder Pendeln? Wenn Umzug: in welche Zielorte (`goal.locations`) und wann (`goal.relocation_timing`, z. B. „Sommer 2027“)? Das steuert den Umzugssatz in der E-Mail (Suchort ≠ Wohnort).
 
 ### Block 2: Person und Kontakt
 
@@ -79,7 +79,7 @@ Lebenslauf: Soll ein Projekt im Block „Eigene Projekte“ erscheinen? Das kost
 - Fachliche Kenntnisse in Gruppen (z. B. Systeme, Netzwerk, Entwicklung)
 - je Zeile Technologien gleichen Themas und gleichen Niveaus zusammenfassen und das Niveau (`future`, `learning`, `basic`, `solid`, `advanced`, `native`) und die Skala 1–5 **je Zeile** erfragen, nicht je Technologie; Technologien als kommagetrennte Liste in `evidence`
 - `future` ist ein Lernwunsch (noch nicht angewandt) und erscheint als Skala 1 ohne Zusatztext
-- Führerschein und Mobilität
+- Führerschein und Mobilität (Klasse → `person.driving_license`, z. B. „Klasse B“, Status `confirmed`; erscheint im Lebenslauf als „Führerschein Klasse B“, leer = nicht angezeigt; Pendel-/Umzugsbereitschaft gehört zu `goal`)
 
 Fähigkeiten ohne erkennbares Niveau (z. B. Icons ohne Balken im alten Lebenslauf) bekommen kein geratenes Niveau: nachfragen, bis dahin `open` und nicht anzeigen. Technologien, die der Nutzer nicht genannt hat, nie ergänzen, auch wenn ein Logo vorhanden ist; bei Anregungen (z. B. gängige Netzwerk-Werkzeuge) fragen, ob und auf welchem Niveau sie stimmen.
 

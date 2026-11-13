@@ -71,7 +71,7 @@ und jede PNG-Seite ansehen.
 - [ ] Anschreiben zeigt Fähigkeiten, Motivationsschreiben zeigt Begeisterung; keine Geschichte doppelt
 - [ ] Humanizer auf Anschreiben, Motivationsschreiben und E-Mail angewendet (oder Fehlen gemeldet)
 - [ ] Wortgrenzen eingehalten bzw. passende Dichte gewählt
-- [ ] E-Mail bei Bewerbungsweg `email`: `application/email.md` vorhanden, nicht leer, ohne Platzhalter (QA und `validate` schlagen sonst fehl); richtige Adresse, Betreff mit Referenznummer, Umzugssatz nur bei über 50 km
+- [ ] E-Mail bei Bewerbungsweg `email`: `application/email.md` vorhanden, nicht leer, ohne Platzhalter (QA und `validate` schlagen sonst fehl); richtige Adresse, Betreff mit Referenznummer, Umzugssatz nur, wenn der Suchort nicht der Wohnort ist (`references/writing.md`)
 - [ ] Bewerbungsweg und Frist stimmen; Kontaktdaten überall identisch
 
 ### Seiten

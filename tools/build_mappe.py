@@ -582,6 +582,8 @@ def cv_hero(ctx: Ctx) -> str:
             facts.append(f'        <li>{icon("i-cake")}<span>{esc(short_date(person["birth_date"]))}</span></li>')
         if person.get('birth_place'):
             facts.append(f'        <li>{icon("i-map")}<span>{esc(person["birth_place"])}</span></li>')
+    if person.get('driving_license'):
+        facts.append(f'        <li>{icon("i-car")}<span>Führerschein {esc(person["driving_license"])}</span></li>')
     return ('    <div class="cv-hero">\n'
             '      <div>\n'
             f'        <p class="cv-name">{esc(person["name"])}</p>\n'

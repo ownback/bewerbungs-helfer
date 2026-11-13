@@ -124,7 +124,8 @@ In `application/`, nach `assets/templates/email.md`:
 - **An:** Bewerbungsadresse aus `application.email`, sonst die belegte Adresse des Ansprechpartners. Bei Portal oder Post: kein E-Mail-Entwurf, stattdessen kurzer Hinweis auf den Weg.
 - **Betreff:** z. B. „Bewerbung um einen Ausbildungsplatz als Fachinformatiker für Systemintegration (Ref.-Nr. …)“
 - **Text:** Anrede wie im Anschreiben, zwei bis vier kurze Sätze: was beiliegt, ein konkreter Grund für diese Stelle, Bitte um Rückmeldung, Grußformel, Name, Telefon.
-- **Umzug:** Ist `commute.over_50_km` true, schreibt der Text, dass der Bewerber plant, in den Suchort zu ziehen und von dort nach <Arbeitsort> zu pendeln. Nur wenn der Nutzer Umzug nicht ausgeschlossen hat (`goal.relocation` nicht `no`); sonst fragen.
+- **Einstieg:** sinngemäß „anbei sende ich Ihnen meine Bewerbungsmappe für die Ausbildungsstelle als <Beruf> (Referenznummer <Ref.-Nr.>).“ (bei Jobs/Praktika „für die Stelle als …“ bzw. „für das Praktikum als …“).
+- **Umzug:** Maßgeblich ist der **Suchort** (Ordner `<suchort>/`, `job.json` → `search.city`), nicht der Ort der Firma. Ist der Suchort nicht der Wohnort (`person.address.city`), steht er in `goal.locations` und ist `goal.relocation` `yes`, folgt ein Satz wie „Ein Umzug nach <Suchort> ist für <goal.relocation_timing> geplant.“ Liegt der Suchort am Wohnort, entfällt der Satz. Kein Satz über Pendeln, keine Entfernungsangabe. Fehlt `goal.relocation_timing`, den Nutzer fragen.
 - **Anhang:** Pfad `application/bewerbungsmappe - <name>.pdf` (entsteht erst nach Freigabe) und geforderte Unterlagen aus `application.required_documents`, nur wenn sie existieren.
 - Hinweis am Ende: Entwurf, nicht gesendet.
 

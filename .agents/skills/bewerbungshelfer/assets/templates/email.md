@@ -8,7 +8,7 @@
 
 [Anrede wie im Anschreiben],
 
-[Zwei bis vier kurze Sätze: was beiliegt, ein konkreter Grund für diese Stelle, bei über 50 km der geplante Umzug in den Suchort mit Pendeln nach dem Arbeitsort, Bitte um Rückmeldung.]
+[Zwei bis vier kurze Sätze: was beiliegt, ein konkreter Grund für diese Stelle, „anbei sende ich Ihnen meine Bewerbungsmappe für die Ausbildungsstelle als …“, bei Suchort ≠ Wohnort „Ein Umzug nach <Suchort> ist für <Zeitpunkt> geplant.“, Bitte um Rückmeldung.]
 
 Mit freundlichen Grüßen
 [Vorname Nachname]

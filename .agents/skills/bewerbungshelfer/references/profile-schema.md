@@ -24,12 +24,13 @@ Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckbl
 - Straße ausgeschrieben mit Hausnummer („Musterstraße 6“), PLZ und Ort getrennt. Die Mappe setzt Straße und „PLZ Ort“ zweizeilig ohne Komma.
 - Telefon speichern, wie es erscheinen soll („+49 …“); E-Mail ohne Zusatz.
 - Geburtsdatum (Anzeige „TT.MM.JJJJ“) und -ort sind optional und erscheinen nur bei `presentation.show_birth_data: true`. Der Ort steht in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land („Ort, Land“).
+- `driving_license` (optional): Klasse als Text mit Präfix („Klasse B“). Der Lebenslauf zeigt „Führerschein Klasse B“ mit `i-car` in der Datenbox, nach den Geburtsdaten; leer oder fehlend = keine Zeile.
 - `photo`: nur gültig, wenn die Datei lesbar ist, zum Nutzer gehört, `consent: true` gesetzt und ein Zuschnitt gewählt ist. `focus` steuert den Ausschnitt im 4:5-Rahmen (`x`, `y` als Prozent, `zoom` bis ca. 1,2). Leere oder defekte Datei: `valid: false` und offener Punkt.
 - `signature`: Bild der Unterschrift mit `valid` und `consent`. Nur dann im Anschreiben.
 
 ## Ziel
 
-`type` (`apprenticeships`, `jobs`, `internships`), `apprenticeship` (Zielberuf), Alternativen, Beginn (`JJJJ-MM-TT`), Orte, Umkreis, Umzug und Pendeln. Der Umkreis ist die Vorgabe für die BA-Suche.
+`type` (`apprenticeships`, `jobs`, `internships`), `apprenticeship` (Zielberuf), Alternativen, Beginn (`JJJJ-MM-TT`), Orte, Umkreis, Umzug und Pendeln, `relocation_timing` (Zeitpunkt eines geplanten Umzugs, z. B. „Sommer 2027“). Der Umkreis ist die Vorgabe für die BA-Suche.
 
 ## Zeiträume
 
@@ -92,7 +93,7 @@ Kopplung von Niveau und Skala (Schema):
 | `basic` | Grundkenntnisse | 2–3 |
 | `solid` | sicher | 3–4 |
 | `advanced` | routiniert | 4–5 |
-| `native` | Muttersprache | 5 |
+| `native` | Muttersprache | 3–5 (Standard 5; weniger nur auf ausdrücklichen Wunsch, z. B. schwächere Schriftsprache; das Wort bleibt „Muttersprache“) |
 
 Die Mappe zeigt die Skala mit der Legende 1 Lernwunsch · 2 Grundkenntnisse · 3 sicher · 4 routiniert · 5 sehr sicher; bei Sprachen steht das Wort zur Skala darunter, bei `native` „Muttersprache“. Keine Prozentangaben, keine geratenen Niveaus, nur Technologien aus dem Profil.
 
@@ -135,6 +136,7 @@ Alle Werte, die die Mappe zeigt, stehen im Profil. Ein neuer Durchlauf leitet si
 | `skills…label`, `note`, `chips` | Zeilenname, Zusatz, Chips | Regeln unter Fähigkeiten; Logos nur aus der Liste in `references/template.md` |
 | `skills.groups[].name`, `icon` | Gruppentitel | Regeln unter Fähigkeiten |
 | `person.salutation` | „Herr“/„Frau“ im Absender | Antwort des Nutzers, Standard leer |
+| `person.driving_license` | Zeile „Führerschein …“ in der Datenbox des Lebenslaufs | Antwort des Nutzers, leer = nicht gezeigt |
 | `presentation.show_birth_data` | Geburtsdaten im Lebenslauf | Antwort des Nutzers, Standard `false` |
 | `presentation.cv_layout` | Blöcke je Lebenslauf-Seite, Verdichtung | Regel in `references/template.md` (Lebenslauf); das Build-Skript meldet den Füllgrad |
 | `presentation.cv_projects` | Titel und Icon des Projektblocks | nur mit Projekten im Lebenslauf; Antwort des Nutzers |

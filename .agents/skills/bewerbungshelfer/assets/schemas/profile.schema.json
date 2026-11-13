@@ -101,6 +101,10 @@
         "birth_place": {
           "type": "string"
         },
+        "driving_license": {
+          "type": "string",
+          "description": "Optional. Führerscheinklasse wie „Klasse B“. Erscheint im Lebenslauf als „Führerschein Klasse B“ (der Zusatz „Führerschein“ wird vom Build ergänzt, Präfix „Klasse“ steht im Wert); leer oder fehlend = nicht angezeigt."
+        },
         "nationality": {
           "type": "string"
         },
@@ -272,6 +276,10 @@
         },
         "field_status": {
           "$ref": "#/$defs/fieldStatus"
+        },
+        "relocation_timing": {
+          "type": "string",
+          "description": "Geplanter Umzugszeitpunkt in einen Zielort (z. B. „Sommer 2027“); erscheint im Umzugssatz der E-Mail, wenn der Suchort nicht der Wohnort ist."
         }
       }
     },
@@ -1207,7 +1215,7 @@
             "future",
             "native"
           ],
-          "description": "future = Lernwunsch (Skala 1), learning = Lernstand (1–2), basic = Grundkenntnisse (2–3), solid = sicher (3–4), advanced = routiniert (4–5), native = Muttersprache (5)."
+          "description": "future = Lernwunsch (Skala 1), learning = Lernstand (1–2), basic = Grundkenntnisse (2–3), solid = sicher (3–4), advanced = routiniert (4–5), native = Muttersprache (3–5; unter 5 nur auf Wunsch des Nutzers, z. B. bei schwächerer Schriftsprache)."
         },
         "scale": {
           "type": "integer",
@@ -1331,7 +1339,7 @@
           "then": {
             "properties": {
               "scale": {
-                "const": 5
+                "minimum": 3
               }
             }
           }

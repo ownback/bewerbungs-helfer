@@ -64,3 +64,7 @@ Wenn Tencil nicht verfügbar ist, `http://127.0.0.1:8791/` in der Vorschau von T
 und das Element dort markieren. Die Annotation übergibt Selektor, HTML und Screenshot an den
 Agenten. Der Agent sucht die Stelle per Selektor oder Text in der Vorlage und hält sich an
 dieselben Regeln. Läuft der Daemon nicht, wird die Seite trotzdem angezeigt, nur ohne Overlay.
+
+## Modell für Pins
+
+Pins starten Threads mit dem Modell aus der Projekteinstellung des Daemons, nicht aus dem globalen `--model`. Datei: `~/.config/tencil/projects/bewerbungs-helfer-<hash>.settings.json` (Hash = erste 10 Zeichen von SHA-256 des absoluten Repo-Pfads), Eintrag `"models": {"t3code": "claudeAgent/claude-haiku-5-5"}` (Aufwand: Standard des Modells, medium). Danach `systemctl --user restart tencil`. Andere Projekte desselben Daemons bleiben unberührt.

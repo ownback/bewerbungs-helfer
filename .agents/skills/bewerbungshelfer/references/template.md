@@ -84,7 +84,7 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 ### Lebenslauf
 
 - Reihenfolge der Blöcke: Praktische Erfahrung, Schulbildung, Fähigkeiten, Sprachen (Sprachen immer zuletzt, auch beim Umbrechen auf die Fortsetzung). Optionaler Block „Eigene Projekte“ irgendwo nach der Erfahrung, wo er auf die Seite passt.
-- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Anschrift, E-Mail, Telefon, Geburtsdatum mit `i-cake`, Geburtsort mit `i-map`). Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
+- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Anschrift, E-Mail, Telefon, Geburtsdatum mit `i-cake`, Geburtsort mit `i-map`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`, immer nach den Geburtsdaten; mit allen Angaben sind es 3 + 3 Zeilen). Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
 - Praktische Erfahrung: neueste zuerst; Datum links in eigener Spalte, rechts Organisation, Ort, Rolle · Art, Aufgaben. Näherungen mit „ca.“.
 - Schulbildung: Einrichtung, Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Grundschulen entfallen standardmäßig, sobald ein weiterführender Abschluss vorliegt (`education[].show_in_cv: false`, Nutzer bestätigt; der Eintrag bleibt im Profil, das Skript meldet die ausgeblendeten Einträge).
 - Sprachen: Balken mit Niveauwort darunter, keine Belegzeile.

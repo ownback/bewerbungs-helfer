@@ -43,6 +43,16 @@ Dem Nutzer eine kurze Liste zeigen: Titel, Firma, Ort, Entfernung (falls angezei
 
 Vor dem Erfassen jede gewählte Stelle gegen das Ledger prüfen (`references/applications.md`, Duplikate). Bei einem Treffer den Nutzer warnen und fragen, ob trotzdem weiter.
 
+Bei vielen Treffern (mehrere Suchorte, Auswahl „alle“) vor dem Erfassen filtern und die Ausschlüsse dem Nutzer mit Grund zeigen:
+
+- anderer Beruf oder andere Fachrichtung im Titel; Titel ohne Fachrichtung nur nach Rückfrage
+- Beginn nicht im Zieljahr (`goal.start`), auch „ab sofort“
+- geforderter Schulabschluss über dem Profil (z. B. Abitur/Fachhochschulreife bei Mittlerer Reife): nach Rückfrage ausschließen; Anzeigen, die im Text auch den eigenen Abschluss akzeptieren, bleiben
+- Duplikat = gleiche Firma und gleicher Titel (auch mit anderer Referenznummer oder als Partner-Listing): die Fassung mit vollständigem BA-Text bzw. die beim Arbeitgeber noch offene behalten; unterschiedliche Schwerpunkte im Text sind keine Duplikate
+- abgelaufene Bewerbungsfrist
+
+Ausgeschlossene Stellen werden nicht gelöscht, sondern mit Grund festgehalten (z. B. `DROPPED.txt` im verschobenen Ordner unter `.tmp/`). Anzeigen ohne BA-Kontaktblock (nur Link zu Partnerseiten wie Studyflix, ausbildung.de, finest-jobs oder zur Karriereseite) bleiben in der Auswahl: Bewerbung dann über das Portal.
+
 ## 5. Rang und Ordner
 
 Die gewählten Stellen nach Entfernung vom Suchort sortieren (01 = am nächsten). Entfernung aus der Trefferliste; fehlt sie, nach Arbeitsort schätzen und das in `job.json` (`search.distance_km: null`) offen lassen. Gleichstand: Reihenfolge der Trefferliste. Danach die Ordner anlegen (`references/applications.md`) und `search` in `job.json` füllen (Bereich, Suchbegriff, Ort, Umkreis, Sortierung, Filter, Ergebnis-URL, Rang, Entfernung).
@@ -84,6 +94,10 @@ Die Kontaktdaten liegen hinter einem Captcha (`#kontaktdaten-captcha-*`):
 2. Den Nutzer bitten: „Bitte löse im Browser das Captcha bei <Firma>. Sag Bescheid, wenn die Kontaktdaten sichtbar sind.“
 3. Erst danach weiterlesen und übernehmen. Das Captcha nie selbst lösen oder umgehen.
 
+Erfahrung (November 2026): Eine Lösung gilt nur im Tab, in dem sie eingegeben wurde, und hält dort für ca. 23–27 Anzeigen; danach erscheint das Captcha erneut. Andere Tabs und Subagenten sehen weiter das Captcha. Bei vielen Stellen deshalb zuerst alle Anzeigen ohne Kontakt erfassen (parallel möglich), danach die Kontaktblöcke im gelösten Tab nacheinander lesen und bei jedem neuen Captcha den Nutzer erneut bitten.
+
+Anzeigen ohne Kontaktblock oder mit Bewerbungsweg „Über Internetseite des Arbeitgebers“: die verlinkte Portal-/Partnerseite öffnen (höchstens zwei Klicks bis zur konkreten Anzeige, keine Formulare ausfüllen, kein Login) und wörtlich nach `job_information/portal_page.md` übernehmen (URL, Abrufdatum, Anzeigentext, Kontakt, Bewerbungsweg, Unterlagen). Fehler wie tote Links, Links auf andere Stellen oder geschlossene Stellen in `application.notes` vermerken.
+
 Regeln für den Kontakt:
 
 - Name, Anrede und Rolle nur übernehmen, wenn sie auf der Seite stehen. `contact.source: "ba_captcha"` bzw. `"ba_page"`.
@@ -100,7 +114,7 @@ Erlaubt ist eine kurze Websuche zur Firma (Branche, Größe, Produkte, Ausbildun
 
 ### Entfernung zum Wohnort
 
-`commute`: Wohnort aus dem Profil, Entfernung zum Arbeitsort (Quelle angeben, z. B. Trefferliste, wenn Such- und Wohnort gleich sind), `over_50_km`. Bei über 50 km schreibt die E-Mail, dass der Nutzer in den Suchort ziehen und von dort nach <Ort> pendeln will (`references/writing.md`).
+`commute`: Wohnort aus dem Profil, Entfernung zum Arbeitsort (Quelle angeben, z. B. Trefferliste, wenn Such- und Wohnort gleich sind), `over_50_km`. Der Umzugssatz der E-Mail hängt am Suchort, nicht an der Entfernung (`references/writing.md`).
 
 ## 7. Speichern
 
