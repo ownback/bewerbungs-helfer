@@ -23,7 +23,7 @@ Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckbl
 
 - Straße ausgeschrieben mit Hausnummer („Musterstraße 6“), PLZ und Ort getrennt. Die Mappe setzt Straße und „PLZ Ort“ zweizeilig ohne Komma.
 - Telefon speichern, wie es erscheinen soll („+49 …“); E-Mail ohne Zusatz.
-- Geburtsdatum (Anzeige „TT.MM.JJJJ“) und -ort sind optional und erscheinen nur bei `presentation.show_birth_data: true`. Der Ort steht in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land („Ort, Land“).
+- Geburtsdatum (Anzeige „TT.MM.JJJJ“) und -ort sind optional und erscheinen nur bei `presentation.show_birth_data: true`. Der Ort steht in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land („Ort, Land“, z. B. „Krakau, Polen“). Der Lebenslauf trennt am letzten Komma: Ort und Land stehen untereinander, ohne Komma (Herkunft in der ersten Zeile der rechten Spalte). Ohne Komma bleibt der Ort einzeilig.
 - `driving_license` (optional): Klasse als Text mit Präfix („Klasse B“). Der Lebenslauf zeigt „Führerschein Klasse B“ mit `i-car` in der Datenbox, nach den Geburtsdaten; leer oder fehlend = keine Zeile.
 - `photo`: nur gültig, wenn die Datei lesbar ist, zum Nutzer gehört, `consent: true` gesetzt und ein Zuschnitt gewählt ist. `focus` steuert den Ausschnitt im 4:5-Rahmen (`x`, `y` als Prozent, `zoom` bis ca. 1,2). Leere oder defekte Datei: `valid: false` und offener Punkt.
 - `signature`: Bild der Unterschrift mit `valid` und `consent`. Nur dann im Anschreiben.
@@ -61,6 +61,14 @@ Aufgaben: zwei bis drei kurze Satzglieder ohne Punkt (Infinitiv oder Nominalstil
 
 Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, optional Link, nur echte Bilder mit `consent` und `valid`. Projekte liefern Stoff für die Briefe und die Belege-Spalte im Motivationsschreiben.
 
+**Projektfotos (Runde 6, feste Regel):**
+
+- Datei unter `profile/<name>/assets/photos/project/` (repo-relativ `profile/<name>/assets/photos/project/…`), eingetragen in `projects[].images[]` mit `file`, `consent: true` (Nutzer hat zugestimmt) und `valid: true` (Datei lesbar, eigenes Bild).
+- Zuordnung: Ein Beleg im Motivationsschreiben bekommt das Projektfoto, wenn sein Titel (`- <icon> | <Titel> | …`) gleich `projects[].name` ist (ohne Groß-/Kleinschreibung). Es wird das erste Bild mit `consent` und `valid` gezeigt, 4:3 unter dem Belegtext.
+- Fallback (fest, kein Ermessen): Gibt es kein passendes Projekt, kein Bild, `consent: false` oder `valid: false`, erscheint kein Foto und kein Platzhalter. Der Belegtext bleibt. Die Mappe baut ohne Projektfotos.
+- Ein Bild, das im Profil eingetragen ist, aber fehlt, bricht den Bau mit Fehler ab (`check_profile_assets`); es wird nie still ersetzt.
+- Keine fremden Personen, keine generierten Bilder, keine Platzhalterfotos.
+
 Optional erscheinen ausgewählte Projekte im Lebenslauf-Block „Eigene Projekte“ (z. B. Homelab, Open-Source-Beitrag):
 
 - `show_in_cv: true` am Projekt und der Block `projects` in `presentation.cv_layout.pages`
@@ -80,7 +88,7 @@ Jedes Item:
 - optional `label`, `note`, `chips`:
   - `label`: kurze Kategorie als Zeilenname im Lebenslauf (ein bis zwei Wörter, höchstens ca. 16 Zeichen, sonst bricht die Zeile um), z. B. „Frontend“, „Tools“; ohne Angabe gilt `name`.
   - `note`: kleiner Zusatz unter dem Zeilennamen. Bei `level: learning` setzt das Build-Skript ohne Angabe „Lernstand“ (leerer String unterdrückt es); sonst nur ein knapper Beleg wie „eigene Projekte“. Bei `future` nie ein Zusatz.
-  - `chips`: Technik-Chips mit `name`, optional `logo` (`dv-…` Devicon oder `si-…` Simple Icons, Liste in `references/template.md`) oder `icon` (Linien-Icon `i-…`). Reihenfolge wie genannt, höchstens ca. 6 je Zeile. Ohne `chips` bildet das Build-Skript Chips aus `evidence`; deshalb enthält `evidence` nur Technologien. Ein vorhandenes Logo ist kein Grund, eine Technik aufzunehmen.
+  - `chips`: Technik-Chips mit `name`, optional `logo` (`dv-…` Devicon oder `si-…` Simple Icons, Liste in `references/template.md`) oder `icon` (Linien-Icon `i-…`). Reihenfolge wie genannt, höchstens ca. 6 je Zeile. Ohne `chips` bildet das Build-Skript Chips aus `evidence`; deshalb enthält `evidence` nur Technologien. Ein vorhandenes Logo ist kein Grund, eine Technik aufzunehmen. Welches Symbol zu welchem Begriff gehört, steht in `assets/icons/README.md` unter „Zuordnung Begriff → Symbol“.
 - Eine Zeile = ein Thema mit genau einem Niveau; mehrere Technologien gleichen Niveaus teilen sich die Zeile und die Skala.
 - Gruppen: zwei bis vier, Name und Icon aus der Themenlage, z. B. „Systeme“ (`i-monitor`), „Netzwerk“ (`i-network`), „Entwicklung“ (`i-code`); weitere Icons stehen in `references/template.md`. Bei „Entwicklung“ trennen die Zeilenbezeichnungen Frontend, Backend und Mobile.
 

@@ -49,6 +49,7 @@ Nach `references/interview.md`:
 
 - Unterlagen aus `assets/documents/old/` vollständig und visuell lesen und in `assets/documents/old/extracted_information.md` festhalten.
 - Nur nach Lücken, Widersprüchen und defekten Dateien fragen. Nichts erfinden, nichts raten.
+- Pro Projekt nach einem eigenen Foto und der Einwilligung fragen (`references/interview.md`, Block 5). Ohne Foto entfällt es, die Mappe baut trotzdem.
 - Bestätigte Angaben in `assets/profile/<name>_profile.json` speichern, `<name>_profile.md` als lesbare Fassung pflegen.
 - Prüfen: `python3 tools/build_mappe.py validate profile/<name>` (braucht `jsonschema`, siehe `references/qa-and-export.md`).
 
@@ -75,7 +76,7 @@ Nach `references/job-search.md` im Browser des Harness (kein Skript). Ablauf und
 2. Treffer kurz zeigen (Titel, Firma, Ort, Entfernung, Beginn, Veröffentlichung). Der Nutzer wählt eine oder mehrere Stellen.
 3. Duplikate prüfen: gleiche Referenznummer oder gleiche Firma + Titel im Ledger → Nutzer warnen (`references/applications.md`).
 4. Ränge nach Entfernung vom Suchort vergeben (`NN`), Ordner anlegen.
-5. Jede Anzeige **nacheinander** vollständig erfassen: `ba_scrape.md` wörtlich, `job.json` strukturiert. Für die Kontaktdaten zum Captcha scrollen und den **Nutzer** bitten, es zu lösen. Kurze Websuche zur Firma ist erlaubt (Fakten mit Quelle).
+5. Jede Anzeige **nacheinander im selben Tab** vollständig erfassen (Kopf, Text und Kontakt in einem Besuch): `ba_scrape.md` wörtlich, `job.json` strukturiert. Für die Kontaktdaten zum Captcha scrollen und den **Nutzer** bitten, es zu lösen. Kurze Websuche zur Firma ist erlaubt (Fakten mit Quelle).
 6. `job.json` gegen das Schema prüfen.
 
 Browserarbeit bleibt beim Hauptagenten; Subagenten haben oft keinen Browser.
@@ -126,7 +127,7 @@ Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status
 - Freigegebene Näherungen bleiben `inferred` und erscheinen mit „ca.“.
 - Kein automatisches Senden, kein Portal ausfüllen, kein Upload.
 - Finales PDF erst nach ausdrücklicher HTML-Freigabe.
-- Keine Fotos fremder Personen, keine generierten Porträts oder Projektbilder; defekte Dateien nicht einbinden.
+- Keine Fotos fremder Personen, keine generierten Porträts oder Projektbilder; Projektfotos nur mit `consent` und `valid` und nur am Beleg mit gleichem Projektnamen; defekte Dateien nicht einbinden.
 - Generiertes HTML nie von Hand bearbeiten; Design nur in der Skill-Vorlage.
 - Entscheidungen des Nutzers, die die Ausgabe prägen, gehören in ein Profilfeld (mit Interviewfrage) oder in Vorlage und Referenzen, nie nur in ein Gespräch oder in `.tmp/`. Ein neuer Durchlauf aus demselben Profil muss dieselbe Mappe ergeben.
 - Persönliche Daten nur in `profile/` und `.tmp/`; nichts davon committen.

@@ -17,9 +17,32 @@ Devicon-Pfad: `icons/<name>/<name>-<variante>.svg`, Simple-Icons-Pfad: `icons/<n
 
 | Variante `plain` | Variante `original` | Simple Icons |
 |---|---|---|
-| android, ansible, archlinux, bash, cloudflare, css3, debian, docker, flutter, git, html5, javascript, kubernetes, linux, nodejs, podman, python, swift, typescript | apple, github, react, rust, windows11 | bluetooth, cisco, homeassistant, nextcloud, nginx, proxmox, tailscale, wireguard, wireshark |
+| android, ansible, archlinux, bash, cloudflare, css3, debian, docker, flutter, git, html5, javascript, kubernetes, linux, nixos, nodejs, podman, python, swift, typescript | apple, github, react, rust, windows11 | bluetooth, cisco, homeassistant, nextcloud, nginx, proxmox, tailscale, wireguard, wireshark |
 
 Die Id-Liste mit Verwendungszweck steht in `references/template.md` (Abschnitt Icons und Logos).
+
+## Zuordnung Begriff → Symbol
+
+Welcher Chip welches Symbol bekommt, steht hier, damit ein frischer Durchlauf dieselben Symbole wählt. Gilt für `skills.groups[].items[].chips[]` im Profil (`references/profile-schema.md`, Fähigkeiten). Die Liste der Logo-Ids steht in `references/template.md`.
+
+| Begriff (Chip-Name) | Feld im Chip | Symbol | Hinweis |
+|---|---|---|---|
+| Cisco Packet Tracer | `logo` | `si-cisco` | Simple Icons |
+| Wireshark | `logo` | `si-wireshark` | Simple Icons |
+| Cisco IOS CLI | `icon` | `i-router` | Linien-Icon, kein Cisco-Logo in der Zeile |
+| SSH | `icon` | `i-terminal` | Linien-Icon, kein freies Logo |
+| TCP/IP | `icon` | `i-waypoints` | Linien-Icon |
+| WAN/LAN | `icon` | `i-cable` | Linien-Icon |
+| VLAN | `icon` | `i-layers` | Linien-Icon |
+| Firewall | `icon` | `i-shield` | Linien-Icon |
+| Git | `logo` | `dv-git` | Devicon |
+| GitHub | `logo` | `dv-github` | Devicon |
+| NixOS/Nix | `logo` | `dv-nixos` | Devicon (plain) |
+| Dockform | `logo` | `dv-docker` | kein eigenes Logo verfügbar; Docker-Logo als Zeichen für das Docker-Ökosystem |
+| Kubernetes | `logo` | `dv-kubernetes` | Devicon |
+| Ansible | `logo` | `dv-ansible` | Devicon |
+
+Ein Begriff, der hier fehlt: Logo aus der Liste in `references/template.md` wählen, sonst Linien-Icon oder Text-Chip; danach diese Tabelle ergänzen.
 
 ## Neues Logo aufnehmen
 
@@ -41,6 +64,6 @@ Das ist eine Designänderung an der Vorlage (`references/tencil.md`).
    - nur bekannte Attribute; keine Ereignis-Attribute, keine `href`/`xlink:href`, kein `url(…)`, kein `data:`/`http(s):`
    - Füllfarben werden entfernt (erben `currentColor`), Weiß wird Aussparung; das gilt auch für `fill` im `style`-Attribut. Im `style`-Attribut sind nur `fill`, `fill-rule`, `clip-rule`, `opacity`, `fill-opacity` erlaubt; `stroke` nur `none`/`currentColor` (Strichfarben gehen sonst verloren: anderes Logo wählen)
    - das fertige Symbol wird erneut als XML gelesen und gegen dieselben Regeln geprüft
-   Probe auf Reproduzierbarkeit: Die 33 Quelldateien aus der Tabelle oben laden (Devicon 2.17.0, Simple Icons 15.0.0) und umwandeln; die Ausgabe muss mit den `<symbol>`-Zeilen der SVG-Bibliothek in `assets/bewerbungsmappe.html` Byte für Byte übereinstimmen.
+   Probe auf Reproduzierbarkeit: Die 34 Quelldateien aus der Tabelle oben laden (Devicon 2.17.0, Simple Icons 15.0.0) und umwandeln; die Ausgabe muss mit den `<symbol>`-Zeilen der SVG-Bibliothek in `assets/bewerbungsmappe.html` Byte für Byte übereinstimmen.
 4. Die Zeilen alphabetisch in die SVG-Bibliothek der Vorlage einfügen, die Tabellen in `references/template.md` und diese Datei ergänzen, im Profil `chips[].logo` setzen, neu bauen und die Chips ansehen (Chip-Höhe 3,1 mm: feine Logos müssen lesbar bleiben).
 5. Das Schema (`profile.schema.json`, `$defs/chip`) erlaubt `dv-…` und `si-…`; ein neues Präfix braucht eine Schemaänderung.

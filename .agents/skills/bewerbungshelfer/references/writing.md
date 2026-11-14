@@ -40,7 +40,7 @@ Struktur:
 4. warum das Thema auch außerhalb der Pflicht beschäftigt
 5. belegter Bezug zu Stelle und Firma
 6. Ausblick, ruhiger Schluss, „Mit freundlichen Grüßen“
-7. **Belege:** drei kurze Einträge für die Seitenspalte (Projekt, eigene Rolle oder Ergebnis, Lernstand)
+7. **Belege:** drei kurze Einträge für die Seitenspalte (Projekt, eigene Rolle oder Ergebnis, Lernstand). Ein Projektbeleg trägt den Projektnamen aus dem Profil genau als Titel, dann erscheint sein Projektfoto (`references/profile-schema.md`, Projekte).
 
 Umfang: bis ca. 300 Wörter normal, bis ca. 370 Wörter mit `dichte: dicht`.
 
@@ -111,6 +111,8 @@ Mit freundlichen Grüßen
 ```
 
 Belege: `- <Linien-Icon> | <Titel> | <kurzer Text>`. Verfügbare Icons stehen in `references/template.md`.
+
+Titel bei Projekten genau wie `projects[].name` im Profil schreiben (gleiche Schreibweise, Groß-/Kleinschreibung egal). Nur dann erscheint das Projektfoto. Kein anderer Titel als Ersatz erfinden. Ohne passendes Projektfoto bleibt der Beleg ohne Bild, das ist korrekt.
 
 ### `kontaktdaten.md`
 

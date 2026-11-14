@@ -59,7 +59,7 @@ Die gewählten Stellen nach Entfernung vom Suchort sortieren (01 = am nächsten)
 
 ## 6. Anzeige erfassen
 
-Jede gewählte Stelle in einem **neuen Tab** öffnen und nacheinander erfassen, nicht parallel: das Captcha braucht den Nutzer.
+Alle gewählten Stellen **nacheinander im selben Tab** erfassen, nicht parallel: Das Captcha braucht den Nutzer, und eine Lösung gilt nur in dem Tab, in dem sie eingegeben wurde. Pro Anzeige in einem Besuch Kopf, Text und Kontakt übernehmen.
 
 ### Kopfbereich
 
@@ -94,7 +94,7 @@ Die Kontaktdaten liegen hinter einem Captcha (`#kontaktdaten-captcha-*`):
 2. Den Nutzer bitten: „Bitte löse im Browser das Captcha bei <Firma>. Sag Bescheid, wenn die Kontaktdaten sichtbar sind.“
 3. Erst danach weiterlesen und übernehmen. Das Captcha nie selbst lösen oder umgehen.
 
-Erfahrung (November 2026): Eine Lösung gilt nur im Tab, in dem sie eingegeben wurde, und hält dort für ca. 23–27 Anzeigen; danach erscheint das Captcha erneut. Andere Tabs und Subagenten sehen weiter das Captcha. Bei vielen Stellen deshalb zuerst alle Anzeigen ohne Kontakt erfassen (parallel möglich), danach die Kontaktblöcke im gelösten Tab nacheinander lesen und bei jedem neuen Captcha den Nutzer erneut bitten.
+Erfahrung (November 2026): Eine Lösung gilt nur im Tab, in dem sie eingegeben wurde, und hält dort für ca. 23–27 Anzeigen; danach erscheint das Captcha erneut. Andere Tabs und Subagenten sehen weiter das Captcha. Deshalb: Captcha einmal lösen lassen, dann im selben Tab von Anzeige zu Anzeige navigieren und jede vollständig erfassen; erscheint das Captcha erneut, den Nutzer wieder bitten (bei 60 Anzeigen ca. drei Mal). Keine Subagenten für die Erfassung, sie sehen nur das Captcha.
 
 Anzeigen ohne Kontaktblock oder mit Bewerbungsweg „Über Internetseite des Arbeitgebers“: die verlinkte Portal-/Partnerseite öffnen (höchstens zwei Klicks bis zur konkreten Anzeige, keine Formulare ausfüllen, kein Login) und wörtlich nach `job_information/portal_page.md` übernehmen (URL, Abrufdatum, Anzeigentext, Kontakt, Bewerbungsweg, Unterlagen). Fehler wie tote Links, Links auf andere Stellen oder geschlossene Stellen in `application.notes` vermerken.
 

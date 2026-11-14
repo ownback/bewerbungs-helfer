@@ -1,6 +1,6 @@
 # Vorlage, Seiten und Design
 
-Die Basisvorlage ist `assets/bewerbungsmappe.html` (Stand Runde 5, „Glisse“). Sie ist datenfrei, enthält Platzhalter in eckigen Klammern, erklärende HTML-Kommentare, die SVG-Bibliothek und den QA-Snippet. Sie ist die einzige Stelle für Designänderungen; visuell geprüft und geändert wird sie über Tencil (`references/tencil.md`).
+Die Basisvorlage ist `assets/bewerbungsmappe.html` (Design „Glisse“). Sie ist datenfrei, enthält Platzhalter in eckigen Klammern, erklärende HTML-Kommentare, die SVG-Bibliothek und den QA-Snippet. Sie ist die einzige Stelle für Designänderungen; visuell geprüft und geändert wird sie über Tencil (`references/tencil.md`).
 
 `tools/build_mappe.py` übernimmt `<head>` (CSS, eingebettete Schrift) und SVG-Bibliothek der Vorlage unverändert und erzeugt die Seiten nach dem Datenvertrag unten. Daraus entstehen die Profilvorlage `<name>_template.html` und pro Stelle die Mappe. Generiertes HTML wird nie von Hand bearbeitet.
 
@@ -40,7 +40,7 @@ Glas nur auf der Funktionsebene, höchstens eine große Glasfläche pro Seite, n
 
 - Papier `#ffffff`, Text `#1d1d1f` (16,8:1), gedämpft `#424245`, leise `#6e6e73` (5,1:1)
 - Akzent Petrol `#0b4f5c` (9,2:1), Fläche `#f5f5f7`
-- Deckblatt: petrolfarbener Farbraum nur im oberen Teil (`#0f4753` → `#0d4250` → `#0a2c35`, seit Runde 5 heller) mit weichen Lichtflecken; Text darauf weiß bzw. 74 % Weiß (≥ 6,5:1). Darunter weißes Papier.
+- Deckblatt: petrolfarbener Farbraum nur im oberen Teil (`#0f4753` → `#0d4250` → `#0a2c35`, seit Runde 5 heller) mit weichen Lichtflecken; Text darauf weiß bzw. 74 % Weiß (≥ 6,5:1). Darunter weißes Papier: Kurzprofil links, Beginn als Kapsel (Runde 7, siehe Papierzone unten); oben 8 mm, unten 9 mm Innenabstand. Die Farbfläche nimmt den restlichen Platz, es bleibt kein großer weißer Rest unter dem Kurzprofil (Runde 6).
 
 Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 
@@ -64,7 +64,7 @@ Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 Zwei Zonen (seit Runde 5, leichter im Druck):
 
 - **Farbraum** `.cover-stage` oben (ca. drei Viertel der Seite, so hoch wie die Seite minus Papierzone): Kennung „Bewerbungsmappe“ oben links, Name unten links (Klasse nach dem längsten Namensteil: bis 10 Zeichen keine, 11–13 `is-long`, 14–17 `is-xlong`; bei Doppelnamen zählt der Teil mit Bindestrich), darunter der Beruf. Rechts unten die Glasleiste mit optionalem Foto (4:5), Kontakt und Inhaltsangabe; sie ist so hoch wie ihr Inhalt. Die Glasleiste ist leichter als in Runde 4 (weniger Füllung, feinere Kante, kürzerer Schatten).
-- **Papierzone** `.cover-intro` unten (mindestens 76 mm): links das Kurzprofil in dunkler Schrift, rechts unter der Glasleiste der Beginn als Kapsel. Fließtext steht damit nie auf dunklem Grund.
+- **Papierzone** `.cover-intro` unten, ohne feste Mindesthöhe (Höhe = Inhalt, oben 8 mm, unten 9 mm): links das Kurzprofil in dunkler Schrift, rechts der Beginn „Ausbildung ab …“ als Kapsel. Die Kapsel steht mittig in ihrer Spalte und mittig im Papierstreifen (`.cover-start { justify-self: center; align-self: center; }`), nicht mehr bündig unter der Glasleiste. Fließtext steht damit nie auf dunklem Grund.
 
 Kontakt in der Leiste: Telefon, E-Mail, Anschrift (zweizeilig). Lange E-Mail-Adressen (über 24 Zeichen) bricht das Skript mit `<wbr>` nach „@“ und vor Punkten um, auch im Briefkopf und im Lebenslauf.
 
@@ -84,12 +84,12 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 ### Lebenslauf
 
 - Reihenfolge der Blöcke: Praktische Erfahrung, Schulbildung, Fähigkeiten, Sprachen (Sprachen immer zuletzt, auch beim Umbrechen auf die Fortsetzung). Optionaler Block „Eigene Projekte“ irgendwo nach der Erfahrung, wo er auf die Seite passt.
-- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Anschrift, E-Mail, Telefon, Geburtsdatum mit `i-cake`, Geburtsort mit `i-map`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`, immer nach den Geburtsdaten; mit allen Angaben sind es 3 + 3 Zeilen). Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
+- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Spalten nach Inhalt breit, `repeat(2, auto)`), der Block horizontal und vertikal mittig in der grauen Box, Symbol und Text je Zeile mittig (Runde 6, Runde 7). Linke Spalte: Anschrift (zweizeilig), E-Mail, Telefon. Rechte Spalte: Herkunft mit `i-map` als Ort und Land untereinander ohne Komma (aus `person.birth_place`, „Krakau, Polen“ → „Krakau“ / „Polen“) in der ersten Zeile neben dem Wohnort, darunter Geburtsdatum mit `i-cake`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`; mit allen Angaben sind es 3 + 3 Zeilen. Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
 - Praktische Erfahrung: neueste zuerst; Datum links in eigener Spalte, rechts Organisation, Ort, Rolle · Art, Aufgaben. Näherungen mit „ca.“.
 - Schulbildung: Einrichtung, Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Grundschulen entfallen standardmäßig, sobald ein weiterführender Abschluss vorliegt (`education[].show_in_cv: false`, Nutzer bestätigt; der Eintrag bleibt im Profil, das Skript meldet die ausgeblendeten Einträge).
 - Sprachen: Balken mit Niveauwort darunter, keine Belegzeile.
 - Fähigkeiten: Gruppen untereinander, Gruppentitel mit Linien-Icon; jede Zeile = Kategorie (optional kleiner Zusatz), Technik-Chips, Skala. Bis ca. 6 Chips je Zeile passen bei üblichen Namen in eine Zeile; längere Reihen brechen ruhig in eine zweite Zeile um (kostet ca. 4–5 mm Höhe). Keine Prozentwerte.
-- Skalen-Legende unter den Fähigkeiten: fünf gleich breite Spalten, oben die Musterleiste in Originalgröße, darunter die Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher.
+- Skala oben im Block Fähigkeiten, direkt unter der Überschrift (Runde 6): Die Skalen-Legende beginnt links mit dem Titel „Skala 1–5“. Der Titel ist vertikal mittig zu den Skalenleisten ausgerichtet (`.skill-legend-title { align-self: center; margin: 0; }`), weil das Grid `align-items: start` hat und der Titel sonst oben hängt. Daneben fünf gleich breite Spalten mit Musterleiste in Originalgröße und Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher.
 - Eigene Projekte / Homelab (optional, Block `projects`): nur Projekte mit `show_in_cv: true`, Reihenfolge wie im Profil. Zeile wie bei der Erfahrung: Zeitraum links (leer, wenn unbekannt; „laufend“ bei `is_current` ohne Datum), Projektname, ein Satz aus `cv_summary` (sonst `own_role`), darunter die Werkzeuge als Chips (`chips`, sonst Text-Chips aus `tools`). Titel und Icon aus `presentation.cv_projects` (Standard „Eigene Projekte“, `i-layers`). Platzbedarf: ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag mit einer Zeile Text und einer Chipzeile; höchstens zwei bis drei Einträge.
 - Aufteilung auf Seiten (`presentation.cv_layout`): Die QA meldet den Füllgrad jeder Lebenslauf-Seite („Füllgrad Lebenslauf: S3 95 % (+13.9 mm) · …“, Anteil des Satzspiegels, Rest in mm; negativ = Überlauf). Vorgehen:
   1. Standard ist eine Seite mit allen Blöcken. Läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben (Reihenfolge beibehalten, Sprachen zuletzt) und die Seiten etwa gleich füllen (Richtwert 90–98 %).
@@ -100,7 +100,7 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 
 ### Motivationsschreiben
 
-Redaktioneller Einstieg (ein Satz, groß), daneben die Belege-Spalte mit drei Einträgen (Icon, Titel, Text). Kein Zitat-Icon, keine doppelte Projektgeschichte. Bis ca. 300 Wörter normal, bis ca. 370 Wörter `.motivation-copy.is-dense`. Abschluss mit Name und Ort, ohne Unterschriftsbild.
+Redaktioneller Einstieg (ein Satz, groß), daneben die Belege-Spalte (66 mm breit, Runde 6) mit drei Einträgen. Jeder Beleg: Icon und Titel, Text, darunter das Projektfoto im Format 4:3 in voller Breite. Reihenfolge je Beleg: Projekt → Details → Projektfoto. Das Foto kommt nur aus dem Profil, wenn Titel und Projektname gleich sind und das Bild `consent` und `valid` hat (`references/profile-schema.md`, Projekte); sonst entfällt es ohne Platzhalter. Kein Zitat-Icon, keine doppelte Projektgeschichte. Bis ca. 300 Wörter normal, bis ca. 370 Wörter `.motivation-copy.is-dense`. Abschluss mit Name und Ort, ohne Unterschriftsbild.
 
 ### Zertifikate und Zeugnisse
 
@@ -113,13 +113,14 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
 
 ### Icons und Logos
 
-- Linien-Icons (`<svg class="icon"><use href="#i-…"/></svg>`): `i-phone`, `i-mail`, `i-pin`, `i-calendar`, `i-user`, `i-folder`, `i-graduation`, `i-briefcase`, `i-terminal`, `i-server`, `i-network`, `i-scan`, `i-list`, `i-badge`, `i-globe`, `i-branch`, `i-layers`, `i-wrench`, `i-building`, `i-home`, `i-cake`, `i-map`, `i-monitor`, `i-code`, `i-cpu`. Ein Icon trägt nie allein eine Information.
+- Linien-Icons (`<svg class="icon"><use href="#i-…"/></svg>`): `i-phone`, `i-mail`, `i-pin`, `i-calendar`, `i-user`, `i-folder`, `i-graduation`, `i-briefcase`, `i-terminal`, `i-server`, `i-network`, `i-scan`, `i-list`, `i-badge`, `i-globe`, `i-branch`, `i-layers`, `i-wrench`, `i-building`, `i-home`, `i-cake`, `i-map`, `i-car` (Führerschein), `i-monitor`, `i-code`, `i-cpu`, `i-cable` (LAN/WAN), `i-router` (Cisco IOS CLI), `i-shield` (Firewall), `i-waypoints` (TCP/IP). `i-cable`, `i-router`, `i-shield` und `i-waypoints` stammen aus Lucide (ISC, Version 0.469.0, Lizenz in `assets/icons/LICENSES.md`). Ein Icon trägt nie allein eine Information.
 - Technologie-Logos lokal als einfarbige `<symbol>` eingebettet (`<svg class="logo"><use href="#dv-…"/></svg>`), im Chip immer neben dem Namen. Verfügbar:
 
   | id | Technik | Quelle |
   |---|---|---|
   | `dv-windows11`, `dv-apple`, `dv-linux`, `dv-archlinux`, `dv-debian`, `dv-android` | Betriebssysteme (auch iOS über `dv-apple`) | Devicon |
-  | `dv-docker`, `dv-podman`, `dv-kubernetes`, `dv-ansible` | Container, Automatisierung | Devicon |
+  | `dv-docker`, `dv-podman`, `dv-kubernetes`, `dv-ansible` | Container, Automatisierung (Dockform über `dv-docker`) | Devicon |
+  | `dv-nixos` | NixOS/Nix | Devicon (plain) |
   | `dv-git`, `dv-github`, `dv-bash` | Versionierung, Shell | Devicon |
   | `dv-cloudflare` | Cloudflare (auch Tunnel) | Devicon |
   | `dv-html5`, `dv-css3`, `dv-javascript`, `dv-typescript`, `dv-rust`, `dv-python`, `dv-nodejs`, `dv-flutter`, `dv-swift`, `dv-react` | Entwicklung (auch React Native über `dv-react`) | Devicon |
@@ -133,7 +134,9 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
   | `si-nextcloud` | Nextcloud | Simple Icons |
   | `si-bluetooth` | Bluetooth (z. B. BlueZ) | Simple Icons |
 
-  Quellen: Devicon 2.17.0 (MIT) und Simple Icons 15.0.0 (CC0 1.0). Simple Icons nur, wo Devicon kein brauchbares einfarbiges Logo hat (nginx und Proxmox sind bei Devicon Schriftzüge, das Devicon-SSH-Logo zerfällt einfarbig). Für SSH/OpenSSH gibt es kein freies einfarbiges Logo: Linien-Icon `i-terminal`. Quelldatei je Symbol, Lizenztexte und Ablauf: `assets/icons/`.
+  Zuordnung Begriff → Symbol (welcher Chip welches Symbol bekommt, z. B. VLAN → `i-layers`, Firewall → `i-shield`, Dockform → `dv-docker`): maßgeblich ist die Tabelle in `assets/icons/README.md` (Abschnitt „Zuordnung Begriff → Symbol“). Logo-Ids stehen hier, die Begriffe dort. Ein neuer Chip ohne Eintrag in dieser Tabelle wird nicht gebaut, bis er ergänzt ist.
+
+  Quellen: Devicon 2.17.0 (MIT) und Simple Icons 15.0.0 (CC0 1.0). Lucide 0.469.0 (ISC/Feather, MIT) für die Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`; Lizenz in `assets/icons/LICENSES.md`. Simple Icons nur, wo Devicon kein brauchbares einfarbiges Logo hat (nginx und Proxmox sind bei Devicon Schriftzüge, das Devicon-SSH-Logo zerfällt einfarbig). Für SSH/OpenSSH gibt es kein freies einfarbiges Logo: Linien-Icon `i-terminal`. Quelldatei je Symbol, Lizenztexte und Ablauf: `assets/icons/`.
 - Ein Logo im Vorrat ist keine Aussage über den Bewerber. Welche Technik mit welcher Skala erscheint, steht nur im Profil. Neue Logos sind eine Designänderung an der Vorlage: Devicon zuerst, sonst Simple Icons, mit `tools/devicon_symbols.py` einfarbig umwandeln (Ablauf in `assets/icons/README.md`; das Werkzeug prüft XML, `viewBox`, Dateiname/Id, erlaubte Elemente und Attribute und weist Verweise, Skripte, `foreignObject`, `style`-Elemente und Strichfarben mit einer Fehlermeldung je Datei ab), diese Tabelle nachtragen.
 
 ### Bildschirm
@@ -152,8 +155,8 @@ Das Build-Skript erzeugt diese Struktur; Designänderungen müssen sie erhalten 
 - Bildschirm: `.screen-bar`, `.screen-nav`, `.viewport-proof`, `.glass`, `.glass-dark`, `.glass-light`
 - Deckblatt: `.cover-layout` > `.cover-stage` (> `.cover-main`, `.cover-panel`) + `.cover-intro` (> `.cover-bio`, `.cover-start`); `.cover-mark`, `.cover-hero` (`h1.is-long`, `h1.is-xlong`, `.cover-role`), `.cover-panel`, `.cover-photo`, `.contact-list`, `.contact-item`, `.panel-spacer`, `.toc-list`, `.toc-row`, `.toc-page`, `.label`
 - Anschreiben: `.letter-head`, `.letter-party`, `.letter-line` (`.is-org`, `.is-name`, `.is-empty`), `.letter-date`, `.letter-subject` (`.is-caps`), `.subject-kicker`, `.subject-title`, `.subject-ref`, `.letter-copy` (`.is-dense`), `.signature`, `.signature-img`, `.signature-name`
-- Lebenslauf: `.cv-hero`, `.cv-name`, `.cv-goal`, `.cv-facts`, `.cv-section`, `.cv-section-head`, `.timeline-item`, `.timeline-date`, `.timeline-content`, `.timeline-place`, `.timeline-role`, `.timeline-text`, `.timeline-chips` (Chipzeile in Projekten, zusammen mit `.skill-chips`), `.language-list`, `.language`, `.language-name`, `.language-level`, `.skills-band`, `.skill-group`, `.skill-head`, `.skill-row`, `.skill-name`, `.skill-chips`, `.tech`, `.logo`, `.bars.s1…s5`, `.bars.is-future`, `.skill-legend`, `.scale-item`
-- Motivationsschreiben: `.motivation-lead`, `.motivation-layout`, `.motivation-copy` (`.is-dense`), `.motivation-aside`, `.proof-item`
+- Lebenslauf: `.cv-hero`, `.cv-name`, `.cv-goal`, `.cv-facts`, `.cv-section`, `.cv-section-head`, `.timeline-item`, `.timeline-date`, `.timeline-content`, `.timeline-place`, `.timeline-role`, `.timeline-text`, `.timeline-chips` (Chipzeile in Projekten, zusammen mit `.skill-chips`), `.language-list`, `.language`, `.language-name`, `.language-level`, `.skills-band`, `.skill-group`, `.skill-head`, `.skill-row`, `.skill-name`, `.skill-chips`, `.tech`, `.logo`, `.bars.s1…s5`, `.bars.is-future`, `.skill-legend`, `.skill-legend-title`, `.scale-item`
+- Motivationsschreiben: `.motivation-lead`, `.motivation-layout`, `.motivation-copy` (`.is-dense`), `.motivation-aside`, `.proof-item`, `.proof-photo` (`.is-placeholder` nur in der Profilvorlage)
 - Nachweise: `.evidence-grid` (`.is-pair`), `.evidence-card`, `.evidence-meta`, `.document-stage`, `.document-placeholder`, `.document-caption`, `.caption-note`, `.caption-date`
 - Lebenslauf-Blöcke in `cv_layout.pages`: `experience`, `education`, `projects`, `skills`, `languages`; Überschriften-IDs `experience-title`, `education-title`, `projects-title`, `skills-title`, `languages-title`.
 - Veraltet, ohne Wirkung: `.skills-band.is-four`. Entfallen seit Runde 4: `.page-footer`, `.letter-window`, `.letter-info`, `.return-line`, `.cv-role`. Seit Runde 5 sitzen `.cover-bio` und `.cover-start` in `.cover-intro` statt in `.cover-main`.
@@ -164,4 +167,5 @@ Das Build-Skript erzeugt diese Struktur; Designänderungen müssen sie erhalten 
 - Eingang: PNG, JPEG, WebP direkt; PDF als PNG gerendert (Original daneben, separat beilegen, wenn die Anzeige es verlangt); DOCX nur als Quelle für Angaben und eingebettete Bilder.
 - Vor dem Einbinden prüfen: lesbar, gehört zum Nutzer, Ausstellungsdatum erkennbar, Art (Zertifikat oder Zeugnis), darf erscheinen.
 - Das Build-Skript kopiert die benötigten Bilder in `application/assets/` des Stellenordners und trägt sie mit Quelle im Manifest ein.
+- Projektfotos (Rolle `project_image`, Abschnitt `motivationsschreiben`) stehen im Manifest; sie werden nur gebaut, wenn ein Beleg dazu passt (siehe Motivationsschreiben).
 - Keine Nachweise in Git, keine Uploads in externe Dienste. Vor dem Versand prüft der Nutzer, ob Geburtsdatum, Adresse oder andere sensible Angaben sichtbar sein sollen.

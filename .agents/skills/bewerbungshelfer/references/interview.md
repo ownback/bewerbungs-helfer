@@ -53,7 +53,7 @@ Nur zu den Punkten der Abweichungsliste und zu Feldern, die das Profil braucht u
 - Name, Anrede im eigenen Absender (`person.salutation`): „Herr“, „Frau“ oder ohne. Standard ist ohne; die Anrede vor dem eigenen Namen ist im deutschen Geschäftsbrief unüblich und steht nur auf ausdrücklichen Wunsch.
 - Anschrift: Straße ausgeschrieben („Straße“, nicht „Str.“), ohne Punkt und Komma am Ende, PLZ und Ort getrennt
 - Telefon (so speichern, wie es erscheinen soll, z. B. „+49 …“), E-Mail für Bewerbungen
-- Geburtsdatum und Geburtsort (optional; Ort in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land; im Lebenslauf nur mit `presentation.show_birth_data: true`)
+- Geburtsdatum und Geburtsort (optional; Ort in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland als „Ort, Land“ (z. B. „Krakau, Polen“; der Lebenslauf zeigt Ort und Land untereinander, ohne Komma); im Lebenslauf nur mit `presentation.show_birth_data: true`)
 - Bewerbungsfoto: gültig, aktuell, zum Nutzer gehörend, ausdrücklich freigegeben? Mindestens 600 × 750 px. Den Ausschnitt (`photo.focus`) wählt der Agent mit dem Nutzer an der Vorschau.
 - Unterschrift als Bild: gültig und freigegeben?
 
@@ -70,6 +70,8 @@ Je Station: Art (Praktikum, Anstellung mit Vollzeit/Teilzeit, Ehrenamt, Sonstige
 ### Block 5: Projekte
 
 Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, Link, echtes Bild mit Freigabe. Nach Entscheidungen und Problemen fragen, nicht nach Werbesätzen.
+
+Pro Projekt fragen (Runde 6): „Gibt es ein eigenes Foto zu diesem Projekt (z. B. Aufbau, eigene Oberfläche)? Dürfen wir es in der Bewerbungsmappe zeigen?“ Wenn ja: Datei nach `assets/photos/project/` legen, Eintrag mit `consent: true` und `valid: true` nach Sichtprüfung. Wenn nein oder unklar: kein Foto, das Projekt bleibt ohne Bild. Keine Fotos fremder Personen, keine generierten Bilder. Der Projektname muss zum Beleg-Titel im Motivationsschreiben passen (`references/profile-schema.md`, Projekte).
 
 Lebenslauf: Soll ein Projekt im Block „Eigene Projekte“ erscheinen? Das kostet ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag, also meist eine zusätzliche Seitenaufteilung. Wenn ja: Reihenfolge, ein belegter Satz (`cv_summary`, höchstens 160 Zeichen), vier bis sechs Werkzeuge als Chips, Titel des Blocks (`presentation.cv_projects`). Details: `references/profile-schema.md`.
 

@@ -84,6 +84,16 @@ und jede PNG-Seite ansehen.
 - [ ] Nachweise lesbar; Nachweis-Paar nur bei kurzen Dokumenten
 - [ ] Desktop- und Mobilansicht (1440, 390, 375 px) von der QA ohne Überlauf; die Bildschirmansicht ist nicht die Druckfassung
 
+### Deckblatt, Lebenslauf und Belege (Runde 6)
+
+- [ ] Deckblatt: Kurzprofil und Beginn kompakt unter der Farbfläche, kein großer weißer Rest unten
+- [ ] Deckblatt: Kapsel „Ausbildung ab …“ steht mittig in ihrer Spalte und im Papierstreifen, nicht bündig unter der Glasleiste
+- [ ] Persönliche Daten: zwei Spalten nach Inhalt breit (`repeat(2, auto)`), der Block mittig in der grauen Box, Symbole mittig zur Zeile; Herkunft steht in der ersten Zeile der rechten Spalte neben dem Wohnort, Ort und Land untereinander ohne Komma; Anschrift, E-Mail, Telefon und, falls gesetzt, Herkunft, Geburtsdatum und Führerschein vollständig
+- [ ] Chips: jedes Symbol entspricht der Zuordnung in `assets/icons/README.md`; alle verwendeten Ids (`i-…`, `dv-…`, `si-…`) sind in der Vorlage definiert
+- [ ] Skala: Block steht direkt unter „Fähigkeiten“, vor der ersten Gruppe; der Titel „Skala 1–5“ steht links und ist vertikal mittig auf der Höhe der Leisten (nicht oben bündig); die fünf Spalten bleiben gleich breit
+- [ ] Belege: Projektfoto nur bei Titel gleich `projects[].name` und Bild mit `consent` und `valid`; sonst kein Foto. In der fertigen Mappe steht kein `[PROJEKTFOTO]`
+- [ ] Ohne Projektfotos baut die Mappe fehlerfrei (Fallback); die Belege bleiben mit Text
+
 ## Freigabe
 
 Mappe im Browser zeigen (HTML) und die A4-Seiten als Bilder oder Vorschau-PDF aus `.tmp/`. Dann einzeln fragen:
@@ -135,5 +145,5 @@ Platzhalter durch die echten Werte des Nutzers ersetzen (aus dem Profil lesen, n
 - alle JSON-Dateien im Skill gültig: `python3 -m json.tool <datei>`
 - alle Schemas gültig (Draft 2020-12): `python3 -c "import json,jsonschema; jsonschema.Draft202012Validator.check_schema(json.load(open('<schema>')))"`
 - `python3 tools/build_mappe.py --help` läuft
-- Symbole der Vorlage reproduzierbar: `python3 tools/devicon_symbols.py` auf den Quellen aus `assets/icons/README.md` liefert die 33 Symbole der SVG-Bibliothek Byte für Byte
+- Symbole der Vorlage reproduzierbar: `python3 tools/devicon_symbols.py` auf den Quellen aus `assets/icons/README.md` liefert die 34 Symbole (25 Devicon, 9 Simple Icons) der SVG-Bibliothek Byte für Byte
 - Verweise zwischen SKILL.md, Referenzen und Vorlagen stimmen

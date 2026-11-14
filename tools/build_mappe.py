@@ -526,6 +526,21 @@ def render_letter(ctx: Ctx, number: int, letter: dict | None, job: dict | None, 
         '  </section>\n\n')
 
 
+def project_photo(ctx: Ctx, title: str) -> str:
+    """Projektfoto zu einem Beleg (feste Regel): Projekt mit gleichem Namen (ohne Groß-/Kleinschreibung),
+    erstes Bild mit consent und valid. Fehlt eins davon, entsteht kein Foto und kein Platzhalter."""
+    for i, pr in enumerate(ctx.p.get('projects') or []):
+        if (pr.get('name') or '').strip().casefold() != title.strip().casefold():
+            continue
+        for j, img in enumerate(pr.get('images') or []):
+            if img.get('consent') and img.get('valid') and img.get('file'):
+                field = f'projects[{pr.get("id", i)}].images[{j}].file'
+                return (f'<figure class="proof-photo"><img src="{esc(ctx.src(img["file"], field))}" '
+                        f'alt="{esc("Projektfoto: " + pr["name"])}"></figure>')
+        return ''
+    return ''
+
+
 def render_motivation(ctx: Ctx, number: int, mot: dict | None) -> str:
     person = ctx.p['person']
     if mot:
@@ -533,7 +548,8 @@ def render_motivation(ctx: Ctx, number: int, mot: dict | None) -> str:
         dense = ' is-dense' if mot['meta'].get('dichte', 'normal') in ('dicht', 'dense') else ''
         paras = ''.join(f'          <p>{esc(x)}</p>\n' for x in mot['paragraphs'])
         proofs = ''.join(
-            f'        <div class="proof-item">{icon(pi)}<div><strong>{esc(t)}</strong><span>{esc(d)}</span></div></div>\n'
+            f'        <div class="proof-item">{icon(pi)}<div><strong>{esc(t)}</strong><span>{esc(d)}</span></div>'
+            f'{project_photo(ctx, t)}</div>\n'
             for pi, t, d in mot['proofs'])
     else:
         lead = '[PERSÖNLICHER EINSTIEG IN EINEM SATZ]'
@@ -544,7 +560,8 @@ def render_motivation(ctx: Ctx, number: int, mot: dict | None) -> str:
             '[BELEGTER BEZUG ZUR STELLE UND ZUM UNTERNEHMEN]', '[AUSBLICK UND RUHIGER ABSCHLUSS]',
             'Mit freundlichen Grüßen'))
         proofs = ''.join(
-            f'        <div class="proof-item">{icon(pi)}<div><strong>{t}</strong><span>{d}</span></div></div>\n'
+            f'        <div class="proof-item">{icon(pi)}<div><strong>{t}</strong><span>{d}</span></div>'
+            f'<figure class="proof-photo is-placeholder">[PROJEKTFOTO]</figure></div>\n'
             for pi, t, d in (('i-server', '[PROJEKT 1]', '[BELEGTE TECHNIK UND ERGEBNIS]'),
                              ('i-branch', '[PROJEKT 2]', '[EIGENE ROLLE UND ERGEBNIS]'),
                              ('i-layers', '[LERNPROJEKT]', '[AKTUELLER LERNSTAND]')))
@@ -570,6 +587,14 @@ def render_motivation(ctx: Ctx, number: int, mot: dict | None) -> str:
         '  </section>\n\n')
 
 
+def two_line_place(text: str) -> str:
+    """„Krakau, Polen“ -> Ort und Land untereinander, ohne Komma (wie die Adresszeile). Ohne Komma unverändert."""
+    city, sep, country = text.rpartition(',')
+    if not sep or not country.strip():
+        return esc(text)
+    return f'{esc(city.strip())}<br>{esc(country.strip())}'
+
+
 def cv_hero(ctx: Ctx) -> str:
     p = ctx.p
     person, addr = p['person'], p['person']['address']
@@ -578,10 +603,11 @@ def cv_hero(ctx: Ctx) -> str:
              f'        <li>{icon("i-mail")}<span>{email_html(person["email"])}</span></li>',
              f'        <li>{icon("i-phone")}<span>{esc(person["phone"])}</span></li>']
     if p['presentation'].get('show_birth_data'):
+        # Herkunft steht in der ersten Zeile der rechten Spalte, neben dem Wohnort; Geburtsdatum darunter.
+        if person.get('birth_place'):
+            facts.append(f'        <li>{icon("i-map")}<span>{two_line_place(person["birth_place"])}</span></li>')
         if person.get('birth_date'):
             facts.append(f'        <li>{icon("i-cake")}<span>{esc(short_date(person["birth_date"]))}</span></li>')
-        if person.get('birth_place'):
-            facts.append(f'        <li>{icon("i-map")}<span>{esc(person["birth_place"])}</span></li>')
     if person.get('driving_license'):
         facts.append(f'        <li>{icon("i-car")}<span>Führerschein {esc(person["driving_license"])}</span></li>')
     return ('    <div class="cv-hero">\n'
@@ -698,10 +724,13 @@ def cv_skills(ctx: Ctx) -> str:
                       + ''.join(rows) + '      </div>\n')
     legend = ''.join(f'        <span class="scale-item">{bars(s, future=s == 1, aria=False)}{SCALE_LABEL[s]}</span>\n'
                      for s in range(1, 6))
+    # Skala steht oben (Runde 6), mit Titel „Skala“ und Erklärung.
+    head_legend = ('      <div class="skill-legend" aria-label="Skala">\n'
+                   '        <p class="skill-legend-title">Skala <span>1–5</span></p>\n'
+                   + legend + '      </div>\n')
     return ('    <section class="skills-band" aria-labelledby="skills-title">\n'
             f'      <h3 class="cv-section-head" id="skills-title">{icon("i-wrench")}Fähigkeiten</h3>\n'
-            + ''.join(groups) +
-            '      <div class="skill-legend" aria-label="Skala">\n' + legend + '      </div>\n'
+            + head_legend + ''.join(groups) +
             '    </section>\n')
 
 
@@ -1196,12 +1225,19 @@ def asset_entries(profile: dict, pdir: Path, copied: list[tuple[str, Path]]) -> 
     photo = profile['person'].get('photo') or {}
     if photo.get('file'):
         by_path[resolve_asset(pdir, photo['file'], 'person.photo.file')] = ('photo', 'deckblatt', None)
+    for i, pr in enumerate(profile.get('projects') or []):
+        for j, img in enumerate(pr.get('images') or []):
+            if img.get('file'):
+                field = f'projects[{pr.get("id", i)}].images[{j}].file'
+                by_path[resolve_asset(pdir, img['file'], field)] = ('project_image', 'motivationsschreiben', None)
     out, seen = [], set()
     for file, src in copied:
         if file in seen:
             continue
         seen.add(file)
         role, sec, ev = by_path.get(src.resolve(), ('evidence', 'zertifikate', None))
+        if role == 'project_image':
+            sec = 'motivationsschreiben'
         entry = {'file': file, 'kind': 'image', 'section': sec, 'role': role, 'source': rel(src)}
         if ev:
             entry['evidence_id'] = ev['id']

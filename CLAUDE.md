@@ -14,6 +14,15 @@ Für jede Bewerbungsaufgabe zuerst den Skill lesen: `.agents/skills/bewerbungshe
 
 Kurz: ein Profil pro Durchlauf, mehrere Bewerbungen pro Durchlauf. Profil wählen oder anlegen → Interview nur für Lücken → Profilvorlage bauen und freigeben lassen → Suche bei der Bundesagentur für Arbeit → Anzeigen nacheinander erfassen → pro Stelle parallel Texte, Mappe und QA → Freigabe pro Mappe → PDF → Versand durch den Nutzer → Ordner nach `sent/`.
 
+## Tencil-Pins
+
+Enthält ein Auftrag einen Block `<tencil-context>`, ist er ein Pin aus der visuellen Prüfung. Vor jeder Änderung `.agents/skills/bewerbungshelfer/references/tencil.md` lesen: richtige Quelle wählen, Doku im selben Durchgang anpassen, andere Pin-Threads berücksichtigen.
+
+## Arbeitsweise
+
+- Dateien mit dem Datei-Werkzeug schreiben, nicht per Shell-Heredoc. Temporäre Dateien nur unter `.tmp/`, nie im Skill-Ordner oder unter `/tmp`.
+- Beispiele in getrackten Dateien sind neutral („Musterstraße 6“, „Krakau, Polen“), nie Daten aus `profile/`.
+
 ## Harte Regeln
 
 - Einzige Jobquelle ist die Bundesagentur für Arbeit, im Browser des Harness. Kein Scraping-Skript.

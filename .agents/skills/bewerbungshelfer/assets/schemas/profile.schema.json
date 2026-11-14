@@ -99,7 +99,8 @@
           "description": "Optional (Datensparsamkeit). Anzeige nur, wenn presentation.show_birth_data true ist."
         },
         "birth_place": {
-          "type": "string"
+          "type": "string",
+          "description": "Optional. Ort in der vom Nutzer bestätigten deutschen Schreibweise; im Ausland „Ort, Land“. Der Lebenslauf zeigt Ort und Land untereinander (Trennung am letzten Komma, ohne Komma bleibt es einzeilig). Anzeige nur bei presentation.show_birth_data true."
         },
         "driving_license": {
           "type": "string",
@@ -1133,7 +1134,8 @@
                 "type": "boolean"
               }
             }
-          }
+          },
+          "description": "Projektfotos unter profile/<name>/assets/photos/project/. Nur mit consent true und valid true. Erscheinen im Motivationsschreiben bei einem Beleg mit gleichem Titel wie projects[].name (erstes Bild mit consent und valid); fehlt das, entfällt das Foto ohne Platzhalter."
         },
         "source_status": {
           "$ref": "#/$defs/sourceStatus"
