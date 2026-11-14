@@ -1,10 +1,76 @@
 # Vorlage, Seiten und Design
 
-Die Basisvorlage ist `assets/bewerbungsmappe.html` (Design „Glisse“). Sie ist datenfrei, enthält Platzhalter in eckigen Klammern, erklärende HTML-Kommentare, die SVG-Bibliothek und den QA-Snippet. Sie ist die einzige Stelle für Designänderungen; visuell geprüft und geändert wird sie über Tencil (`references/tencil.md`).
+Das Design heißt „Glisse“. Aussehen und Markup der Mappe stehen an genau einer Stelle: in den Quellen unter `assets/mappe/`. Daraus baut `tools/build_mappe.py` drei Arten von Dateien, jede eine eigenständige HTML-Datei ohne externe Ressourcen:
 
-`tools/build_mappe.py` übernimmt `<head>` (CSS, eingebettete Schrift) und SVG-Bibliothek der Vorlage unverändert und erzeugt die Seiten nach dem Datenvertrag unten. Daraus entstehen die Profilvorlage `<name>_template.html` und pro Stelle die Mappe. Generiertes HTML wird nie von Hand bearbeitet.
+| Datei | Befehl | Inhalt |
+|---|---|---|
+| Master-Vorlage `assets/bewerbungsmappe.html` | `build_mappe.py master` | nur Platzhalter in eckigen Klammern, keine Daten; liegt im Repository für Tencil und die Vorschau |
+| Profilvorlage `profile/<name>/assets/profile/<name>_template.html` | `build_mappe.py profile-template` | echtes Profil; Anschreiben und Motivationsschreiben als Platzhalter |
+| Mappe `<stelle>/application/bewerbungsmappe - <name>.html` | `build_mappe.py application` | Profil, `job.json` und die Texte der Stelle |
 
-**Strukturänderungen an der Vorlage** (neue oder umbenannte Klassen, andere Verschachtelung, neue Seitenelemente) brauchen eine passende Änderung in `tools/build_mappe.py`. Reine CSS- und Symboländerungen wirken sofort beim nächsten Bau. Die QA meldet Klassen, die das Skript erzeugt, die Vorlage aber nicht kennt.
+Alle drei sind Bauergebnisse und werden nie von Hand bearbeitet, auch die Master-Vorlage nicht. Visuell geprüft wird über Tencil (`references/tencil.md`).
+
+## Quellen der Vorlage
+
+```
+assets/mappe/
+  tokens.css     Farben, Maße, Schriftgrößen, Glasrezepte (nur :root)
+  mappe.css      Papier: Grundregeln, ein Block je Seite, zuletzt @media print
+  screen.css     Bildschirm: Leiste, Navigation, schmale Fenster; nie im PDF
+  fonts.css      @font-face für Inter; die Dateien aus assets/fonts/ setzt der Bau als Base64 ein
+  icons.svg      alle Symbole, eines pro Zeile; der Bau bettet nur die verwendeten ein
+  master.json    Platzhalter-Modell: pages = Master-Vorlage, slots = Platzhalter der Profilvorlage
+  qa.js, qa.html Überlauf- und Füllgradprüfung (references/qa-and-export.md)
+  partials/      Markup, ein Partial pro Datei
+```
+
+| Was soll sich ändern? | Wo |
+|---|---|
+| Farbe, Schriftgröße, Abstand, Maß | `tokens.css`; fehlt ein Token, der Block des Partials in `mappe.css` |
+| Aufbau einer Seite oder eines Elements | das Partial in `partials/` und sein Block in `mappe.css` |
+| Verhalten auf dem Bildschirm (mobil, Leiste) | `screen.css` |
+| Neues Symbol | `icons.svg` (Ablauf in `assets/icons/README.md`) |
+| Platzhaltertext der Master- oder Profilvorlage | `master.json` |
+| Was auf einer Seite steht (Daten, Reihenfolge, Sichtbarkeit) | Profil, `job.json`, Texte; neue Regel: View-Model in `tools/build_mappe.py` |
+
+Nach jeder Änderung an den Quellen: `python3 tools/build_mappe.py master`, dann Profilvorlage und betroffene Mappen neu bauen. `tools/check_repo.py` (Prüfung `template`) schlägt fehl, solange die Master-Vorlage nicht dem Bau aus den Quellen entspricht; das fängt auch eine direkte Änderung an `assets/bewerbungsmappe.html` ab.
+
+### Partials und View-Model
+
+- Die Partials sind Mustache in einer kleinen Teilmenge (`tools/mustache_lite.py`): `{{x}}` Wert (HTML-escaped), `{{{x}}}` roh (nur CSS, Schrift, Symbole), `{{#x}}…{{/x}}` Abschnitt, `{{^x}}…{{/x}}` Abschnitt bei leerem Wert, `{{> name}}` anderes Partial, `{{! … }}` Kommentar.
+- `tools/build_mappe.py` baut pro Seite ein dict (View-Model, Funktionen `…_view`) und enthält kein HTML. `document.html` ist der Rahmen, `body.html` reiht die Seiten: `cover`, `letter`, `cv`, `motivation`, `evidence`. Kleinere Partials: `section-head`, `letter-line`, `timeline-item`, `chip`, `bars`, `text`, `chrome`.
+- Strenge Schlüssel: Ein Name wird nur im aktuellen Abschnitt gesucht, nie in einer äußeren Ebene. Nennt ein Partial einen Schlüssel, den das View-Model nicht setzt, bricht der Bau mit Partial, Zeile und Schlüssel ab. Jeder Schlüssel ist deshalb immer gesetzt, notfalls mit `null`.
+- Die Master-Vorlage entsteht aus denselben Partials mit `master.json`. Markup gibt es damit nur einmal; Master-Vorlage und gebaute Mappen können nicht auseinanderlaufen.
+- Ein neuer Schlüssel braucht drei Stellen im selben Durchgang: das Partial, die `…_view`-Funktion und `master.json`.
+
+### Attribute für Pins
+
+Jede gebaute Datei trägt zwei Attribute, die einen Pin zur richtigen Quelle führen. Sie ändern nichts am Aussehen.
+
+| Attribut | Bedeutung | Steht an |
+|---|---|---|
+| `data-part="<name>"` | Partial `assets/mappe/partials/<name>.html`, das das Element zeichnet: Quelle für das **Aussehen** | Wurzelelement jedes Partials |
+| `data-origin="<quelle>"` | Herkunft des **Inhalts** | Elemente mit Inhalt aus Daten |
+
+Werte von `data-origin`:
+
+| Wert | Quelle |
+|---|---|
+| `profile:<pfad>` | `<name>_profile.json`, z. B. `profile:person.phone`, `profile:experience[<id>]`, `profile:skills.groups[0].items[2]` |
+| `job:<pfad>` | `job_information/job.json` der Stelle, z. B. `job:contact` |
+| `text:<datei>#<stelle>` | `text_generation/<datei>`: Kopffeld (`#datum`, `#betreff`), Absatz (`#p3`), `#einstieg`, Beleg (`#beleg2`) |
+| `master:<pfad>` | `assets/mappe/master.json` (Platzhalter) |
+| `build:<name>` | Funktion oder Konstante in `tools/build_mappe.py` (berechnete Angaben, z. B. Seitenzahlen der Inhaltsangabe) |
+
+Für ein Element gilt das nächste Attribut an ihm selbst oder an einem Vorfahren. Der Vorschau-Server (`tools/serve_template.py`) löst beide zu Datei und Zeile auf (`references/tencil.md`).
+
+### Vertrag prüfen
+
+```bash
+python3 tools/build_mappe.py contract
+```
+
+Der Befehl leitet den Vertrag aus den Dateien ab: je Partial `data-part`, die Schlüssel, die es vom View-Model erwartet, seine Klassen und eingebundenen Partials; dazu Klassen ohne CSS-Regel und CSS-Klassen, die kein Partial fest nennt. Er ersetzt jede von Hand gepflegte Klassenliste. Exit 1, wenn ein Partial sein `data-part` nicht trägt oder ein eingebundenes Partial fehlt. Die QA meldet zusätzlich Klassen in einer gebauten Mappe, die weder eine CSS-Regel noch ein Partial kennt.
 
 ## Aufbau der Mappe
 
@@ -40,15 +106,15 @@ Glas nur auf der Funktionsebene, höchstens eine große Glasfläche pro Seite, n
 
 - Papier `#ffffff`, Text `#1d1d1f` (16,8:1), gedämpft `#424245`, leise `#6e6e73` (5,1:1)
 - Akzent Petrol `#0b4f5c` (9,2:1), Fläche `#f5f5f7`
-- Deckblatt: petrolfarbener Farbraum nur im oberen Teil (`#0f4753` → `#0d4250` → `#0a2c35`, seit Runde 5 heller) mit weichen Lichtflecken; Text darauf weiß bzw. 74 % Weiß (≥ 6,5:1). Darunter weißes Papier: Kurzprofil links, Beginn als Kapsel (Runde 7, siehe Papierzone unten); oben 8 mm, unten 9 mm Innenabstand. Die Farbfläche nimmt den restlichen Platz, es bleibt kein großer weißer Rest unter dem Kurzprofil (Runde 6).
+- Deckblatt: petrolfarbener Farbraum nur im oberen Teil (`#0f4753` → `#0d4250` → `#0a2c35`) mit weichen Lichtflecken; Text darauf weiß bzw. 74 % Weiß (≥ 6,5:1). Darunter weißes Papier: Kurzprofil links, Beginn als Kapsel (siehe Papierzone unten); oben 8 mm, unten 9 mm Innenabstand. Die Farbfläche nimmt den restlichen Platz, es bleibt kein großer weißer Rest unter dem Kurzprofil.
 
 Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 
 ### Typografie
 
-- Eine Familie: **Inter 4.1** (SIL OFL 1.1), Stapel `"Inter", "Helvetica Neue", "Segoe UI", "Noto Sans", Arial`. Inter ist in der Vorlage eingebettet (Block `<style id="font-inter">` am Ende des Kopfs, data-URIs), keine externen Font-Requests, keine Systeminstallation nötig.
+- Eine Familie: **Inter 4.1** (SIL OFL 1.1), Stapel `"Inter", "Helvetica Neue", "Segoe UI", "Noto Sans", Arial`. Inter ist in jeder gebauten Datei eingebettet (`assets/mappe/fonts.css`, Block `<style id="font-inter">` am Ende des Kopfs, data-URIs), keine externen Font-Requests, keine Systeminstallation nötig.
 - Statische Schnitte 400, 500, 600, 700 (keine variable Schrift): Chromium bettet sie im PDF als TrueType (CID) ein, Text bleibt auswählbar und auswertbar. Nur diese vier Gewichte verwenden. Untermenge Latin + Latin Extended (deutsche Umlaute, ß, ș ț ă, typografische Anführungszeichen, Gedankenstrich).
-- Quelldateien und Lizenz: `assets/fonts/` (`Inter-*.woff2`, `OFL.txt`, `README.md` mit dem Weg zum Neu-Einbetten).
+- Quelldateien und Lizenz: `assets/fonts/` (`Inter-*.woff2`, `OFL.txt`, `README.md`).
 - SF Pro bewusst nicht im Stapel (Lizenz erlaubt keine Einbettung in eigene Dokumente); `-apple-system`/`BlinkMacSystemFont` ebenfalls nicht (Chromium unter Linux löst sie zu Liberation Sans auf).
 - Hierarchie über Größe und Gewicht: Name ca. 54 pt, Abschnittstitel 25 pt, Betreff 16,5 pt, Einstieg 15,5 pt, Fließtext 9,6 pt, Nebentext 8,5 pt, Chips 7,5 pt, Bildunterschriften 7,4 pt. Überschriften ab 12 pt in 700, kleine Titel und Hervorhebungen in 600, Akzentzeilen in 500. Keine Serifen, keine Großbuchstaben-Labels. Fließtext nie unter 9 pt.
 
@@ -61,10 +127,10 @@ Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 
 ### Deckblatt
 
-Zwei Zonen (seit Runde 5, leichter im Druck):
+Zwei Zonen:
 
-- **Farbraum** `.cover-stage` oben (ca. drei Viertel der Seite, so hoch wie die Seite minus Papierzone): Kennung „Bewerbungsmappe“ oben links, Name unten links (Klasse nach dem längsten Namensteil: bis 10 Zeichen keine, 11–13 `is-long`, 14–17 `is-xlong`; bei Doppelnamen zählt der Teil mit Bindestrich), darunter der Beruf. Rechts unten die Glasleiste mit optionalem Foto (4:5), Kontakt und Inhaltsangabe; sie ist so hoch wie ihr Inhalt. Die Glasleiste ist leichter als in Runde 4 (weniger Füllung, feinere Kante, kürzerer Schatten).
-- **Papierzone** `.cover-intro` unten, ohne feste Mindesthöhe (Höhe = Inhalt, oben 8 mm, unten 9 mm): links das Kurzprofil in dunkler Schrift, rechts der Beginn „Ausbildung ab …“ als Kapsel. Die Kapsel steht mittig in ihrer Spalte und mittig im Papierstreifen (`.cover-start { justify-self: center; align-self: center; }`), nicht mehr bündig unter der Glasleiste. Fließtext steht damit nie auf dunklem Grund.
+- **Farbraum** `.cover-stage` oben (ca. drei Viertel der Seite, so hoch wie die Seite minus Papierzone): Kennung „Bewerbungsmappe“ oben links, Name unten links (Klasse nach dem längsten Namensteil: bis 10 Zeichen keine, 11–13 `is-long`, 14–17 `is-xlong`; bei Doppelnamen zählt der Teil mit Bindestrich), darunter der Beruf. Rechts unten die Glasleiste mit optionalem Foto (4:5), Kontakt und Inhaltsangabe; sie ist so hoch wie ihr Inhalt. Die Glasleiste ist leicht gehalten (wenig Füllung, feine Kante, kurzer Schatten).
+- **Papierzone** `.cover-intro` unten, ohne feste Mindesthöhe (Höhe = Inhalt, oben 8 mm, unten 9 mm): links das Kurzprofil in dunkler Schrift, rechts der Beginn „Ausbildung ab …“ als Kapsel. Die Kapsel steht mittig in ihrer Spalte und mittig im Papierstreifen (`.cover-start { justify-self: center; align-self: center; }`), nicht bündig unter der Glasleiste. Fließtext steht damit nie auf dunklem Grund.
 
 Kontakt in der Leiste: Telefon, E-Mail, Anschrift (zweizeilig). Lange E-Mail-Adressen (über 24 Zeichen) bricht das Skript mit `<wbr>` nach „@“ und vor Punkten um, auch im Briefkopf und im Lebenslauf.
 
@@ -77,21 +143,21 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 - Symmetrischer Briefkopf: links Empfänger, rechts Absender, je sechs Zeilen mit Icon auf einem gemeinsamen Raster: Firma (fett) · Anrede + Name · Straße · PLZ Ort · Telefon · E-Mail. Die Firmenzeile des Absenders bleibt leer. Die Anrede vor dem eigenen Namen kommt aus `person.salutation` (leer = nur Name); sie ist eine Entscheidung des Nutzers. Fehlt beim Empfänger eine belegte Angabe, bleibt eine leere Zeile (`is-empty`) stehen; nichts erfinden. Ohne Ansprechpartner steht die Abteilung in der Namenszeile.
 - Straße ausgeschrieben („Straße“, nicht „Str.“), Straße und PLZ/Ort zweizeilig ohne Punkt und Komma, für Absender und Empfänger. Das Build-Skript warnt bei „Str.“ oder Satzzeichen am Ende.
 - Ort (Wohnort) und Datum („11. November 2026“) rechtsbündig mit Kalender-Icon zwischen Briefkopf und Betreff.
-- Betreff zweistufig in gemischter Schreibung (Entscheidung des Nutzers, Versalien wirken bei langen Berufsbezeichnungen laut): Einleitung klein in Akzentfarbe, darunter groß der Beruf, darunter optional die BA-Referenznummer. Die Variante `.letter-subject.is-caps` (Einleitung in Versalien) existiert in der Vorlage, das Build-Skript setzt sie aber nicht; sie wäre eine Skript- und Profiländerung.
+- Betreff zweistufig in gemischter Schreibung (Entscheidung des Nutzers, Versalien wirken bei langen Berufsbezeichnungen laut): Einleitung klein in Akzentfarbe, darunter groß der Beruf, darunter optional die BA-Referenznummer. Die Variante `.letter-subject.is-caps` (Einleitung in Versalien) existiert im CSS, das View-Model setzt sie aber nicht; sie wäre eine Änderung an Partial, Skript und Profil.
 - Brieftext bis ca. 250 Wörter normal, ca. 250–350 Wörter `.letter-copy.is-dense`, darüber kürzen.
 - Unterschrift als Bild (12 mm hoch, höchstens 45 mm breit) nur mit gültiger, freigegebener Datei; darunter Name und Ort.
 
 ### Lebenslauf
 
 - Reihenfolge der Blöcke: Praktische Erfahrung, Schulbildung, Fähigkeiten, Sprachen (Sprachen immer zuletzt, auch beim Umbrechen auf die Fortsetzung). Optionaler Block „Eigene Projekte“ irgendwo nach der Erfahrung, wo er auf die Seite passt.
-- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Spalten nach Inhalt breit, `repeat(2, auto)`), der Block horizontal und vertikal mittig in der grauen Box, Symbol und Text je Zeile mittig (Runde 6, Runde 7). Linke Spalte: Anschrift (zweizeilig), E-Mail, Telefon. Rechte Spalte: Herkunft mit `i-map` als Ort und Land untereinander ohne Komma (aus `person.birth_place`, „Krakau, Polen“ → „Krakau“ / „Polen“) in der ersten Zeile neben dem Wohnort, darunter Geburtsdatum mit `i-cake`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`; mit allen Angaben sind es 3 + 3 Zeilen. Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
+- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Spalten nach Inhalt breit, `repeat(2, auto)`), der Block horizontal und vertikal mittig in der grauen Box, Symbol und Text je Zeile mittig. Linke Spalte: Anschrift (zweizeilig), E-Mail, Telefon. Rechte Spalte: Herkunft mit `i-map` als Ort und Land untereinander ohne Komma (aus `person.birth_place`, „Krakau, Polen“ → „Krakau“ / „Polen“) in der ersten Zeile neben dem Wohnort, darunter Geburtsdatum mit `i-cake`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`; mit allen Angaben sind es 3 + 3 Zeilen. Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
 - Praktische Erfahrung: neueste zuerst; Datum links in eigener Spalte, rechts Organisation, Ort, Rolle · Art, Aufgaben. Näherungen mit „ca.“.
 - Schulbildung: Einrichtung, Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Grundschulen entfallen standardmäßig, sobald ein weiterführender Abschluss vorliegt (`education[].show_in_cv: false`, Nutzer bestätigt; der Eintrag bleibt im Profil, das Skript meldet die ausgeblendeten Einträge).
 - Sprachen: Balken mit Niveauwort darunter, keine Belegzeile.
 - Fähigkeiten: Gruppen untereinander, Gruppentitel mit Linien-Icon; jede Zeile = Kategorie (optional kleiner Zusatz), Technik-Chips, Skala. Bis ca. 6 Chips je Zeile passen bei üblichen Namen in eine Zeile; längere Reihen brechen ruhig in eine zweite Zeile um (kostet ca. 4–5 mm Höhe). Keine Prozentwerte.
-- Skala oben im Block Fähigkeiten, direkt unter der Überschrift (Runde 6): Die Skalen-Legende beginnt links mit dem Titel „Skala 1–5“. Der Titel ist vertikal mittig zu den Skalenleisten ausgerichtet (`.skill-legend-title { align-self: center; margin: 0; }`), weil das Grid `align-items: start` hat und der Titel sonst oben hängt. Daneben fünf gleich breite Spalten mit Musterleiste in Originalgröße und Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher.
+- Skala oben im Block Fähigkeiten, direkt unter der Überschrift: Die Skalen-Legende beginnt links mit dem Titel „Skala 1–5“. Der Titel ist vertikal mittig zu den Skalenleisten ausgerichtet (`.skill-legend-title { align-self: center; margin: 0; }`), weil das Grid `align-items: start` hat und der Titel sonst oben hängt. Daneben fünf gleich breite Spalten mit Musterleiste in Originalgröße und Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher.
 - Eigene Projekte / Homelab (optional, Block `projects`): nur Projekte mit `show_in_cv: true`, Reihenfolge wie im Profil. Zeile wie bei der Erfahrung: Zeitraum links (leer, wenn unbekannt; „laufend“ bei `is_current` ohne Datum), Projektname, ein Satz aus `cv_summary` (sonst `own_role`), darunter die Werkzeuge als Chips (`chips`, sonst Text-Chips aus `tools`). Titel und Icon aus `presentation.cv_projects` (Standard „Eigene Projekte“, `i-layers`). Platzbedarf: ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag mit einer Zeile Text und einer Chipzeile; höchstens zwei bis drei Einträge.
-- Aufteilung auf Seiten (`presentation.cv_layout`): Die QA meldet den Füllgrad jeder Lebenslauf-Seite („Füllgrad Lebenslauf: S3 95 % (+13.9 mm) · …“, Anteil des Satzspiegels, Rest in mm; negativ = Überlauf). Vorgehen:
+- Aufteilung auf Seiten (`presentation.cv_layout`, Blocknamen `experience`, `education`, `projects`, `skills`, `languages`): Die QA meldet den Füllgrad jeder Lebenslauf-Seite („Füllgrad Lebenslauf: S3 95 % (+13.9 mm) · …“, Anteil des Satzspiegels, Rest in mm; negativ = Überlauf). Vorgehen:
   1. Standard ist eine Seite mit allen Blöcken. Läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben (Reihenfolge beibehalten, Sprachen zuletzt) und die Seiten etwa gleich füllen (Richtwert 90–98 %).
   2. Bei sehr vielen Stationen einen Block teilen.
   3. Verdichten (`cv_layout.compact`) nur auf einer Seite, die sonst überläuft: auf der volleren Seite (`[false, true]`) oder auf allen (`true`). Eine Seite, die ohne Verdichtung passt, bleibt unverdichtet.
@@ -100,7 +166,7 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 
 ### Motivationsschreiben
 
-Redaktioneller Einstieg (ein Satz, groß), daneben die Belege-Spalte (66 mm breit, Runde 6) mit drei Einträgen. Jeder Beleg: Icon und Titel, Text, darunter das Projektfoto im Format 4:3 in voller Breite. Reihenfolge je Beleg: Projekt → Details → Projektfoto. Das Foto kommt nur aus dem Profil, wenn Titel und Projektname gleich sind und das Bild `consent` und `valid` hat (`references/profile-schema.md`, Projekte); sonst entfällt es ohne Platzhalter. Kein Zitat-Icon, keine doppelte Projektgeschichte. Bis ca. 300 Wörter normal, bis ca. 370 Wörter `.motivation-copy.is-dense`. Abschluss mit Name und Ort, ohne Unterschriftsbild.
+Redaktioneller Einstieg (ein Satz, groß), daneben die Belege-Spalte (66 mm breit) mit drei Einträgen. Jeder Beleg: Icon und Titel, Text, darunter das Projektfoto im Format 4:3 in voller Breite. Reihenfolge je Beleg: Projekt → Details → Projektfoto. Das Foto kommt nur aus dem Profil, wenn Titel und Projektname gleich sind und das Bild `consent` und `valid` hat (`references/profile-schema.md`, Projekte); sonst entfällt es ohne Platzhalter. Kein Zitat-Icon, keine doppelte Projektgeschichte. Bis ca. 300 Wörter normal, bis ca. 370 Wörter `.motivation-copy.is-dense`. Abschluss mit Name und Ort, ohne Unterschriftsbild.
 
 ### Zertifikate und Zeugnisse
 
@@ -134,10 +200,10 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
   | `si-nextcloud` | Nextcloud | Simple Icons |
   | `si-bluetooth` | Bluetooth (z. B. BlueZ) | Simple Icons |
 
-  Zuordnung Begriff → Symbol (welcher Chip welches Symbol bekommt, z. B. VLAN → `i-layers`, Firewall → `i-shield`, Dockform → `dv-docker`): maßgeblich ist die Tabelle in `assets/icons/README.md` (Abschnitt „Zuordnung Begriff → Symbol“). Logo-Ids stehen hier, die Begriffe dort. Ein neuer Chip ohne Eintrag in dieser Tabelle wird nicht gebaut, bis er ergänzt ist.
+  Zuordnung Begriff → Symbol (welcher Chip welches Symbol bekommt, z. B. VLAN → `i-layers`, Firewall → `i-shield`, Dockform → `dv-docker`): maßgeblich ist die Tabelle in `assets/icons/README.md` (Abschnitt „Zuordnung Begriff → Symbol“). Logo-Ids stehen hier, die Begriffe dort. Ein neuer Chip ohne Eintrag in dieser Tabelle wird nicht gebaut, bis er ergänzt ist. Nennt ein Profil oder ein Beleg ein Symbol, das in `assets/mappe/icons.svg` fehlt, bricht der Bau mit der Id ab. Jede gebaute Datei enthält nur die Symbole, die sie verwendet.
 
   Quellen: Devicon 2.17.0 (MIT) und Simple Icons 15.0.0 (CC0 1.0). Lucide 0.469.0 (ISC/Feather, MIT) für die Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`; Lizenz in `assets/icons/LICENSES.md`. Simple Icons nur, wo Devicon kein brauchbares einfarbiges Logo hat (nginx und Proxmox sind bei Devicon Schriftzüge, das Devicon-SSH-Logo zerfällt einfarbig). Für SSH/OpenSSH gibt es kein freies einfarbiges Logo: Linien-Icon `i-terminal`. Quelldatei je Symbol, Lizenztexte und Ablauf: `assets/icons/`.
-- Ein Logo im Vorrat ist keine Aussage über den Bewerber. Welche Technik mit welcher Skala erscheint, steht nur im Profil. Neue Logos sind eine Designänderung an der Vorlage: Devicon zuerst, sonst Simple Icons, mit `tools/devicon_symbols.py` einfarbig umwandeln (Ablauf in `assets/icons/README.md`; das Werkzeug prüft XML, `viewBox`, Dateiname/Id, erlaubte Elemente und Attribute und weist Verweise, Skripte, `foreignObject`, `style`-Elemente und Strichfarben mit einer Fehlermeldung je Datei ab), diese Tabelle nachtragen.
+- Ein Logo im Vorrat ist keine Aussage über den Bewerber. Welche Technik mit welcher Skala erscheint, steht nur im Profil. Neue Logos sind eine Designänderung an `assets/mappe/icons.svg`: Devicon zuerst, sonst Simple Icons, mit `tools/devicon_symbols.py` einfarbig umwandeln (Ablauf in `assets/icons/README.md`; das Werkzeug prüft XML, `viewBox`, Dateiname/Id, erlaubte Elemente und Attribute und weist Verweise, Skripte, `foreignObject`, `style`-Elemente und Strichfarben mit einer Fehlermeldung je Datei ab), diese Tabelle nachtragen.
 
 ### Bildschirm
 
@@ -146,20 +212,6 @@ Desktop zeigt Papierseiten mit Schatten, Bildschirmleiste und Seitennavigation; 
 ### Verboten
 
 Glas hinter Fließtext oder Scans, Stockfotos oder generierte Bilder als Projekte oder Porträts, Prozentbalken, externe Fonts, Bilder oder Skripte, überladene Deckblätter, Linien ohne Funktion, falsche Seitenzahlen.
-
-## Datenvertrag (Klassen)
-
-Das Build-Skript erzeugt diese Struktur; Designänderungen müssen sie erhalten oder das Skript mitziehen.
-
-- Seiten: `.page`, `.cover-page`, `.letter-page`, `.cv-compact`, `data-section`, `data-slot="letter|motivation"` (Austauschbereiche der Profilvorlage, ohne Wirkung auf das Aussehen), `.section-head`, `.continued`, `.folio`, `.page[data-overflow]`
-- Bildschirm: `.screen-bar`, `.screen-nav`, `.viewport-proof`, `.glass`, `.glass-dark`, `.glass-light`
-- Deckblatt: `.cover-layout` > `.cover-stage` (> `.cover-main`, `.cover-panel`) + `.cover-intro` (> `.cover-bio`, `.cover-start`); `.cover-mark`, `.cover-hero` (`h1.is-long`, `h1.is-xlong`, `.cover-role`), `.cover-panel`, `.cover-photo`, `.contact-list`, `.contact-item`, `.panel-spacer`, `.toc-list`, `.toc-row`, `.toc-page`, `.label`
-- Anschreiben: `.letter-head`, `.letter-party`, `.letter-line` (`.is-org`, `.is-name`, `.is-empty`), `.letter-date`, `.letter-subject` (`.is-caps`), `.subject-kicker`, `.subject-title`, `.subject-ref`, `.letter-copy` (`.is-dense`), `.signature`, `.signature-img`, `.signature-name`
-- Lebenslauf: `.cv-hero`, `.cv-name`, `.cv-goal`, `.cv-facts`, `.cv-section`, `.cv-section-head`, `.timeline-item`, `.timeline-date`, `.timeline-content`, `.timeline-place`, `.timeline-role`, `.timeline-text`, `.timeline-chips` (Chipzeile in Projekten, zusammen mit `.skill-chips`), `.language-list`, `.language`, `.language-name`, `.language-level`, `.skills-band`, `.skill-group`, `.skill-head`, `.skill-row`, `.skill-name`, `.skill-chips`, `.tech`, `.logo`, `.bars.s1…s5`, `.bars.is-future`, `.skill-legend`, `.skill-legend-title`, `.scale-item`
-- Motivationsschreiben: `.motivation-lead`, `.motivation-layout`, `.motivation-copy` (`.is-dense`), `.motivation-aside`, `.proof-item`, `.proof-photo` (`.is-placeholder` nur in der Profilvorlage)
-- Nachweise: `.evidence-grid` (`.is-pair`), `.evidence-card`, `.evidence-meta`, `.document-stage`, `.document-placeholder`, `.document-caption`, `.caption-note`, `.caption-date`
-- Lebenslauf-Blöcke in `cv_layout.pages`: `experience`, `education`, `projects`, `skills`, `languages`; Überschriften-IDs `experience-title`, `education-title`, `projects-title`, `skills-title`, `languages-title`.
-- Veraltet, ohne Wirkung: `.skills-band.is-four`. Entfallen seit Runde 4: `.page-footer`, `.letter-window`, `.letter-info`, `.return-line`, `.cv-role`. Seit Runde 5 sitzen `.cover-bio` und `.cover-start` in `.cover-intro` statt in `.cover-main`.
 
 ## Nachweise und Bilder
 

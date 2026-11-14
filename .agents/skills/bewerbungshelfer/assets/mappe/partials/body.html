@@ -1,0 +1,25 @@
+{{! Bildschirmleiste und Navigation, dann alle Seiten. Jede Seite hat genau einen der fünf Schlüssel gesetzt. }}
+{{#chrome}}
+{{> chrome}}
+{{/chrome}}
+
+{{#pages}}
+{{#cover}}
+{{> cover}}
+{{/cover}}
+{{#letter}}
+{{> letter}}
+{{/letter}}
+{{#cv}}
+{{> cv}}
+{{/cv}}
+{{#motivation}}
+{{> motivation}}
+{{/motivation}}
+{{#evidence}}
+{{> evidence}}
+{{/evidence}}
+{{^last}}
+
+{{/last}}
+{{/pages}}

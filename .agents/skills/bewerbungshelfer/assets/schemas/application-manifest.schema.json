@@ -180,6 +180,11 @@
       "type": "string",
       "format": "date-time"
     },
+    "approved_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Prüfsumme des freigegebenen Stands: HTML-Datei und eingebundene Bilder. Gesetzt von „status … html_approved“; --pdf verweigert den Export, wenn die neu gebaute Mappe eine andere Prüfsumme hat."
+    },
     "pdf_exported_at": {
       "type": "string",
       "format": "date-time"
@@ -198,6 +203,13 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "mode": {
+          "enum": [
+            "full",
+            "fast"
+          ],
+          "description": "full: Bildschirmlauf und A4-PDF. fast (--qa=fast): ohne A4-PDF, reicht nicht für Freigabe und PDF."
+        },
         "placeholders_remaining": {
           "type": "integer",
           "minimum": 0

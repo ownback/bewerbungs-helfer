@@ -1,0 +1,11 @@
+{{! Nur Bildschirm, nie im PDF. Die Seitenzahlen der Navigation sind die Startseiten der Abschnitte. }}
+  <div class="screen-bar glass glass-light" aria-hidden="true" data-part="chrome">
+    <span><strong>Bewerbungsmappe</strong></span>
+    <span class="state"><span>HTML-Fassung · PDF im A4-Format</span><span class="viewport-proof mobile">Mobilansicht</span><span class="viewport-proof desktop">Desktopansicht</span></span>
+  </div>
+
+  <nav class="screen-nav glass glass-light" aria-label="Seiten" data-part="chrome" data-origin="build:plan_pages">
+{{#nav}}
+    <a href="#{{target}}"><span>{{label}}</span><span>{{page}}</span></a>
+{{/nav}}
+  </nav>

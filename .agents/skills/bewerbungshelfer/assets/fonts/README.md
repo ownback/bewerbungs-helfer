@@ -20,21 +20,6 @@ pyftsubset Inter-Regular.woff2 --flavor=woff2 --no-hinting --desubroutinize \
 
 ## Einbettung
 
-Die Vorlage `assets/bewerbungsmappe.html` enthält dieselben vier Dateien als data-URIs im Block `<style id="font-inter">` am Ende des Kopfs. So funktioniert die Schrift ohne Installation und ohne Netz: in Tencil (das nur die Vorlage ausliefert), beim direkten Öffnen der HTML-Datei und im Chromium-PDF. `tools/build_mappe.py` übernimmt den Kopf unverändert in jede Mappe.
+`tools/build_mappe.py` setzt die vier Dateien bei jedem Bau als data-URIs in den Block `<style id="font-inter">` am Ende des Kopfs. Die `@font-face`-Regeln stehen in `assets/mappe/fonts.css`; jeder Platzhalter dort nennt eine Datei dieses Ordners ohne Endung (`Inter-Regular` für `Inter-Regular.woff2`). So funktioniert die Schrift ohne Installation und ohne Netz: in Tencil, beim direkten Öffnen der HTML-Datei und im Chromium-PDF.
 
-Nach einer Änderung an den Dateien den Block neu erzeugen, z. B.:
-
-```bash
-python3 - <<'EOF'
-import base64, pathlib, re
-d = pathlib.Path('.agents/skills/bewerbungshelfer/assets')
-faces = '\n'.join(
-    f'    @font-face {{ font-family: "Inter"; font-style: normal; font-weight: {w}; font-display: block; '
-    f'src: url(data:font/woff2;base64,{base64.b64encode((d / "fonts" / f"Inter-{n}.woff2").read_bytes()).decode()}) format("woff2"); }}'
-    for w, n in ((400, 'Regular'), (500, 'Medium'), (600, 'SemiBold'), (700, 'Bold')))
-t = d / 'bewerbungsmappe.html'
-s = t.read_text()
-s = re.sub(r'(<style id="font-inter">\n).*?(\n  </style>)', lambda m: m.group(1) + faces + m.group(2), s, flags=re.S)
-t.write_text(s)
-EOF
-```
+Nach einer Änderung an den Dateien: `python3 tools/build_mappe.py master`, dann Profilvorlage und Mappen neu bauen. Ein weiterer Schnitt braucht die Datei hier und eine Zeile in `fonts.css`.

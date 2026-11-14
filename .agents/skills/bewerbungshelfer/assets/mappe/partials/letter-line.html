@@ -1,0 +1,8 @@
+{{! Eine Zeile im Briefkopf. Fehlt die Angabe, bleibt eine leere Zeile stehen, damit Empfänger und Absender
+   gleich viele Zeilen haben. }}
+{{#empty}}
+        <span class="letter-line is-empty" aria-hidden="true" data-part="letter-line"></span>
+{{/empty}}
+{{^empty}}
+        <span class="letter-line{{#cls}} {{cls}}{{/cls}}" data-part="letter-line"><svg class="icon"><use href="#{{icon}}"/></svg><span>{{> text}}</span></span>
+{{/empty}}

@@ -80,7 +80,7 @@ Erster Absatz …
 Mit freundlichen Grüßen
 ```
 
-- `datum`: Erstellungsdatum (JJJJ-MM-TT, wird als „11. November 2026“ gesetzt); `ort`: Wohnort aus dem Profil.
+- `datum`: Briefdatum (JJJJ-MM-TT, wird als „11. November 2026“ gesetzt). Pflicht: Ohne gültiges `datum` baut das Skript nicht, und es setzt nie selbst das Tagesdatum ein, damit dieselben Quellen dieselbe Mappe ergeben. Für das PDF darf es höchstens 7 Tage alt sein (`references/qa-and-export.md`, PDF). `ort`: Wohnort aus dem Profil.
 - `betreff_einleitung` und `betreff` ergeben den zweistufigen Betreff. Der Agent setzt die Einleitung ausdrücklich: bei Ausbildung „Bewerbung um einen Ausbildungsplatz zum/zur“ (passend zur Berufsbezeichnung), sonst „Bewerbung als“ bzw. „Bewerbung um einen Praktikumsplatz als“; `betreff` ist `occupation` aus `job.json`. Ohne Angabe nutzt das Skript die neutrale Form mit „als“.
 - Die Referenzzeile „Ihre Anzeige bei der Bundesagentur für Arbeit, Ref.-Nr. …“ setzt das Skript aus `job.json`.
 - `dichte`: `normal` oder `dicht`.

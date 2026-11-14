@@ -1,0 +1,54 @@
+{{! Anschreiben, muss auf eine Seite passen. Briefkopf: links Empfänger, rechts Absender, je sechs Zeilen auf
+   demselben Raster (Firma · Anrede + Name · Straße · PLZ Ort · Telefon · E-Mail). Der Absender hat keine
+   Firmenzeile. In der Profilvorlage stehen hier die Platzhalter aus master.json (slots.letter). }}
+  <!-- Anschreiben -->
+  <section class="page letter-page" data-section="{{section_no}}" aria-labelledby="{{aria}}" data-part="letter">
+{{#head}}
+{{> section-head}}
+{{/head}}
+
+    <div class="letter-head">
+{{#recipient}}
+      <address class="letter-party" aria-label="Empfänger" data-origin="{{origin}}">
+{{#lines}}
+{{> letter-line}}
+{{/lines}}
+      </address>
+{{/recipient}}
+{{#sender}}
+      <address class="letter-party" aria-label="Absender" data-origin="{{origin}}">
+{{#lines}}
+{{> letter-line}}
+{{/lines}}
+      </address>
+{{/sender}}
+    </div>
+{{#date}}
+    <p class="letter-date" data-origin="{{origin}}"><svg class="icon"><use href="#i-calendar"/></svg>{{place}}, {{date}}</p>
+{{/date}}
+
+    <div class="letter-subject">
+{{#kicker}}
+      <span class="subject-kicker" data-origin="{{origin}}">{{text}}</span>
+{{/kicker}}
+{{#title}}
+      <span class="subject-title" data-origin="{{origin}}">{{text}}</span>
+{{/title}}
+{{#ref}}
+      <span class="subject-ref" data-origin="{{origin}}">Ihre Anzeige bei der Bundesagentur für Arbeit, Ref.-Nr. {{text}}</span>
+{{/ref}}
+    </div>
+    <div class="letter-copy{{#dense}} is-dense{{/dense}}">
+{{#paragraphs}}
+      <p data-origin="{{origin}}">{{text}}</p>
+{{/paragraphs}}
+    </div>
+    <div class="signature">
+{{#signature}}
+      <img class="signature-img" src="{{src}}" alt="{{alt}}" data-origin="{{origin}}">
+{{/signature}}
+{{#signer}}
+      <div class="signature-name" data-origin="{{origin}}"><strong>{{name}}</strong>{{city}}</div>
+{{/signer}}
+    </div>
+  </section>

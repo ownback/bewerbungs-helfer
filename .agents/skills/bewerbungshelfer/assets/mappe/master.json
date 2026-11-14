@@ -1,0 +1,261 @@
+{
+  "about": "Platzhalter-Modell der Bewerbungsmappe, ohne persönliche Daten. pages: Inhalt der Master-Vorlage assets/bewerbungsmappe.html (build_mappe.py master). slots: Platzhalter für Anschreiben und Motivationsschreiben in der Profilvorlage. Aufbau wie das View-Model der Partials (build_mappe.py contract). Kurzformen, die das Skript ergänzt: parts als Liste von Zeilen, fehlende Lebenslauf-Blöcke, origin, Seitenzahlen, Registerkopf, Inhaltsangabe und Skalen-Legende.",
+  "title": "Bewerbungsmappe",
+  "pages": [
+    {
+      "section": "deckblatt",
+      "content": {
+        "name": {"first": "[VORNAME]", "last": "[NACHNAME]", "cls": "is-long"},
+        "role": {"parts": ["[AUSBILDUNGSBERUF]", "[FACHRICHTUNG]"]},
+        "photo": null,
+        "phone": {"text": "[TELEFON]"},
+        "email": {"parts": ["[E-MAIL]"]},
+        "address": {"parts": ["[STRASSE]", "[PLZ ORT]"]},
+        "bio": {"text": "[KURZPROFIL: Alter, aktueller Bildungsweg, Zugang zum Beruf und Ausbildungsziel in zwei bis drei natürlichen Sätzen.]"},
+        "start": {"text": "Ausbildung ab [AUSBILDUNGSBEGINN]"}
+      }
+    },
+    {
+      "section": "anschreiben",
+      "content": {
+        "recipient": {
+          "lines": [
+            {"empty": false, "cls": "is-org", "icon": "i-building", "parts": ["[EMPFÄNGER_FIRMA]"]},
+            {"empty": false, "cls": "is-name", "icon": "i-user", "parts": ["[EMPFÄNGER_ANREDE_NAME]"]},
+            {"empty": false, "cls": "", "icon": "i-home", "parts": ["[EMPFÄNGER_STRASSE]"]},
+            {"empty": false, "cls": "", "icon": "i-pin", "parts": ["[EMPFÄNGER_PLZ_ORT]"]},
+            {"empty": false, "cls": "", "icon": "i-phone", "parts": ["[EMPFÄNGER_TELEFON]"]},
+            {"empty": false, "cls": "", "icon": "i-mail", "parts": ["[EMPFÄNGER_EMAIL]"]}
+          ]
+        },
+        "sender": {
+          "lines": [
+            {"empty": true, "cls": "", "icon": "", "parts": []},
+            {"empty": false, "cls": "is-name", "icon": "i-user", "parts": ["[ABSENDER_ANREDE_NAME]"]},
+            {"empty": false, "cls": "", "icon": "i-home", "parts": ["[STRASSE]"]},
+            {"empty": false, "cls": "", "icon": "i-pin", "parts": ["[PLZ ORT]"]},
+            {"empty": false, "cls": "", "icon": "i-phone", "parts": ["[TELEFON]"]},
+            {"empty": false, "cls": "", "icon": "i-mail", "parts": ["[E-MAIL]"]}
+          ]
+        },
+        "date": {"place": "[ORT]", "date": "[DATUM]"},
+        "kicker": {"text": "Bewerbung um einen Ausbildungsplatz zum"},
+        "title": {"text": "[AUSBILDUNGSBERUF]"},
+        "ref": {"text": "[REFERENZNUMMER]"},
+        "dense": false,
+        "paragraphs": [
+          {"text": "[ANREDE],"},
+          {"text": "[EINSTIEG MIT BELEGTEM UNTERNEHMENSBEZUG]"},
+          {"text": "[BELEGTE STÄRKE MIT KURZEM BEISPIEL]"},
+          {"text": "[PASSUNG ZUR AUSBILDUNG UND ZUM UNTERNEHMEN]"},
+          {"text": "[AUSBILDUNGSSTAND UND START]"},
+          {"text": "[BITTE UM GESPRÄCH ODER PRAKTIKUM]"},
+          {"text": "Mit freundlichen Grüßen"}
+        ],
+        "signature": null,
+        "signer": {"name": "[VORNAME NACHNAME]", "city": "[ORT]"}
+      }
+    },
+    {
+      "section": "lebenslauf",
+      "content": {
+        "compact": false,
+        "hero": {
+          "name": {"text": "[VORNAME NACHNAME]"},
+          "goal": {"text": "Ausbildungsziel: [AUSBILDUNGSBERUF]"},
+          "facts": [
+            {"icon": "i-pin", "parts": ["[STRASSE]", "[PLZ ORT]"]},
+            {"icon": "i-mail", "parts": ["[E-MAIL]"]},
+            {"icon": "i-phone", "parts": ["[TELEFON]"]},
+            {"icon": "i-map", "parts": ["[GEBURTSORT]"]},
+            {"icon": "i-cake", "parts": ["[GEBURTSDATUM]"]},
+            {"icon": "i-car", "parts": ["Führerschein [KLASSE]"]}
+          ]
+        },
+        "blocks": [
+          {
+            "experience": {
+              "items": [
+                {
+                  "date": "[ZEITRAUM]",
+                  "name": "[ORGANISATION]",
+                  "meta": {"place": "[ORT]", "role": "[ROLLE] · [PRAKTIKUM|ANSTELLUNG]"},
+                  "text": "[BELEGTE AUFGABEN]",
+                  "chipline": null
+                }
+              ]
+            }
+          },
+          {
+            "education": {
+              "items": [
+                {
+                  "date": "[ZEITRAUM]",
+                  "name": "[SCHULE]",
+                  "meta": {"place": "[ORT]", "role": "[SCHULFORM] · [PROFIL]"},
+                  "text": "Abschluss: [ABSCHLUSS]",
+                  "chipline": null
+                }
+              ]
+            }
+          },
+          {
+            "skills": {
+              "groups": [
+                {
+                  "icon": "i-monitor",
+                  "name": "[GRUPPE 1]",
+                  "rows": [
+                    {
+                      "name": "[KATEGORIE]",
+                      "note": null,
+                      "chips": [
+                        {"name": "[TECHNIK]", "logo": "dv-linux", "icon": null},
+                        {"name": "[TECHNIK]", "logo": null, "icon": null}
+                      ],
+                      "bars": {"scale": "[SKALA]", "future": false, "label": "[NIVEAU-LABEL]"}
+                    },
+                    {
+                      "name": "[KATEGORIE]",
+                      "note": null,
+                      "chips": [{"name": "[TECHNIK]", "logo": null, "icon": null}],
+                      "bars": {"scale": "[SKALA]", "future": false, "label": "[NIVEAU-LABEL]"}
+                    }
+                  ]
+                },
+                {
+                  "icon": "i-code",
+                  "name": "[GRUPPE 2]",
+                  "rows": [
+                    {
+                      "name": "[KATEGORIE]",
+                      "note": null,
+                      "chips": [{"name": "[TECHNIK]", "logo": null, "icon": null}],
+                      "bars": {"scale": "[SKALA]", "future": false, "label": "[NIVEAU-LABEL]"}
+                    },
+                    {
+                      "name": "[KATEGORIE]",
+                      "note": null,
+                      "chips": [{"name": "[TECHNIK]", "logo": null, "icon": null}],
+                      "bars": {"scale": 1, "future": true, "label": "Lernwunsch"}
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "languages": {
+              "items": [
+                {
+                  "name": "[SPRACHE]",
+                  "bars": {"scale": 5, "future": false, "label": "Muttersprache"},
+                  "level": "Muttersprache"
+                },
+                {
+                  "name": "[SPRACHE]",
+                  "bars": {"scale": "[SKALA]", "future": false, "label": "[NIVEAU-LABEL]"},
+                  "level": "[NIVEAU-LABEL]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "section": "motivationsschreiben",
+      "content": {
+        "lead": {"text": "[PERSÖNLICHER EINSTIEG IN EINEM SATZ: Woher kommt das Interesse am Beruf?]"},
+        "dense": false,
+        "paragraphs": [
+          {"text": "[AUSGANGSPUNKT UND PERSÖNLICHER WEG]"},
+          {"text": "[PRÄGENDE ERFAHRUNG MIT EIGENER ROLLE UND ERGEBNIS]"},
+          {"text": "[WARUM DAS THEMA AUCH AUSSERHALB DER PFLICHT BESCHÄFTIGT]"},
+          {"text": "[BELEGTER BEZUG ZUR AUSBILDUNG UND ZUM UNTERNEHMEN]"},
+          {"text": "[AUSBLICK UND RUHIGER ABSCHLUSS]"},
+          {"text": "Mit freundlichen Grüßen"}
+        ],
+        "signer": {"name": "[VORNAME NACHNAME]", "city": "[ORT]"},
+        "proofs": [
+          {"icon": "i-server", "title": "[PROJEKT 1]", "text": "[BELEGTE TECHNIK UND ERGEBNIS]", "photo": null, "placeholder": "[PROJEKTFOTO]"},
+          {"icon": "i-branch", "title": "[PROJEKT 2]", "text": "[EIGENE ROLLE UND ERGEBNIS]", "photo": null, "placeholder": "[PROJEKTFOTO]"},
+          {"icon": "i-layers", "title": "[LERNPROJEKT]", "text": "[AKTUELLER LERNSTAND]", "photo": null, "placeholder": "[PROJEKTFOTO]"}
+        ]
+      }
+    },
+    {
+      "section": "zertifikate",
+      "content": {
+        "pair": false,
+        "cards": [
+          {
+            "title": "[TITEL DES ZERTIFIKATS]",
+            "issuer": "[AUSSTELLER]",
+            "image": null,
+            "placeholder": {"parts": ["[ZERTIFIKAT-DATEI]", "Hier wird der echte Scan eingesetzt."]},
+            "caption": {"note": "[ORIGINAL-SCAN|KOPIE|DIGITALES ORIGINAL]", "date": "[DATUM]"}
+          }
+        ]
+      }
+    },
+    {
+      "section": "zeugnisse",
+      "content": {
+        "pair": false,
+        "cards": [
+          {
+            "title": "[TITEL DES ZEUGNISSES]",
+            "issuer": "[AUSSTELLER]",
+            "image": null,
+            "placeholder": {"parts": ["[ZEUGNIS-DATEI]", "Hier wird der echte Scan eingesetzt."]},
+            "caption": {"note": "[ORIGINAL-SCAN|KOPIE|DIGITALES ORIGINAL]", "date": "[DATUM]"}
+          }
+        ]
+      }
+    }
+  ],
+  "slots": {
+    "letter": {
+      "recipient": {
+        "lines": [
+          {"empty": false, "cls": "is-org", "icon": "i-building", "parts": ["[EMPFÄNGER_FIRMA]"]},
+          {"empty": false, "cls": "is-name", "icon": "i-user", "parts": ["[EMPFÄNGER_ANREDE_NAME]"]},
+          {"empty": false, "cls": "", "icon": "i-home", "parts": ["[EMPFÄNGER_STRASSE]"]},
+          {"empty": false, "cls": "", "icon": "i-pin", "parts": ["[EMPFÄNGER_PLZ_ORT]"]},
+          {"empty": false, "cls": "", "icon": "i-phone", "parts": ["[EMPFÄNGER_TELEFON]"]},
+          {"empty": false, "cls": "", "icon": "i-mail", "parts": ["[EMPFÄNGER_EMAIL]"]}
+        ]
+      },
+      "date": {"text": "[DATUM]"},
+      "kicker": {"text": "[BETREFF-EINLEITUNG]"},
+      "title": {"text": "[BERUF]"},
+      "ref": {"text": "[REFERENZNUMMER]"},
+      "paragraphs": [
+        {"text": "[ANREDE],"},
+        {"text": "[EINSTIEG MIT BELEGTEM UNTERNEHMENSBEZUG]"},
+        {"text": "[BELEGTE STÄRKE MIT KURZEM BEISPIEL]"},
+        {"text": "[PASSUNG ZUR STELLE UND ZUM UNTERNEHMEN]"},
+        {"text": "[AUSBILDUNGSSTAND UND START]"},
+        {"text": "[BITTE UM GESPRÄCH]"},
+        {"text": "Mit freundlichen Grüßen"}
+      ]
+    },
+    "motivation": {
+      "lead": {"text": "[PERSÖNLICHER EINSTIEG IN EINEM SATZ]"},
+      "paragraphs": [
+        {"text": "[AUSGANGSPUNKT UND PERSÖNLICHER WEG]"},
+        {"text": "[PRÄGENDE ERFAHRUNG MIT EIGENER ROLLE UND ERGEBNIS]"},
+        {"text": "[WARUM DAS THEMA AUCH AUSSERHALB DER PFLICHT BESCHÄFTIGT]"},
+        {"text": "[BELEGTER BEZUG ZUR STELLE UND ZUM UNTERNEHMEN]"},
+        {"text": "[AUSBLICK UND RUHIGER ABSCHLUSS]"},
+        {"text": "Mit freundlichen Grüßen"}
+      ],
+      "proofs": [
+        {"icon": "i-server", "title": "[PROJEKT 1]", "text": "[BELEGTE TECHNIK UND ERGEBNIS]", "photo": null, "placeholder": "[PROJEKTFOTO]"},
+        {"icon": "i-branch", "title": "[PROJEKT 2]", "text": "[EIGENE ROLLE UND ERGEBNIS]", "photo": null, "placeholder": "[PROJEKTFOTO]"},
+        {"icon": "i-layers", "title": "[LERNPROJEKT]", "text": "[AKTUELLER LERNSTAND]", "photo": null, "placeholder": "[PROJEKTFOTO]"}
+      ]
+    }
+  }
+}

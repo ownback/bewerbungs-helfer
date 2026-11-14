@@ -1,0 +1,9 @@
+{{! Schrift: Inter 4.1, statische Schnitte 400/500/600/700 (SIL Open Font License 1.1, Copyright (c) 2016
+   The Inter Project Authors, https://github.com/rsms/inter). Lizenz und Dateien: assets/fonts/.
+   Jeder Platzhalter in dreifachen geschweiften Klammern nennt eine Datei assets/fonts/<Name>.woff2; das
+   Build-Skript setzt sie als Base64 ein. So braucht die Mappe weder eine installierte Schrift noch das Netz. Statisch statt variabel,
+   damit Chromium die Schrift im PDF als TrueType (CID) einbettet und der Text auswählbar bleibt. }}
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: block; src: url(data:font/woff2;base64,{{{Inter-Regular}}}) format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: block; src: url(data:font/woff2;base64,{{{Inter-Medium}}}) format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: block; src: url(data:font/woff2;base64,{{{Inter-SemiBold}}}) format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 700; font-display: block; src: url(data:font/woff2;base64,{{{Inter-Bold}}}) format("woff2"); }

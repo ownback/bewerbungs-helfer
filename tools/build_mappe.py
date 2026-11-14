@@ -1,25 +1,39 @@
 #!/usr/bin/env python3
 """Bewerbungsmappe bauen, prüfen und verwalten (nur Python-Standardbibliothek).
 
-Das Skript enthält keine persönlichen Daten. Es liest das Profil, die Stelle und die
-Texte aus dem gitignorierten Ordner profile/<vorname.nachname>/ und setzt sie in die
-Basisvorlage .agents/skills/bewerbungshelfer/assets/bewerbungsmappe.html ein.
-CSS und SVG-Bibliothek kommen unverändert aus der Vorlage; das Markup der Seiten
-folgt dem Datenvertrag der Vorlage (references/template.md).
+Das Skript enthält keine persönlichen Daten und kein HTML. Es liest das Profil, die Stelle und die Texte aus
+dem gitignorierten Ordner profile/<vorname.nachname>/, baut daraus ein View-Model (dict) und rendert es mit den
+Quellen der Vorlage unter .agents/skills/bewerbungshelfer/assets/mappe/: Partials (Markup), CSS, Symbole,
+Schrift. Jede Ausgabe ist eine eigenständige HTML-Datei. Aufbau und Regeln: references/template.md.
 
 Befehle:
-  profile-template <profil-ordner> [--qa] [--pdf]
+  master [--check]
+      Baut die Master-Vorlage assets/bewerbungsmappe.html aus assets/mappe/ und dem Platzhalter-Modell
+      master.json. --check vergleicht nur (Exit 2, wenn die Datei nicht aktuell ist).
+  profile-template <profil-ordner> [--qa[=fast]] [--pdf]
       Baut assets/profile/<name>_template.html aus <name>_profile.json und den Assets.
       --pdf schreibt die A4-Vorschau <name>_template.pdf daneben.
-  application <stellen-ordner> [--qa] [--pdf]
-      Baut application/bewerbungsmappe - <name>.html aus der Profilvorlage,
-      text_generation/anschreiben.md, text_generation/motivationsschreiben.md und
-      job_information/job.json. Aktualisiert application-manifest.json und ledger.json.
-      --pdf exportiert das finale A4-PDF, aber nur bei Status html_approved oder später.
-  qa <html>                      Überlauf-, Platzhalter-, Seiten- und Breitenprüfung (1440/390/375 px,
+  application <stellen-ordner> [--qa[=fast]] [--pdf]
+      Baut application/bewerbungsmappe - <name>.html aus den Quellen: Profil, job_information/job.json,
+      text_generation/anschreiben.md (Kopf mit „datum: JJJJ-MM-TT“ ist Pflicht) und motivationsschreiben.md.
+      Aktualisiert application-manifest.json und ledger.json.
+      --pdf exportiert das finale A4-PDF: nur mit voller QA, bei Status html_approved oder später, wenn die
+      Mappe der Prüfsumme der Freigabe entspricht und das Briefdatum höchstens 7 Tage alt ist.
+  qa <html> [--fast]             Überlauf-, Platzhalter-, Seiten- und Breitenprüfung (1440/390/375 px,
                                  Headless-Chromium); bei Bewerbungsweg „email“ auch der E-Mail-Entwurf.
+                                 --fast bzw. --qa=fast: ohne A4-PDF, für die Schleife beim Ändern der Vorlage.
   preview <html> <ausgabe-ordner> A4-Vorschau als PDF und PNG-Seiten (PNG nur mit pdftoppm).
-  validate <profil-|stellen-ordner>  JSON-Schemaprüfung (benötigt das Paket jsonschema), Asset-Pfade,
+  snapshot --save|--compare <html>… [--name N] [--tolerance 0–255]
+      Seitenbilder (A4, 50 dpi, Graustufen) unter .tmp/snapshots/ sichern bzw. mit der Sicherung vergleichen:
+      Anteil geänderter Fläche und Bereich je Seite. Exit 2, wenn sich eine Seite geändert hat.
+  rebuild --check <ziel>…
+      Prüft, dass gespeicherte Dateien Byte für Byte dem entsprechen, was ihre Quellen jetzt ergeben. Ziel:
+      „master“, ein Profilordner (Profilvorlage und alle gebauten Mappen) oder ein Stellenordner. Exit 2 bei
+      Abweichung. Schreibt nichts.
+  contract
+      Vertrag zwischen View-Model, Partials und CSS, aus den Dateien abgeleitet: je Partial data-part,
+      Schlüssel, Klassen, eingebundene Partials; dazu Klassen ohne CSS-Regel. Exit 1 bei einem Verstoß.
+  validate <profil-|stellen-ordner>  JSON-Schemaprüfung (tools/schema_lite.py, ohne Installation), Asset-Pfade,
       bei Bewerbungsweg „email“ der E-Mail-Entwurf application/email.md und offene blockierende Fragen
       (job.json open_questions: severity blocking + status open).
   check-duplicate <stellen-ordner>   Stelle gegen alle erfassten Stellenordner prüfen: same_posting (Exit 3),
@@ -41,7 +55,9 @@ Chromium wird über $CHROME oder chromium/chromium-browser/google-chrome gesucht
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
+import hashlib
 import html
 import json
 import os
@@ -55,9 +71,19 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import quote
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # Schwestermodule, auch bei Import aus einem anderen Ordner
+import schema_lite  # noqa: E402
+from mustache_lite import TAG, Renderer, RenderError  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / '.agents' / 'skills' / 'bewerbungshelfer'
-TEMPLATE = SKILL / 'assets' / 'bewerbungsmappe.html'
+TEMPLATE = SKILL / 'assets' / 'bewerbungsmappe.html'  # Master-Vorlage: gebaut aus MAPPE (Befehl master)
+MAPPE = SKILL / 'assets' / 'mappe'          # Quellen der Vorlage: CSS, Symbole, Partials, QA-Sonde
+PARTIALS = MAPPE / 'partials'               # Markup, ein Partial pro Datei (Mustache-Teilmenge, mustache_lite.py)
+MASTER_MODEL = MAPPE / 'master.json'        # Platzhalter-Modell der Master-Vorlage und der Profilvorlage
+CSS_FILES = ('tokens.css', 'mappe.css', 'screen.css')  # in dieser Reihenfolge im <style> (Kaskade)
+FONT_DIR = SKILL / 'assets' / 'fonts'
+QA_PAGE = MAPPE / 'qa.html'                 # Prüfstand, lädt qa.js
 SCHEMAS = SKILL / 'assets' / 'schemas'
 PROFILE_ROOT = ROOT / 'profile'
 
@@ -76,6 +102,10 @@ SECTION_META = {  # section -> (data-section, id prefix, Titel, Navigationslabel
     'zertifikate': (5, 'cert', 'Zertifikate', 'Zertifikate'),
     'zeugnisse': (6, 'reference', 'Zeugnisse', 'Zeugnisse'),
 }
+# Abschnitt -> Partial, das seine Seiten zeichnet (assets/mappe/partials/<name>.html)
+PAGE_PARTIAL = {'deckblatt': 'cover', 'anschreiben': 'letter', 'lebenslauf': 'cv',
+                'motivationsschreiben': 'motivation', 'zertifikate': 'evidence', 'zeugnisse': 'evidence'}
+PAGE_KINDS = ('cover', 'letter', 'cv', 'motivation', 'evidence')
 TYPES = ['apprenticeships', 'jobs', 'internships']
 # Reihenfolge und Bedeutung: references/applications.md, Abschnitt Status
 STATUSES = ['captured', 'draft', 'html_approved', 'pdf_exported', 'sent', 'interview', 'offer', 'rejected',
@@ -92,9 +122,11 @@ SUBJECT_KICKER = {
 }
 LETTER_WORDS = {'normal': 250, 'dicht': 350}
 MOTIVATION_WORDS = {'normal': 300, 'dicht': 370}
+LETTER_MAX_AGE_DAYS = 7  # --pdf verweigert ein älteres Briefdatum (datum in anschreiben.md)
 IMAGE_EXT = {'.png', '.jpg', '.jpeg', '.webp'}
 # Bildschirmbreiten der QA: Desktop (Überlauf, Füllgrad) und zwei Mobilbreiten; Schlüssel -> Fenstergröße
 QA_VIEWPORTS = (('desktop', '1440,900'), ('mobile', '390,844'), ('mobile_375', '375,812'))
+QA_MODES = ('full', 'fast')  # --qa = full; --qa=fast ohne A4-PDF (Schleife beim Ändern der Vorlage)
 
 
 class BuildError(Exception):
@@ -102,33 +134,6 @@ class BuildError(Exception):
 
 
 # --------------------------------------------------------------------------- Hilfen
-
-def esc(text) -> str:
-    return html.escape(str(text), quote=True)
-
-
-def icon(name: str) -> str:
-    return f'<svg class="icon"><use href="#{esc(name)}"/></svg>'
-
-
-def logo(name: str) -> str:
-    return f'<svg class="logo"><use href="#{esc(name)}"/></svg>'
-
-
-def bars(scale: int, future: bool = False, label: str | None = None, aria: bool = True) -> str:
-    cls = f'bars s{scale}' + (' is-future' if future else '')
-    attr = f' role="img" aria-label="{scale} von 5: {esc(label or SCALE_LABEL[scale])}"' if aria else ''
-    return f'<span class="{cls}"{attr}>' + '<span></span>' * 5 + '</span>'
-
-
-def email_html(addr: str) -> str:
-    """Lange Adressen bekommen <wbr> nach @ und vor Punkten (Regel der Vorlage)."""
-    if len(addr) <= 24:
-        return esc(addr)
-    local, _, domain = addr.partition('@')
-    domain = '<wbr>.'.join(esc(p) for p in domain.split('.'))
-    return f'{esc(local)}@<wbr>{domain}'
-
 
 def slugify(text: str) -> str:
     t = text.lower()
@@ -323,226 +328,331 @@ def html_name(user: str, ext: str = 'html') -> str:
     return f'bewerbungsmappe - {user}.{ext}'
 
 
-# --------------------------------------------------------------------------- Vorlage
+# --------------------------------------------------------------------------- Vorlage (Quellen unter assets/mappe/)
 
-def template_text() -> str:
-    return TEMPLATE.read_text(encoding='utf-8')
-
-
-def template_head(tpl: str, title: str) -> str:
-    head = tpl.split('<div class="screen-bar', 1)[0]
-    return re.sub(r'<title>.*?</title>', f'<title>{esc(title)}</title>', head, count=1, flags=re.S)
+def read_source(path: Path) -> str:
+    try:
+        return path.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        raise BuildError(f'Quelle der Vorlage fehlt: {rel(path)}')
 
 
-def qa_snippet(tpl: str) -> str:
-    m = re.search(r'\(QA-SNIPPET-START\)(.*?)\(QA-SNIPPET-END\)', tpl, re.S)
-    if not m:
-        raise BuildError('QA-SNIPPET fehlt in der Vorlage')
-    code = m.group(1)
-    return code[code.index('[...document'):].strip()
+def partial_sources() -> dict[str, str]:
+    return {p.stem: read_source(p) for p in sorted(PARTIALS.glob('*.html'))}
 
 
-def template_classes(tpl: str) -> set[str]:
-    classes = set(re.findall(r'\.([a-zA-Z][\w-]*)', tpl.split('</style>', 1)[0]))
-    for attr in re.findall(r'class="([^"]*)"', tpl):
-        classes.update(attr.split())
+def stylesheet() -> str:
+    return ''.join(read_source(MAPPE / name) for name in CSS_FILES)
+
+
+def font_css() -> str:
+    """fonts.css mit den Schriftdateien aus assets/fonts/ als Base64 (Platzhalter = Dateiname ohne Endung)."""
+    fonts = {p.stem: base64.b64encode(p.read_bytes()).decode('ascii') for p in sorted(FONT_DIR.glob('*.woff2'))}
+    return Renderer({'fonts': read_source(MAPPE / 'fonts.css')}).render('fonts', fonts)
+
+
+def symbol_table() -> dict[str, str]:
+    """id -> Zeile aller Symbole in icons.svg (ein <symbol> pro Zeile), in Dateireihenfolge."""
+    table = {}
+    for line in read_source(MAPPE / 'icons.svg').splitlines():
+        m = re.match(r'<symbol id="([^"]+)"', line)
+        if m:
+            table[m.group(1)] = line
+    return table
+
+
+def symbol_lines(body: str) -> list[str]:
+    """Nur die Symbole, die das Dokument verwendet. Ein Verweis ohne Symbol ist ein Fehler."""
+    used = set(re.findall(r'<use href="#([^"]+)"', body))
+    table = symbol_table()
+    missing = sorted(used - set(table))
+    if missing:
+        raise BuildError(f'Symbol fehlt in {rel(MAPPE / "icons.svg")}: {", ".join(missing)}. Icon-Ids im Profil und in '
+                         'den Texten prüfen (references/template.md, Icons und Logos).')
+    return [line for sid, line in table.items() if sid in used]
+
+
+def render_document(title: str, chrome: dict, pages: list[dict]) -> str:
+    """View-Model -> eine eigenständige HTML-Datei: Partials, CSS, Schrift und die verwendeten Symbole."""
+    try:
+        engine = Renderer(partial_sources())
+        body = engine.render('body', {'chrome': chrome, 'pages': pages})
+        return engine.render('document', {'title': title, 'css': stylesheet(), 'fonts': font_css(),
+                                          'symbols': symbol_lines(body), 'body': body})
+    except RenderError as e:
+        raise BuildError(f'Vorlage unter {rel(MAPPE)}: {e}')
+
+
+def css_classes() -> set[str]:
+    return set(re.findall(r'\.([a-zA-Z][\w-]*)', re.sub(r'/\*.*?\*/', '', stylesheet(), flags=re.S)))
+
+
+def partial_classes(source: str) -> set[str]:
+    """Klassen, die ein Partial fest nennt (Mustache-Tags entfernt; Werte aus dem View-Model fehlen hier)."""
+    classes: set[str] = set()
+    for attr in re.findall(r'class="([^"]*)"', source):
+        # Abschnitts-Tags fallen weg, ihr Inhalt bleibt; ein Wert ({{x}}) macht sein Wort unvollständig: auslassen
+        plain = TAG.sub(lambda m: '' if m.group(2) in ('#', '^', '/', '!') else '\0', attr)
+        classes.update(c for c in plain.split() if re.fullmatch(r'[a-zA-Z][\w-]*', c))
     return classes
 
 
-# --------------------------------------------------------------------------- Seiten
+def known_classes() -> set[str]:
+    return css_classes().union(*(partial_classes(s) for s in partial_sources().values()))
 
-def section_head(section: str, number: int, continued: bool, n_cont: int = 0) -> str:
-    _, prefix, title, _ = SECTION_META[section]
-    hid = f'{prefix}{n_cont + 1}-title' if continued else f'{prefix}-title'
-    cont = '<span class="continued">Fortsetzung</span>' if continued else ''
-    return ('    <header class="section-head">\n'
-            f'      <h2 id="{hid}">{title}{cont}</h2>\n'
-            f'      <span class="folio" aria-label="Seite {number}">{number}</span>\n'
-            '    </header>\n')
+
+# --------------------------------------------------------------------------- View-Model
+#
+# Jede Funktion baut ein dict für genau ein Partial und kein HTML. Der Renderer bricht ab, wenn ein Partial einen
+# Schlüssel nennt, den das dict nicht hat: Jeder Schlüssel ist deshalb immer gesetzt, notfalls mit None.
+# origin nennt die Inhaltsquelle (data-origin, siehe references/template.md): profile:<Pfad im Profil-JSON>,
+# job:<Pfad in job.json>, text:<Datei>#<Stelle>, master:<Pfad in master.json>, build:<Name im Skript>.
+
+def part(text: str, br: bool = False, wbr: bool = False) -> dict:
+    return {'text': text, 'br': br, 'wbr': wbr}
+
+
+def lines(*texts: str) -> list[dict]:
+    """Text aus Zeilen für das Partial text: Zeilenumbruch vor jeder Zeile außer der ersten."""
+    return [part(t, br=i > 0) for i, t in enumerate(texts)]
+
+
+def email_parts(addr: str) -> list[dict]:
+    """Lange Adressen bekommen eine Umbruchstelle nach @ und vor jedem Punkt der Domain."""
+    if len(addr) <= 24:
+        return [part(addr)]
+    local, _, domain = addr.partition('@')
+    first, *rest = domain.split('.')
+    return [part(local + '@'), part(first, wbr=True), *(part('.' + x, wbr=True) for x in rest)]
+
+
+def two_line_place(text: str) -> list[dict]:
+    """„Krakau, Polen“ -> Ort und Land untereinander, ohne Komma (wie die Adresszeile). Ohne Komma unverändert."""
+    city, sep, country = text.rpartition(',')
+    if not sep or not country.strip():
+        return lines(text)
+    return lines(city.strip(), country.strip())
+
+
+def field(text: str, origin: str) -> dict:
+    return {'text': text, 'origin': origin}
+
+
+def bars_view(scale, future: bool = False, label: str | None = None, aria: bool = True) -> dict:
+    return {'scale': scale, 'future': future, 'label': (label or SCALE_LABEL[scale]) if aria else None}
+
+
+def scale_legend() -> list[dict]:
+    return [{'bars': bars_view(s, future=s == 1, aria=False), 'label': SCALE_LABEL[s]} for s in range(1, 6)]
+
+
+def chip_view(c: dict) -> dict:
+    """Logo geht vor Icon; ohne beides steht nur der Name."""
+    logo = c.get('logo') or None
+    return {'name': c['name'], 'logo': logo, 'icon': None if logo else (c.get('icon') or None)}
 
 
 def name_class(first: str, last: str) -> str:
-    parts = []
+    """Klasse am Namen auf dem Deckblatt nach dem längsten Namensteil (Doppelnamen brechen nach dem Bindestrich)."""
+    pieces = []
     for word in f'{first} {last}'.split():
         segs = word.split('-')
-        parts += [s + '-' for s in segs[:-1]] + [segs[-1]]
-    longest = max((len(p) for p in parts), default=0)
+        pieces += [s + '-' for s in segs[:-1]] + [segs[-1]]
+    longest = max((len(p) for p in pieces), default=0)
     if longest >= 14:
-        return ' class="is-xlong"'
+        return 'is-xlong'
     if longest >= 11:
-        return ' class="is-long"'
+        return 'is-long'
     return ''
 
 
-def screen_chrome(starts: dict) -> str:
-    out = ['  <div class="screen-bar glass glass-light" aria-hidden="true">',
-           '    <span><strong>Bewerbungsmappe</strong></span>',
-           '    <span class="state"><span>HTML-Fassung · PDF im A4-Format</span><span class="viewport-proof mobile">'
-           'Mobilansicht</span><span class="viewport-proof desktop">Desktopansicht</span></span>',
-           '  </div>', '',
-           '  <nav class="screen-nav glass glass-light" aria-label="Seiten">']
-    for sec in SECTIONS:
-        _, prefix, _, nav = SECTION_META[sec]
-        out.append(f'    <a href="#{prefix}-title"><span>{nav}</span><span>{starts[sec]}</span></a>')
-    out += ['  </nav>', '']
-    return '\n'.join(out) + '\n'
+def page_frame(section: str, number: int, index: int = 0) -> dict:
+    """Rahmen jeder Seite: Registerspalte, Überschrift-Id, Kommentar, Kopf mit Titel und Seitenzahl."""
+    sec_no, prefix, title, _ = SECTION_META[section]
+    hid = f'{prefix}-title' if index == 0 else f'{prefix}{index + 1}-title'
+    return {'section_no': sec_no, 'aria': hid, 'comment': title + (', Fortsetzung' if index else ''),
+            'head': {'id': hid, 'title': title, 'continued': index > 0, 'number': number}}
+
+
+def page_entry(section: str, number: int, index: int, content: dict) -> dict:
+    """Eintrag in pages: genau ein Schlüssel aus PAGE_KINDS trägt Rahmen und Inhalt, die anderen sind None."""
+    entry = dict.fromkeys(PAGE_KINDS)
+    entry[PAGE_PARTIAL[section]] = {**page_frame(section, number, index), **content}
+    entry['last'] = False
+    return entry
+
+
+def section_starts(plan: list[dict]) -> dict:
+    starts: dict[str, int] = {}
+    for page in plan:
+        starts.setdefault(page['section'], page['number'])
+    return starts
+
+
+def toc_view(starts: dict) -> list[dict]:
+    return [{'title': SECTION_META[s][2], 'page': starts[s]} for s in SECTIONS]
+
+
+def chrome_view(starts: dict) -> dict:
+    return {'nav': [{'target': f'{SECTION_META[s][1]}-title', 'label': SECTION_META[s][3], 'page': starts[s]}
+                    for s in SECTIONS]}
 
 
 class Ctx:
-    """Alle Werte, die eine Seite braucht. src() rechnet Asset-Pfade relativ zur Ausgabedatei."""
+    """Profil und Zielordner einer Ausgabe. src() liefert den Bildpfad relativ zur Ausgabedatei.
 
-    def __init__(self, profile: dict, pdir: Path, out_dir: Path):
+    bundle (Bewerbung): Bilder werden nach <out_dir>/assets/ kopiert und von dort eingebunden; copied hält
+    (Pfad in der Mappe, Quelldatei) in der Reihenfolge der Verwendung fest. dry: nichts schreiben (Vergleich)."""
+
+    def __init__(self, profile: dict, pdir: Path, out_dir: Path, bundle: bool = False, dry: bool = False):
         self.p = profile
         self.pdir = pdir
         self.out_dir = out_dir
+        self.bundle = bundle
+        self.dry = dry
+        self.copied: list[tuple[str, Path]] = []
+        self._names: dict[str, Path] = {}
 
     def src(self, file: str, field: str = 'Asset') -> str:
         path = resolve_asset(self.pdir, file, field)
         if not path.is_file() or path.stat().st_size == 0:
             raise BuildError(f'Asset fehlt oder ist leer: {file}')
-        return Path(os.path.relpath(path, self.out_dir)).as_posix()
+        if not self.bundle:
+            return Path(os.path.relpath(path, self.out_dir)).as_posix()
+        if self._names.setdefault(path.name, path) != path:
+            raise BuildError(f'Namenskollision in application/assets/: „{path.name}“ kommt aus '
+                             f'{rel(self._names[path.name])} und {rel(path)}. Eine der Dateien umbenennen '
+                             '(Profilfelder anpassen), neu bauen.')
+        target = self.out_dir / 'assets' / path.name
+        if not self.dry and (not target.exists() or target.read_bytes() != path.read_bytes()):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+        self.copied.append((f'assets/{path.name}', path))
+        return f'assets/{path.name}'
 
 
-def render_cover(ctx: Ctx, starts: dict) -> str:
+def master_model() -> dict:
+    """assets/mappe/master.json, aufbereitet: parts als Liste von Zeilen wird zu Textteilen, und jedes dict
+    bekommt origin = sein Pfad in der Datei."""
+    data = read_json(MASTER_MODEL)
+
+    def prepare(node, path: str) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == 'parts' and isinstance(value, list) and all(isinstance(x, str) for x in value):
+                    node[key] = lines(*value)
+                else:
+                    prepare(value, f'{path}.{key}')
+            node.setdefault('origin', f'master:{path}')
+        elif isinstance(node, list):
+            for i, value in enumerate(node):
+                prepare(value, f'{path}[{i}]')
+
+    for key in ('pages', 'slots'):
+        prepare(data[key], key)
+    return data
+
+
+def cover_view(ctx: Ctx, starts: dict) -> dict:
     p = ctx.p
     person, goal, port = p['person'], p['goal'], p.get('portfolio', {})
     first = person.get('first_name') or person['name'].split()[0]
     last = person.get('last_name') or ' '.join(person['name'].split()[1:])
-    role_lines = port.get('cover_role') or [goal['apprenticeship']]
-    bio = port.get('cover_bio') or '[KURZPROFIL: Alter, aktueller Bildungsweg, Zugang zum Beruf und Ausbildungsziel]'
-    start = port.get('cover_start') or (f'Ausbildung ab {month_year(goal["start"])}' if goal.get('start')
-                                         else '[AUSBILDUNGSBEGINN]')
     addr = person['address']
-    photo = ''
+    photo = None
     ph = person.get('photo', {})
     if ph.get('valid') and ph.get('consent') and ph.get('file'):
         focus = ph.get('focus') or {}
-        style = '; '.join(f'--photo-{k}: {focus[k]}' for k in ('x', 'y', 'zoom') if k in focus)
-        style = f' style="{esc(style)}"' if style else ''
-        photo = (f'        <figure class="cover-photo"{style}><img src="{esc(ctx.src(ph["file"], "person.photo.file"))}" '
-                 f'alt="{esc(ph.get("alt") or "Bewerbungsfoto von " + person["name"])}"></figure>\n')
-    toc = ''.join(f'            <li class="toc-row"><span>{SECTION_META[s][2]}</span>'
-                  f'<span class="toc-page">{starts[s]}</span></li>\n' for s in SECTIONS)
-    return (
-        '  <!-- Deckblatt -->\n'
-        '  <section class="page cover-page" data-section="1" aria-labelledby="cover-title">\n'
-        '    <div class="cover-layout">\n'
-        '      <div class="cover-stage">\n'
-        '      <div class="cover-main">\n'
-        f'        <p class="cover-mark">{icon("i-folder")}Bewerbungsmappe</p>\n'
-        '        <div class="cover-hero">\n'
-        f'          <h1 id="cover-title"{name_class(first, last)}>{esc(first)}<br>{esc(last)}</h1>\n'
-        f'          <p class="cover-role">{"<br>".join(esc(x) for x in role_lines)}</p>\n'
-        '        </div>\n'
-        '      </div>\n\n'
-        '      <aside class="cover-panel glass glass-dark" aria-label="Kontakt und Inhalt">\n'
-        f'{photo}'
-        f'        <p class="label">{icon("i-user")}Kontakt</p>\n'
-        '        <div class="contact-list">\n'
-        f'          <p class="contact-item">{icon("i-phone")}<span>{esc(person["phone"])}</span></p>\n'
-        f'          <p class="contact-item">{icon("i-mail")}<span>{email_html(person["email"])}</span></p>\n'
-        f'          <p class="contact-item">{icon("i-pin")}<span>{esc(addr["street"])}<br>'
-        f'{esc(addr["postal_code"])} {esc(addr["city"])}</span></p>\n'
-        '        </div>\n'
-        '        <div class="panel-spacer"></div>\n'
-        '        <nav aria-label="Inhalt">\n'
-        f'          <p class="label">{icon("i-list")}Inhalt</p>\n'
-        '          <ol class="toc-list">\n'
-        f'{toc}'
-        '          </ol>\n'
-        '        </nav>\n'
-        '      </aside>\n'
-        '      </div>\n\n'
-        '      <div class="cover-intro">\n'
-        f'        <p class="cover-bio">{esc(bio)}</p>\n'
-        f'        <p class="cover-start">{icon("i-calendar")}{esc(start)}</p>\n'
-        '      </div>\n'
-        '    </div>\n'
-        '  </section>\n\n')
+        photo = {'src': ctx.src(ph['file'], 'person.photo.file'),
+                 'alt': ph.get('alt') or 'Bewerbungsfoto von ' + person['name'],
+                 'style': '; '.join(f'--photo-{k}: {focus[k]}' for k in ('x', 'y', 'zoom') if k in focus),
+                 'origin': 'profile:person.photo'}
+    if port.get('cover_start'):
+        start = field(port['cover_start'], 'profile:portfolio.cover_start')
+    else:
+        start = field(f'Ausbildung ab {month_year(goal["start"])}' if goal.get('start') else '[AUSBILDUNGSBEGINN]',
+                      'profile:goal.start')
+    return {
+        'name': {'first': first, 'last': last, 'cls': name_class(first, last), 'origin': 'profile:person.name'},
+        'role': {'parts': lines(*(port.get('cover_role') or [goal['apprenticeship']])),
+                 'origin': 'profile:portfolio.cover_role' if port.get('cover_role') else 'profile:goal.apprenticeship'},
+        'photo': photo,
+        'phone': field(person['phone'], 'profile:person.phone'),
+        'email': {'parts': email_parts(person['email']), 'origin': 'profile:person.email'},
+        'address': {'parts': lines(addr['street'], f'{addr["postal_code"]} {addr["city"]}'),
+                    'origin': 'profile:person.address'},
+        'toc': toc_view(starts),
+        'bio': field(port.get('cover_bio')
+                     or '[KURZPROFIL: Alter, aktueller Bildungsweg, Zugang zum Beruf und Ausbildungsziel]',
+                     'profile:portfolio.cover_bio'),
+        'start': start,
+    }
 
 
-def letter_line(icon_name: str | None, text: str, extra: str = '') -> str:
-    if not text:
-        return '        <span class="letter-line is-empty" aria-hidden="true"></span>\n'
-    cls = 'letter-line' + (f' {extra}' if extra else '')
-    return f'        <span class="{cls}">{icon(icon_name)}<span>{text}</span></span>\n'
+def letter_line(icon_name: str, parts: list[dict], cls: str = '') -> dict:
+    """Zeile im Briefkopf. Ohne Text bleibt eine leere Ausgleichszeile stehen; nichts wird erfunden."""
+    if not any(p['text'] for p in parts):
+        return {'empty': True, 'cls': '', 'icon': '', 'parts': []}
+    return {'empty': False, 'cls': cls, 'icon': icon_name, 'parts': parts}
 
 
-def render_letter(ctx: Ctx, number: int, letter: dict | None, job: dict | None, typ: str) -> str:
-    """letter/job None -> Profilvorlage mit Platzhaltern für Empfänger und Text."""
+def letter_view(ctx: Ctx, letter: dict | None, job: dict | None, typ: str) -> dict:
+    """letter/job None -> Profilvorlage: Empfänger und Text sind die Platzhalter aus master.json (slots.letter)."""
     person = ctx.p['person']
     addr = person['address']
     sig = person.get('signature') or {}
     if job:
         c = job.get('contact', {})
         name = ' '.join(x for x in (c.get('honorific', ''), c.get('name', '')) if x) or c.get('department', '')
-        recipient = [
-            ('i-building', esc(c.get('company') or job['company']), 'is-org'),
-            ('i-user', esc(name), 'is-name'),
-            ('i-home', esc(c.get('street', '')), ''),
-            ('i-pin', esc(' '.join(x for x in (c.get('postal_code', ''), c.get('city', '')) if x)), ''),
-            ('i-phone', esc(c.get('phone', '')), ''),
-            ('i-mail', email_html(c['email']) if c.get('email') else '', ''),
-        ]
         meta = letter['meta']
-        place = meta.get('ort') or addr['city']
-        date = german_date(meta.get('datum') or today())
-        kicker = meta.get('betreff_einleitung') or SUBJECT_KICKER[typ]
-        title = meta.get('betreff') or job.get('occupation') or job.get('apprenticeship', '')
         ref = job.get('reference_number')
-        ref_html = (f'      <span class="subject-ref">Ihre Anzeige bei der Bundesagentur für Arbeit, '
-                    f'Ref.-Nr. {esc(ref)}</span>\n') if ref else ''
-        dense = ' is-dense' if meta.get('dichte', 'normal') in ('dicht', 'dense') else ''
-        paras = ''.join(f'      <p>{esc(x)}</p>\n' for x in letter['paragraphs'])
+        md = 'text:anschreiben.md'
+        view = {
+            'recipient': {'origin': 'job:contact', 'lines': [
+                letter_line('i-building', lines(c.get('company') or job['company']), 'is-org'),
+                letter_line('i-user', lines(name), 'is-name'),
+                letter_line('i-home', lines(c.get('street', ''))),
+                letter_line('i-pin', lines(' '.join(x for x in (c.get('postal_code', ''), c.get('city', '')) if x))),
+                letter_line('i-phone', lines(c.get('phone', ''))),
+                letter_line('i-mail', email_parts(c['email']) if c.get('email') else lines('')),
+            ]},
+            'date': {'place': meta.get('ort') or addr['city'], 'date': german_date(meta['datum']),
+                     'origin': f'{md}#datum'},
+            'kicker': (field(meta['betreff_einleitung'], f'{md}#betreff_einleitung') if meta.get('betreff_einleitung')
+                       else field(SUBJECT_KICKER[typ], 'build:SUBJECT_KICKER')),
+            'title': (field(meta['betreff'], f'{md}#betreff') if meta.get('betreff')
+                      else field(job.get('occupation') or job.get('apprenticeship', ''), 'job:occupation')),
+            'ref': field(ref, 'job:reference_number') if ref else None,
+            'dense': meta.get('dichte', 'normal') in ('dicht', 'dense'),
+            'paragraphs': [field(x, f'{md}#p{i}') for i, x in enumerate(letter['paragraphs'], 1)],
+        }
     else:
-        recipient = [('i-building', '[EMPFÄNGER_FIRMA]', 'is-org'), ('i-user', '[EMPFÄNGER_ANREDE_NAME]', 'is-name'),
-                     ('i-home', '[EMPFÄNGER_STRASSE]', ''), ('i-pin', '[EMPFÄNGER_PLZ_ORT]', ''),
-                     ('i-phone', '[EMPFÄNGER_TELEFON]', ''), ('i-mail', '[EMPFÄNGER_EMAIL]', '')]
-        place, date = addr['city'], '[DATUM]'
-        kicker, title = '[BETREFF-EINLEITUNG]', '[BERUF]'
-        ref_html = '      <span class="subject-ref">Ihre Anzeige bei der Bundesagentur für Arbeit, Ref.-Nr. [REFERENZNUMMER]</span>\n'
-        dense = ''
-        paras = ''.join(f'      <p>{x}</p>\n' for x in (
-            '[ANREDE],', '[EINSTIEG MIT BELEGTEM UNTERNEHMENSBEZUG]', '[BELEGTE STÄRKE MIT KURZEM BEISPIEL]',
-            '[PASSUNG ZUR STELLE UND ZUM UNTERNEHMEN]', '[AUSBILDUNGSSTAND UND START]',
-            '[BITTE UM GESPRÄCH]', 'Mit freundlichen Grüßen'))
+        slot = master_model()['slots']['letter']
+        view = {
+            'recipient': slot['recipient'],
+            'date': {'place': addr['city'], 'date': slot['date']['text'], 'origin': slot['date']['origin']},
+            'kicker': slot['kicker'], 'title': slot['title'], 'ref': slot['ref'],
+            'dense': False,
+            'paragraphs': slot['paragraphs'],
+        }
     sender_name = ' '.join(x for x in (person.get('salutation', ''), person['name']) if x)
-    sender = [None, ('i-user', esc(sender_name), 'is-name'), ('i-home', esc(addr['street']), ''),
-              ('i-pin', esc(f'{addr["postal_code"]} {addr["city"]}'), ''), ('i-phone', esc(person['phone']), ''),
-              ('i-mail', email_html(person['email']), '')]
-    sig_img = ''
+    view['sender'] = {'origin': 'profile:person', 'lines': [
+        letter_line('', []),  # der Absender hat keine Firmenzeile
+        letter_line('i-user', lines(sender_name), 'is-name'),
+        letter_line('i-home', lines(addr['street'])),
+        letter_line('i-pin', lines(f'{addr["postal_code"]} {addr["city"]}')),
+        letter_line('i-phone', lines(person['phone'])),
+        letter_line('i-mail', email_parts(person['email'])),
+    ]}
+    view['signature'] = None
     if sig.get('valid') and sig.get('consent') and sig.get('file'):
-        sig_img = (f'      <img class="signature-img" src="{esc(ctx.src(sig["file"], "person.signature.file"))}" '
-                   f'alt="Unterschrift {esc(person["name"])}">\n')
-    return (
-        '  <!-- Anschreiben -->\n'
-        '  <section class="page letter-page" data-section="2" data-slot="letter" aria-labelledby="letter-title">\n'
-        + section_head('anschreiben', number, False) + '\n'
-        '    <div class="letter-head">\n'
-        '      <address class="letter-party" aria-label="Empfänger">\n'
-        + ''.join(letter_line(i, t, e) for i, t, e in recipient) +
-        '      </address>\n'
-        '      <address class="letter-party" aria-label="Absender">\n'
-        + ''.join(letter_line(*s) if s else letter_line(None, '') for s in sender) +
-        '      </address>\n'
-        '    </div>\n'
-        f'    <p class="letter-date">{icon("i-calendar")}{esc(place)}, {esc(date)}</p>\n\n'
-        '    <div class="letter-subject">\n'
-        f'      <span class="subject-kicker">{esc(kicker)}</span>\n'
-        f'      <span class="subject-title">{esc(title)}</span>\n'
-        f'{ref_html}'
-        '    </div>\n'
-        f'    <div class="letter-copy{dense}">\n'
-        f'{paras}'
-        '    </div>\n'
-        '    <div class="signature">\n'
-        f'{sig_img}'
-        f'      <div class="signature-name"><strong>{esc(person["name"])}</strong>{esc(addr["city"])}</div>\n'
-        '    </div>\n'
-        '  </section>\n\n')
+        view['signature'] = {'src': ctx.src(sig['file'], 'person.signature.file'),
+                             'alt': f'Unterschrift {person["name"]}', 'origin': 'profile:person.signature'}
+    view['signer'] = {'name': person['name'], 'city': addr['city'], 'origin': 'profile:person.name'}
+    return view
 
 
-def project_photo(ctx: Ctx, title: str) -> str:
+def project_photo(ctx: Ctx, title: str) -> dict | None:
     """Projektfoto zu einem Beleg (feste Regel): Projekt mit gleichem Namen (ohne Groß-/Kleinschreibung),
     erstes Bild mit consent und valid. Fehlt eins davon, entsteht kein Foto und kein Platzhalter."""
     for i, pr in enumerate(ctx.p.get('projects') or []):
@@ -550,141 +660,165 @@ def project_photo(ctx: Ctx, title: str) -> str:
             continue
         for j, img in enumerate(pr.get('images') or []):
             if img.get('consent') and img.get('valid') and img.get('file'):
-                field = f'projects[{pr.get("id", i)}].images[{j}].file'
-                return (f'<figure class="proof-photo"><img src="{esc(ctx.src(img["file"], field))}" '
-                        f'alt="{esc("Projektfoto: " + pr["name"])}"></figure>')
-        return ''
-    return ''
+                where = f'projects[{pr.get("id", i)}].images[{j}]'
+                return {'src': ctx.src(img['file'], f'{where}.file'), 'alt': 'Projektfoto: ' + pr['name'],
+                        'origin': f'profile:{where}'}
+        return None
+    return None
 
 
-def render_motivation(ctx: Ctx, number: int, mot: dict | None) -> str:
+def motivation_view(ctx: Ctx, mot: dict | None) -> dict:
+    """mot None -> Profilvorlage mit den Platzhaltern aus master.json (slots.motivation)."""
     person = ctx.p['person']
     if mot:
-        lead = esc(mot['lead'])
-        dense = ' is-dense' if mot['meta'].get('dichte', 'normal') in ('dicht', 'dense') else ''
-        paras = ''.join(f'          <p>{esc(x)}</p>\n' for x in mot['paragraphs'])
-        proofs = ''.join(
-            f'        <div class="proof-item">{icon(pi)}<div><strong>{esc(t)}</strong><span>{esc(d)}</span></div>'
-            f'{project_photo(ctx, t)}</div>\n'
-            for pi, t, d in mot['proofs'])
+        md = 'text:motivationsschreiben.md'
+        view = {
+            'lead': field(mot['lead'], f'{md}#einstieg'),
+            'dense': mot['meta'].get('dichte', 'normal') in ('dicht', 'dense'),
+            'paragraphs': [field(x, f'{md}#p{i}') for i, x in enumerate(mot['paragraphs'], 1)],
+            'proofs': [{'icon': ico, 'title': title, 'text': text, 'photo': project_photo(ctx, title),
+                        'placeholder': None, 'origin': f'{md}#beleg{i}'}
+                       for i, (ico, title, text) in enumerate(mot['proofs'], 1)],
+        }
     else:
-        lead = '[PERSÖNLICHER EINSTIEG IN EINEM SATZ]'
-        dense = ''
-        paras = ''.join(f'          <p>{x}</p>\n' for x in (
-            '[AUSGANGSPUNKT UND PERSÖNLICHER WEG]', '[PRÄGENDE ERFAHRUNG MIT EIGENER ROLLE UND ERGEBNIS]',
-            '[WARUM DAS THEMA AUCH AUSSERHALB DER PFLICHT BESCHÄFTIGT]',
-            '[BELEGTER BEZUG ZUR STELLE UND ZUM UNTERNEHMEN]', '[AUSBLICK UND RUHIGER ABSCHLUSS]',
-            'Mit freundlichen Grüßen'))
-        proofs = ''.join(
-            f'        <div class="proof-item">{icon(pi)}<div><strong>{t}</strong><span>{d}</span></div>'
-            f'<figure class="proof-photo is-placeholder">[PROJEKTFOTO]</figure></div>\n'
-            for pi, t, d in (('i-server', '[PROJEKT 1]', '[BELEGTE TECHNIK UND ERGEBNIS]'),
-                             ('i-branch', '[PROJEKT 2]', '[EIGENE ROLLE UND ERGEBNIS]'),
-                             ('i-layers', '[LERNPROJEKT]', '[AKTUELLER LERNSTAND]')))
-    return (
-        '  <!-- Motivationsschreiben -->\n'
-        '  <section class="page" data-section="4" data-slot="motivation" aria-labelledby="motivation-title">\n'
-        + section_head('motivationsschreiben', number, False) + '\n'
-        f'    <p class="motivation-lead">{lead}</p>\n'
-        '    <div class="motivation-layout">\n'
-        '      <div>\n'
-        f'        <div class="motivation-copy{dense}">\n'
-        f'{paras}'
-        '        </div>\n'
-        '        <div class="signature">\n'
-        f'          <div class="signature-name"><strong>{esc(person["name"])}</strong>{esc(person["address"]["city"])}</div>\n'
-        '        </div>\n'
-        '      </div>\n'
-        '      <aside class="motivation-aside" aria-label="Belege aus eigenen Projekten">\n'
-        f'        <p class="label">{icon("i-badge")}Belege</p>\n'
-        f'{proofs}'
-        '      </aside>\n'
-        '    </div>\n'
-        '  </section>\n\n')
+        slot = master_model()['slots']['motivation']
+        view = {'lead': slot['lead'], 'dense': False, 'paragraphs': slot['paragraphs'], 'proofs': slot['proofs']}
+    view['signer'] = {'name': person['name'], 'city': person['address']['city'], 'origin': 'profile:person.name'}
+    return view
 
 
-def two_line_place(text: str) -> str:
-    """„Krakau, Polen“ -> Ort und Land untereinander, ohne Komma (wie die Adresszeile). Ohne Komma unverändert."""
-    city, sep, country = text.rpartition(',')
-    if not sep or not country.strip():
-        return esc(text)
-    return f'{esc(city.strip())}<br>{esc(country.strip())}'
-
-
-def cv_hero(ctx: Ctx) -> str:
+def cv_hero_view(ctx: Ctx) -> dict:
     p = ctx.p
-    person, addr = p['person'], p['person']['address']
-    goal = p.get('portfolio', {}).get('cv_goal') or f'Ausbildungsziel: {p["goal"]["apprenticeship"]}'
-    facts = [f'        <li>{icon("i-pin")}<span>{esc(addr["street"])}<br>{esc(addr["postal_code"])} {esc(addr["city"])}</span></li>',
-             f'        <li>{icon("i-mail")}<span>{email_html(person["email"])}</span></li>',
-             f'        <li>{icon("i-phone")}<span>{esc(person["phone"])}</span></li>']
+    person, addr, port = p['person'], p['person']['address'], p.get('portfolio', {})
+
+    def fact(icon_name: str, parts: list[dict], origin: str) -> dict:
+        return {'icon': icon_name, 'parts': parts, 'origin': origin}
+
+    facts = [fact('i-pin', lines(addr['street'], f'{addr["postal_code"]} {addr["city"]}'), 'profile:person.address'),
+             fact('i-mail', email_parts(person['email']), 'profile:person.email'),
+             fact('i-phone', lines(person['phone']), 'profile:person.phone')]
     if p['presentation'].get('show_birth_data'):
         # Herkunft steht in der ersten Zeile der rechten Spalte, neben dem Wohnort; Geburtsdatum darunter.
         if person.get('birth_place'):
-            facts.append(f'        <li>{icon("i-map")}<span>{two_line_place(person["birth_place"])}</span></li>')
+            facts.append(fact('i-map', two_line_place(person['birth_place']), 'profile:person.birth_place'))
         if person.get('birth_date'):
-            facts.append(f'        <li>{icon("i-cake")}<span>{esc(short_date(person["birth_date"]))}</span></li>')
+            facts.append(fact('i-cake', lines(short_date(person['birth_date'])), 'profile:person.birth_date'))
     if person.get('driving_license'):
-        facts.append(f'        <li>{icon("i-car")}<span>Führerschein {esc(person["driving_license"])}</span></li>')
-    return ('    <div class="cv-hero">\n'
-            '      <div>\n'
-            f'        <p class="cv-name">{esc(person["name"])}</p>\n'
-            f'        <p class="cv-goal">{esc(goal)}</p>\n'
-            '      </div>\n'
-            '      <ul class="cv-facts" aria-label="Persönliche Daten">\n'
-            + '\n'.join(facts) + '\n'
-            '      </ul>\n'
-            '    </div>\n\n')
+        facts.append(fact('i-car', lines(f'Führerschein {person["driving_license"]}'),
+                          'profile:person.driving_license'))
+    goal = (field(port['cv_goal'], 'profile:portfolio.cv_goal') if port.get('cv_goal')
+            else field(f'Ausbildungsziel: {p["goal"]["apprenticeship"]}', 'profile:goal.apprenticeship'))
+    return {'name': field(person['name'], 'profile:person.name'), 'goal': goal, 'facts': facts}
 
 
-def newest_first(entries: list[dict]) -> list[dict]:
-    """Lebenslauf-Reihenfolge: neueste Station zuerst (nach Beginn); ohne Beginn bleibt die Profilreihenfolge."""
-    return sorted(entries, key=lambda e: (e.get('date_range') or {}).get('start') or '', reverse=True)
+def newest_first(entries: list[dict]) -> list[tuple[int, dict]]:
+    """Lebenslauf-Reihenfolge: neueste Station zuerst (nach Beginn); ohne Beginn bleibt die Profilreihenfolge.
+    Liefert (Position im Profil, Eintrag)."""
+    return sorted(enumerate(entries), key=lambda x: (x[1].get('date_range') or {}).get('start') or '', reverse=True)
 
 
-def cv_experience(ctx: Ctx) -> str:
+def timeline_item(origin: str, date: str, name: str, meta: dict | None, text: str, chips: list[dict]) -> dict:
+    return {'origin': origin, 'date': date, 'name': name, 'meta': meta, 'text': text,
+            'chipline': {'chips': chips} if chips else None}
+
+
+def cv_experience_view(ctx: Ctx) -> dict:
     items = []
-    for e in newest_first(ctx.p['experience']):
+    for i, e in newest_first(ctx.p['experience']):
         kind = KIND_LABEL.get(e['kind'], 'Sonstiges')
         if e.get('employment_type'):
             kind += f' ({e["employment_type"]})'
         role = ' · '.join(x for x in (e.get('role', ''), kind) if x)
-        text = '; '.join(e.get('tasks', []))
-        text_html = f'<p class="timeline-text">{esc(text)}</p>' if text else ''
-        items.append('      <article class="timeline-item">\n'
-                     f'        <p class="timeline-date">{esc(fmt_range(e["date_range"]))}</p>\n'
-                     f'        <div class="timeline-content"><h4>{esc(e["organization"])}</h4>'
-                     f'<p class="timeline-place">{esc(e["city"])}</p><p class="timeline-role">{esc(role)}</p>'
-                     f'{text_html}</div>\n'
-                     '      </article>\n')
-    return ('    <section class="cv-section" aria-labelledby="experience-title">\n'
-            f'      <h3 class="cv-section-head" id="experience-title">{icon("i-briefcase")}Praktische Erfahrung</h3>\n'
-            + ''.join(items) + '    </section>\n\n')
+        items.append(timeline_item(f'profile:experience[{e.get("id", i)}]', fmt_range(e['date_range']),
+                                   e['organization'], {'place': e['city'], 'role': role},
+                                   '; '.join(e.get('tasks', [])), []))
+    return {'items': items}
 
 
-def cv_education(ctx: Ctx) -> str:
+def cv_education_view(ctx: Ctx) -> dict:
     items = []
-    for e in newest_first(ctx.p['education']):
+    for i, e in newest_first(ctx.p['education']):
         if e.get('show_in_cv') is False:  # z. B. Grundschulen nach einem weiterführenden Abschluss; bleibt im Profil
             continue
         place = e['city'] + (f' ({e["country"]})' if e.get('country') and e['country'] != 'Deutschland' else '')
-        program = e.get('program_short') or e.get('program', '')
         text = ''
         if e.get('qualification'):
             text = f'Abschluss: {e["qualification"]}'
             end = e['date_range'].get('end')
             if e.get('expected') and end:
                 text += f', voraussichtlich {fmt_point(end, e["date_range"].get("precision", "month"))}'
-        text_html = f'<p class="timeline-text">{esc(text)}</p>' if text else ''
-        items.append('      <article class="timeline-item">\n'
-                     f'        <p class="timeline-date">{esc(fmt_range(e["date_range"]))}</p>\n'
-                     f'        <div class="timeline-content"><h4>{esc(e["institution"])}</h4>'
-                     f'<p class="timeline-place">{esc(place)}</p><p class="timeline-role">{esc(program)}</p>'
-                     f'{text_html}</div>\n'
-                     '      </article>\n')
-    return ('    <section class="cv-section" aria-labelledby="education-title">\n'
-            f'      <h3 class="cv-section-head" id="education-title">{icon("i-graduation")}Schulbildung</h3>\n'
-            + ''.join(items) + '    </section>\n\n')
+        items.append(timeline_item(f'profile:education[{e.get("id", i)}]', fmt_range(e['date_range']),
+                                   e['institution'],
+                                   {'place': place, 'role': e.get('program_short') or e.get('program', '')}, text, []))
+    return {'items': items}
+
+
+def cv_projects_view(ctx: Ctx) -> dict | None:
+    """Optionaler Block „Eigene Projekte“ (Homelab): nur Projekte mit show_in_cv: true, Reihenfolge wie im Profil."""
+    items = []
+    for i, pr in enumerate(ctx.p.get('projects', [])):
+        if not pr.get('show_in_cv'):
+            continue
+        date = fmt_range(pr['date_range']) if pr.get('date_range') else ''
+        if not date and (pr.get('date_range') or {}).get('is_current'):
+            date = 'laufend'
+        chips = pr.get('chips') or [{'name': x} for x in pr.get('tools', [])]
+        items.append(timeline_item(f'profile:projects[{pr.get("id", i)}]', date, pr['name'], None,
+                                   pr.get('cv_summary') or pr.get('own_role', ''), [chip_view(c) for c in chips]))
+    if not items:
+        return None
+    conf = ctx.p['presentation'].get('cv_projects') or {}
+    return {'title': conf.get('title') or 'Eigene Projekte', 'icon': conf.get('icon') or 'i-layers',
+            'origin': 'profile:presentation.cv_projects', 'items': items}
+
+
+def level_label(item: dict) -> str:
+    return 'Muttersprache' if item.get('level') == 'native' else SCALE_LABEL[item['scale']]
+
+
+def cv_languages_view(ctx: Ctx) -> dict:
+    return {'items': [{'origin': f'profile:skills.languages[{i}]', 'name': lang['name'],
+                       'bars': bars_view(lang['scale'], label=level_label(lang)), 'level': level_label(lang)}
+                      for i, lang in enumerate(ctx.p['skills']['languages'])]}
+
+
+def cv_skills_view(ctx: Ctx) -> dict:
+    groups = []
+    for gi, g in enumerate(ctx.p['skills']['groups']):
+        rows = []
+        for ii, it in enumerate(g['items']):
+            chips = it.get('chips') or [{'name': x.strip()} for x in it.get('evidence', '').split(',') if x.strip()]
+            # Zusatz unter dem Zeilennamen: Profilwert (auch leer = keiner); ohne Angabe „Lernstand“ bei level learning.
+            # Bei future (Lernwunsch) nie ein Zusatz: die Skala zeigt es.
+            note = it['note'] if 'note' in it else ('Lernstand' if it.get('level') == 'learning' else '')
+            rows.append({'origin': f'profile:skills.groups[{gi}].items[{ii}]', 'name': it.get('label') or it['name'],
+                         'note': note or None, 'chips': [chip_view(c) for c in chips],
+                         'bars': bars_view(it['scale'], future=it.get('level') == 'future')})
+        groups.append({'origin': f'profile:skills.groups[{gi}]', 'icon': g['icon'], 'name': g['name'], 'rows': rows})
+    return {'legend': scale_legend(), 'groups': groups}
+
+
+CV_BLOCKS = {'experience': cv_experience_view, 'education': cv_education_view, 'projects': cv_projects_view,
+             'skills': cv_skills_view, 'languages': cv_languages_view}
+# Lesereihenfolge: Erfahrung, Schulbildung, Fähigkeiten, Sprachen. Sprachen nie vor Schulbildung oder
+# Fähigkeiten. „projects“ (optional) darf überall nach der Erfahrung stehen, wo es auf die Seiten passt.
+CV_ORDER = ['experience', 'education', 'skills', 'languages']
+
+
+def cv_block(name: str, view: dict) -> dict:
+    """Eintrag in blocks: genau ein Block ist gesetzt."""
+    return {**dict.fromkeys(CV_BLOCKS), name: view}
+
+
+def cv_page_view(ctx: Ctx, blocks: list[str], index: int, compact: bool) -> dict:
+    views = []
+    for b in blocks:
+        if b not in CV_BLOCKS:
+            raise BuildError(f'Unbekannter Lebenslauf-Block „{b}“ in presentation.cv_layout')
+        view = CV_BLOCKS[b](ctx)
+        if view is not None:
+            views.append(cv_block(b, view))
+    return {'compact': compact, 'hero': cv_hero_view(ctx) if index == 0 else None, 'blocks': views}
 
 
 def address_warnings(profile: dict, job: dict | None = None) -> list[str]:
@@ -699,124 +833,19 @@ def address_warnings(profile: dict, job: dict | None = None) -> list[str]:
     return out
 
 
-def level_label(item: dict) -> str:
-    return 'Muttersprache' if item.get('level') == 'native' else SCALE_LABEL[item['scale']]
-
-
-def cv_languages(ctx: Ctx) -> str:
-    rows = ''.join(
-        f'        <div class="language"><span class="language-name">{esc(l["name"])}</span>'
-        f'{bars(l["scale"], label=level_label(l))}<span class="language-level">{esc(level_label(l))}</span></div>\n'
-        for l in ctx.p['skills']['languages'])
-    return ('    <section class="cv-section" aria-labelledby="languages-title">\n'
-            f'      <h3 class="cv-section-head" id="languages-title">{icon("i-globe")}Sprachen</h3>\n'
-            '      <div class="language-list">\n' + rows + '      </div>\n'
-            '    </section>\n')
-
-
-def chip(c: dict) -> str:
-    if c.get('logo'):
-        return f'<span class="tech">{logo(c["logo"])}{esc(c["name"])}</span>'
-    if c.get('icon'):
-        return f'<span class="tech">{icon(c["icon"])}{esc(c["name"])}</span>'
-    return f'<span class="tech">{esc(c["name"])}</span>'
-
-
-def cv_skills(ctx: Ctx) -> str:
-    groups = []
-    for g in ctx.p['skills']['groups']:
-        rows = []
-        for it in g['items']:
-            chips = it.get('chips') or [{'name': x.strip()} for x in it.get('evidence', '').split(',') if x.strip()]
-            # Zusatz unter dem Zeilennamen: Profilwert (auch leer = keiner); ohne Angabe „Lernstand“ bei level learning.
-            # Bei future (Lernwunsch) nie ein Zusatz: die Skala zeigt es.
-            note_text = it['note'] if 'note' in it else ('Lernstand' if it.get('level') == 'learning' else '')
-            note = f'<small>{esc(note_text)}</small>' if note_text else ''
-            rows.append(f'        <div class="skill-row"><span class="skill-name">{esc(it.get("label") or it["name"])}{note}</span>'
-                        f'<span class="skill-chips">{"".join(chip(c) for c in chips)}</span>'
-                        f'{bars(it["scale"], future=it.get("level") == "future")}</div>\n')
-        groups.append('      <div class="skill-group">\n'
-                      f'        <p class="skill-head">{icon(g["icon"])}{esc(g["name"])}</p>\n'
-                      + ''.join(rows) + '      </div>\n')
-    legend = ''.join(f'        <span class="scale-item">{bars(s, future=s == 1, aria=False)}{SCALE_LABEL[s]}</span>\n'
-                     for s in range(1, 6))
-    # Skala steht oben (Runde 6), mit Titel „Skala“ und Erklärung.
-    head_legend = ('      <div class="skill-legend" aria-label="Skala">\n'
-                   '        <p class="skill-legend-title">Skala <span>1–5</span></p>\n'
-                   + legend + '      </div>\n')
-    return ('    <section class="skills-band" aria-labelledby="skills-title">\n'
-            f'      <h3 class="cv-section-head" id="skills-title">{icon("i-wrench")}Fähigkeiten</h3>\n'
-            + head_legend + ''.join(groups) +
-            '    </section>\n')
-
-
-def cv_projects(ctx: Ctx) -> str:
-    """Optionaler Block „Eigene Projekte“ (Homelab): nur Projekte mit show_in_cv: true, Reihenfolge wie im Profil."""
-    items = []
-    for pr in ctx.p.get('projects', []):
-        if not pr.get('show_in_cv'):
-            continue
-        date = fmt_range(pr['date_range']) if pr.get('date_range') else ''
-        if not date and (pr.get('date_range') or {}).get('is_current'):
-            date = 'laufend'
-        text = pr.get('cv_summary') or pr.get('own_role', '')
-        chips = pr.get('chips') or [{'name': x} for x in pr.get('tools', [])]
-        text_html = f'<p class="timeline-text">{esc(text)}</p>' if text else ''
-        chips_html = (f'<p class="skill-chips timeline-chips">{"".join(chip(c) for c in chips)}</p>' if chips else '')
-        items.append('      <article class="timeline-item">\n'
-                     f'        <p class="timeline-date">{esc(date)}</p>\n'
-                     f'        <div class="timeline-content"><h4>{esc(pr["name"])}</h4>{text_html}{chips_html}</div>\n'
-                     '      </article>\n')
-    if not items:
-        return ''
-    conf = ctx.p['presentation'].get('cv_projects') or {}
-    title = conf.get('title') or 'Eigene Projekte'
-    ico = conf.get('icon') or 'i-layers'
-    return ('    <section class="cv-section" aria-labelledby="projects-title">\n'
-            f'      <h3 class="cv-section-head" id="projects-title">{icon(ico)}{esc(title)}</h3>\n'
-            + ''.join(items) + '    </section>\n\n')
-
-
-CV_BLOCKS = {'experience': cv_experience, 'education': cv_education, 'projects': cv_projects,
-             'skills': cv_skills, 'languages': cv_languages}
-# Lesereihenfolge (Runde 5): Erfahrung, Schulbildung, Fähigkeiten, Sprachen. Sprachen nie vor Schulbildung oder
-# Fähigkeiten. „projects“ (optional) darf überall nach der Erfahrung stehen, wo es auf die Seiten passt.
-CV_ORDER = ['experience', 'education', 'skills', 'languages']
-
-
-def render_cv_page(ctx: Ctx, number: int, blocks: list[str], index: int, compact: bool) -> str:
-    cls = 'page cv-compact' if compact else 'page'
-    aria = 'cv-title' if index == 0 else f'cv{index + 1}-title'
-    comment = '  <!-- Lebenslauf -->\n' if index == 0 else '  <!-- Lebenslauf, Fortsetzung -->\n'
-    body = cv_hero(ctx) if index == 0 else ''
-    for b in blocks:
-        if b not in CV_BLOCKS:
-            raise BuildError(f'Unbekannter Lebenslauf-Block „{b}“ in presentation.cv_layout')
-        body += CV_BLOCKS[b](ctx)
-    return (comment + f'  <section class="{cls}" data-section="3" aria-labelledby="{aria}">\n'
-            + section_head('lebenslauf', number, index > 0, index - 1 if index else 0) + '\n'
-            + body + '  </section>\n\n')
-
-
-def evidence_card(ctx: Ctx, ev: dict | None, section: str) -> str:
+def evidence_card_view(ctx: Ctx, ev: dict | None, section: str) -> dict:
     if ev is None:
-        title = 'Zertifikat' if section == 'zertifikate' else 'Zeugnis'
-        return ('      <article class="evidence-card">\n'
-                f'        <div class="evidence-meta"><h3>{title}</h3><p>Liegt noch nicht vor</p></div>\n'
-                '        <div class="document-stage"><div class="document-placeholder">Liegt noch nicht vor</div></div>\n'
-                '      </article>\n')
-    field = f'evidence[{ev["id"]}].file'
-    path = resolve_asset(ctx.pdir, ev['file'], field)
+        return {'origin': 'profile:evidence', 'title': 'Zertifikat' if section == 'zertifikate' else 'Zeugnis',
+                'issuer': 'Liegt noch nicht vor', 'image': None,
+                'placeholder': {'parts': lines('Liegt noch nicht vor')}, 'caption': None}
+    where = f'evidence[{ev["id"]}]'
+    path = resolve_asset(ctx.pdir, ev['file'], f'{where}.file')
     if path.suffix.lower() not in IMAGE_EXT:
         raise BuildError(f'Nachweis {ev["id"]}: {ev["file"]} ist kein Bild. PDF-Nachweise vorher als PNG '
                          'rendern (z. B. pdftoppm -png -r 150) und das Bild als file eintragen.')
-    return ('      <article class="evidence-card">\n'
-            f'        <div class="evidence-meta"><h3>{esc(ev["title"])}</h3><p>{esc(ev["issuer"])}</p></div>\n'
-            f'        <div class="document-stage"><img src="{esc(ctx.src(ev["file"], field))}" alt="{esc(ev["title"])}"></div>\n'
-            f'        <div class="document-caption"><span class="caption-note">{icon("i-scan")}'
-            f'{ORIGINAL_LABEL.get(ev["original"], "Nachweis")}</span><span class="caption-date">Ausgestellt am '
-            f'{esc(short_date(ev["date"]))}</span></div>\n'
-            '      </article>\n')
+    return {'origin': f'profile:{where}', 'title': ev['title'], 'issuer': ev['issuer'],
+            'image': {'src': ctx.src(ev['file'], f'{where}.file'), 'alt': ev['title']}, 'placeholder': None,
+            'caption': {'note': ORIGINAL_LABEL.get(ev['original'], 'Nachweis'), 'date': short_date(ev['date'])}}
 
 
 def evidence_groups(profile: dict, section: str) -> list[list]:
@@ -834,32 +863,25 @@ def evidence_groups(profile: dict, section: str) -> list[list]:
     return groups or [[None]]
 
 
-def render_evidence_page(ctx: Ctx, number: int, section: str, group: list, index: int) -> str:
-    sec_no, prefix, title, _ = SECTION_META[section]
-    aria = f'{prefix}-title' if index == 0 else f'{prefix}{index + 1}-title'
-    grid = 'evidence-grid is-pair' if len(group) == 2 else 'evidence-grid'
-    comment = f'  <!-- {title}{", Fortsetzung" if index else ""} -->\n'
-    return (comment + f'  <section class="page" data-section="{sec_no}" aria-labelledby="{aria}">\n'
-            + section_head(section, number, index > 0, index - 1 if index else 0)
-            + f'    <div class="{grid}">\n' + ''.join(evidence_card(ctx, ev, section) for ev in group)
-            + '    </div>\n  </section>\n\n')
+def evidence_page_view(ctx: Ctx, section: str, group: list) -> dict:
+    return {'pair': len(group) == 2, 'cards': [evidence_card_view(ctx, ev, section) for ev in group]}
 
 
-def plan_pages(profile: dict) -> list[dict]:
+def plan_pages(profile: dict, warn: bool = True) -> list[dict]:
     layout = profile['presentation'].get('cv_layout') or {}
     cv_pages = layout.get('pages') or [['experience', 'education', 'skills', 'languages']]
     flat = [b for page in cv_pages for b in page]
     known = [b for b in flat if b in CV_ORDER]
-    if known != sorted(known, key=CV_ORDER.index) or (
-            'projects' in flat and 'experience' in flat and flat.index('projects') < flat.index('experience')):
+    if warn and (known != sorted(known, key=CV_ORDER.index) or (
+            'projects' in flat and 'experience' in flat and flat.index('projects') < flat.index('experience'))):
         print('Warnung: presentation.cv_layout weicht von der Lesereihenfolge ab '
               f'({", ".join(CV_ORDER)}; projects nach experience); Sprachen gehören hinter Schulbildung und '
               'Fähigkeiten.', file=sys.stderr)
-    if 'projects' in flat and not any(p.get('show_in_cv') for p in profile.get('projects', [])):
+    if warn and 'projects' in flat and not any(p.get('show_in_cv') for p in profile.get('projects', [])):
         print('Hinweis: Block „projects“ in cv_layout, aber kein Projekt mit show_in_cv: true; der Block entfällt.',
               file=sys.stderr)
     plan = [{'section': 'deckblatt'}, {'section': 'anschreiben'}]
-    compact = layout.get('compact')  # true/false für alle Seiten oder Liste je Seite (Runde 5)
+    compact = layout.get('compact')  # true/false für alle Seiten oder Liste je Seite
     per_page = compact if isinstance(compact, list) else [bool(compact)] * len(cv_pages)
     plan += [{'section': 'lebenslauf', 'blocks': b, 'index': i,
               'compact': bool(per_page[i]) if i < len(per_page) else False}
@@ -873,29 +895,61 @@ def plan_pages(profile: dict) -> list[dict]:
     return plan
 
 
-def build_document(ctx: Ctx, letter=None, mot=None, job=None, typ='apprenticeships') -> tuple[str, list[dict]]:
-    tpl = template_text()
-    plan = plan_pages(ctx.p)
-    starts = {}
+def build_document(ctx: Ctx, letter=None, mot=None, job=None, typ='apprenticeships',
+                   warn: bool = True) -> tuple[str, list[dict]]:
+    """Profilvorlage (ohne letter/mot/job) oder Bewerbung aus den Quellen: HTML und Seitenliste fürs Manifest."""
+    plan = plan_pages(ctx.p, warn)
+    starts = section_starts(plan)
+    entries = []
     for page in plan:
-        starts.setdefault(page['section'], page['number'])
-    parts = [template_head(tpl, f'Bewerbungsmappe – {ctx.p["person"]["name"]}'), screen_chrome(starts)]
-    for page in plan:
-        s, n = page['section'], page['number']
+        s = page['section']
         if s == 'deckblatt':
-            parts.append(render_cover(ctx, starts))
+            content = cover_view(ctx, starts)
         elif s == 'anschreiben':
-            parts.append(render_letter(ctx, n, letter, job, typ))
+            content = letter_view(ctx, letter, job, typ)
         elif s == 'lebenslauf':
-            parts.append(render_cv_page(ctx, n, page['blocks'], page['index'], page['compact']))
+            content = cv_page_view(ctx, page['blocks'], page['index'], page['compact'])
         elif s == 'motivationsschreiben':
-            parts.append(render_motivation(ctx, n, mot))
+            content = motivation_view(ctx, mot)
         else:
-            parts.append(render_evidence_page(ctx, n, s, page['group'], page['index']))
-    doc = ''.join(parts).rstrip() + '\n</body>\n</html>\n'
+            content = evidence_page_view(ctx, s, page['group'])
+        entries.append(page_entry(s, page['number'], page.get('index', 0), content))
+    entries[-1]['last'] = True
+    doc = render_document(f'Bewerbungsmappe – {ctx.p["person"]["name"]}', chrome_view(starts), entries)
     pages = [{'number': p['number'], 'section': p['section'], **({'continuation': True} if p['continuation'] else {})}
              for p in plan]
     return doc, pages
+
+
+def build_master() -> str:
+    """Master-Vorlage: dieselben Partials mit dem Platzhalter-Modell aus master.json."""
+    model = master_model()
+    counts: Counter = Counter()
+    plan = []
+    for number, page in enumerate(model['pages'], 1):
+        if page['section'] not in PAGE_PARTIAL:
+            raise BuildError(f'{rel(MASTER_MODEL)}: unbekannter Abschnitt „{page["section"]}“')
+        plan.append({'section': page['section'], 'number': number, 'index': counts[page['section']]})
+        counts[page['section']] += 1
+    starts = section_starts(plan)
+    missing = [s for s in SECTIONS if s not in starts]
+    if missing:
+        raise BuildError(f'{rel(MASTER_MODEL)}: Abschnitt fehlt: {", ".join(missing)}')
+    entries = []
+    for meta, page in zip(plan, model['pages']):
+        content = page['content']
+        kind = PAGE_PARTIAL[meta['section']]
+        if kind == 'cover':
+            content['toc'] = toc_view(starts)
+        elif kind == 'cv':
+            content.setdefault('hero', None)
+            content['blocks'] = [{name: block.get(name) for name in CV_BLOCKS} for block in content['blocks']]
+            for block in content['blocks']:
+                if block['skills'] is not None:
+                    block['skills'].setdefault('legend', scale_legend())
+        entries.append(page_entry(meta['section'], meta['number'], meta['index'], content))
+    entries[-1]['last'] = True
+    return render_document(model['title'], chrome_view(starts), entries)
 
 
 # --------------------------------------------------------------------------- Texte (Markdown)
@@ -966,6 +1020,19 @@ def read_motivation(path: Path) -> dict:
     return {'meta': meta, 'lead': lead, 'paragraphs': paras, 'proofs': proofs}
 
 
+def letter_date(letter: dict, path: Path) -> dt.date:
+    """Briefdatum aus dem Kopf von anschreiben.md. Pflicht: Das Skript setzt kein Tagesdatum ein, damit
+    dieselben Quellen immer dieselbe Mappe ergeben."""
+    value = letter['meta'].get('datum', '')
+    try:
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value):
+            raise ValueError
+        return dt.date.fromisoformat(value)
+    except ValueError:
+        raise BuildError(f'{rel(path)}: Im Kopf fehlt ein gültiges „datum: JJJJ-MM-TT“ (gefunden: „{value}“). '
+                         'Das Briefdatum ist Pflicht und wird nicht automatisch gesetzt.')
+
+
 def word_count(paras: list[str]) -> int:
     return sum(len(re.findall(r'\S+', p)) for p in paras)
 
@@ -985,8 +1052,11 @@ def chrome_cmd(*args: str) -> list[str]:
 
 
 def print_pdf(html_path: Path, pdf_path: Path) -> None:
+    """A4-PDF ohne Kopf- und Fußzeile; mit Lesezeichen aus den Überschriften, wo Chromium das kann
+    (ältere Versionen ignorieren den Schalter)."""
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(chrome_cmd('--no-pdf-header-footer', f'--print-to-pdf={pdf_path}', html_path.resolve().as_uri()),
+    subprocess.run(chrome_cmd('--no-pdf-header-footer', '--generate-pdf-document-outline',
+                              f'--print-to-pdf={pdf_path}', html_path.resolve().as_uri()),
                    check=True, capture_output=True)
     if not pdf_path.is_file():
         raise BuildError(f'PDF-Export fehlgeschlagen: {pdf_path}')
@@ -1002,86 +1072,70 @@ def pdf_pages(pdf_path: Path) -> int | None:
     return n or None
 
 
-# Füllgrad je Seite (nach dem QA-Snippet, Desktop 1440 px): Anteil des Satzspiegels, den der Inhalt belegt.
-# Richtwert für Lebenslauf-Seiten 90–98 %; negativer Rest = Überlauf. Grundlage der Regel in references/template.md.
-FILL_SNIPPET = '''const mm = 96 / 25.4, fill = [...document.querySelectorAll('.page')].map((p, i) => {
-    const r = p.getBoundingClientRect(), cs = getComputedStyle(p);
-    const top = r.top + parseFloat(cs.paddingTop), bottom = r.bottom - parseFloat(cs.paddingBottom);
-    let low = top;
-    for (const e of p.querySelectorAll('*')) {
-      if (e.closest('.folio, svg, .section-head')) continue;
-      const b = e.getBoundingClientRect();
-      if (b.width > 0 && b.height > 0) low = Math.max(low, b.bottom);
-    }
-    return [i + 1, Math.round(100 * (low - top) / (bottom - top)), Math.round((bottom - low) / mm * 10) / 10];
-  });
-'''
+def probe_views(html_path: Path) -> dict:
+    """Ein Chromium-Lauf für alle Bildschirmbreiten: der Prüfstand qa.html lädt die Mappe je Breite in einen
+    iframe exakter Größe (Media-Queries gelten für den iframe) und führt die Sonde qa.js aus. Es entsteht
+    keine Hilfsdatei. Headless-Chromium erzwingt mindestens ca. 500 px Fensterbreite, deshalb der iframe.
+    Stimmt die gemessene Breite nicht mit der angeforderten überein, gilt die Messung als fehlgeschlagen."""
+    views = ','.join(f'{key}:{size.replace(",", "x")}' for key, size in QA_VIEWPORTS)
+    url = f'{QA_PAGE.as_uri()}?doc={quote(html_path.as_uri(), safe="")}&views={views}'
+    dom = subprocess.run(chrome_cmd('--allow-file-access-from-files', f'--window-size={QA_VIEWPORTS[0][1]}',
+                                    '--dump-dom', url), capture_output=True, text=True).stdout
+    m = re.search(r'data-qa="([^"]*)"', dom)
+    data = json.loads(html.unescape(m.group(1))) if m else {}
+    return {key: view if (view := data.get(key)) and view.get('width') == int(size.split(',')[0]) else None
+            for key, size in QA_VIEWPORTS}
 
 
-IFRAME_PROBE = '''<!doctype html><meta charset="utf-8"><style>html,body{{margin:0}}iframe{{display:block;border:0;width:{w}px;height:{h}px}}</style>
-<iframe id="f" src="{src}"></iframe>
-<script>
-document.getElementById("f").addEventListener("load", () => setTimeout(() => {{
-  try {{
-    const f = document.getElementById("f"), d = f.contentDocument, w = f.contentWindow.innerWidth;
-    document.body.setAttribute("data-qa", JSON.stringify({{width: w, hscroll: d.documentElement.scrollWidth - w}}));
-  }} catch (e) {{}}
-}}, 300));
-</script>
-'''
+PLACEHOLDER = re.compile(r'\[[A-ZÄÖÜ][^\]\n<>]{1,80}\]')
 
 
-def run_qa(html_path: Path, ignore_slots: bool = False) -> dict:
+def slot_placeholders() -> set[str]:
+    """Platzhalter, die in der Profilvorlage stehen sollen: die Texte für Anschreiben und Motivationsschreiben
+    aus master.json (slots)."""
+    found: set[str] = set()
+
+    def walk(node) -> None:
+        if isinstance(node, str):
+            found.update(PLACEHOLDER.findall(node))
+        elif isinstance(node, (dict, list)):
+            for value in (node.values() if isinstance(node, dict) else node):
+                walk(value)
+
+    walk(read_json(MASTER_MODEL)['slots'])
+    return found
+
+
+def local_images(doc: str, base: Path) -> list[Path]:
+    """Lokale Bilddateien, die eine Mappe einbindet (ohne data: und http:)."""
+    return [base / html.unescape(s) for s in re.findall(r'<img\b[^>]*?\ssrc="([^"]+)"', doc)
+            if not re.match(r'(data|https?):', s)]
+
+
+def run_qa(html_path: Path, ignore_slots: bool = False, fast: bool = False) -> dict:
+    """ignore_slots (Profilvorlage): Die Platzhalter für Anschreiben und Motivationsschreiben sind gewollt.
+    fast: nur der Bildschirmlauf (Überlauf, Füllgrad, Breiten), kein A4-PDF. Für die Schleife beim Ändern der
+    Vorlage; vor Freigabe und PDF immer die volle Prüfung."""
     html_path = html_path.resolve()
-    tpl = template_text()
     src = html_path.read_text(encoding='utf-8')
-    probe = ('<script>\naddEventListener("load", () => { const r = ' + qa_snippet(tpl) + ';\n' + FILL_SNIPPET +
-             'document.body.setAttribute("data-qa", JSON.stringify({hits: r, hscroll: '
-             'document.documentElement.scrollWidth - innerWidth, pages: document.querySelectorAll(".page").length, '
-             'fill: fill, cv: [...document.querySelectorAll(".page")].flatMap((p, i) => p.dataset.section === "3" ? [i + 1] : [])})); });\n</script>\n</body>')
-    qa_file = html_path.with_name(f'.qa-{os.getpid()}-{html_path.name}')
-    result = {}
-    try:
-        qa_file.write_text(src.replace('</body>', probe, 1), encoding='utf-8')
-        for key, size in QA_VIEWPORTS:
-            width, height = (int(x) for x in size.split(','))
-            if width >= 1000:
-                dom = subprocess.run(chrome_cmd(f'--window-size={size}', '--dump-dom', qa_file.as_uri()),
-                                     capture_output=True, text=True).stdout
-            else:
-                # Headless-Chromium erzwingt mindestens ca. 500 px Fensterbreite: schmale Breiten über einen iframe
-                # exakter Breite messen (Media-Queries gelten für den iframe-Viewport).
-                wrap = html_path.with_name(f'.qa-{os.getpid()}-{key}.html')
-                wrap.write_text(IFRAME_PROBE.format(src=quote(html_path.name), w=width, h=height), encoding='utf-8')
-                try:
-                    dom = subprocess.run(chrome_cmd('--allow-file-access-from-files', f'--window-size={max(width, 500)},{height}',
-                                                    '--dump-dom', wrap.as_uri()), capture_output=True, text=True).stdout
-                finally:
-                    wrap.unlink(missing_ok=True)
-            m = re.search(r'data-qa="([^"]*)"', dom)
-            data = json.loads(html.unescape(m.group(1))) if m else None
-            if data is not None and width < 1000 and data.get('width') != width:
-                data = None  # Breite nicht wie angefordert: Messung ungültig
-            result[key] = data
-    finally:
-        qa_file.unlink(missing_ok=True)
-    with tempfile.TemporaryDirectory() as tmp:
-        pdf = Path(tmp) / 'qa.pdf'
-        print_pdf(html_path, pdf)
-        a4_pages = pdf_pages(pdf)
-    scan = strip_slots(src) if ignore_slots else src
-    body = re.sub(r'<!--.*?-->', '', scan.split('<div class="screen-bar', 1)[-1], flags=re.S)
-    placeholders = sorted(set(re.findall(r'\[[A-ZÄÖÜ][^\]\n<>]{1,80}\]', body)))
-    missing = []
-    for s in re.findall(r'<img[^>]+src="([^"]+)"', body):
-        if not re.match(r'(data|https?):', s) and not (html_path.parent / html.unescape(s)).is_file():
-            missing.append(html.unescape(s))
-    contract = template_classes(tpl)
-    unknown = sorted({c for attr in re.findall(r'class="([^"]*)"', body) for c in attr.split()} - contract)
+    result = probe_views(html_path)
+    a4_pages = None
+    if not fast:
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf = Path(tmp) / 'qa.pdf'
+            print_pdf(html_path, pdf)
+            a4_pages = pdf_pages(pdf)
+    body = re.sub(r'<!--.*?-->', '', src.split('<div class="screen-bar', 1)[-1], flags=re.S)
+    placeholders = sorted(set(PLACEHOLDER.findall(body)) - (slot_placeholders() if ignore_slots else set()))
+    missing = [p.relative_to(html_path.parent).as_posix() for p in local_images(body, html_path.parent)
+               if not p.is_file()]
+    unknown = sorted({c for attr in re.findall(r'class="([^"]*)"', body) for c in attr.split()
+                      if re.fullmatch(r'[a-zA-Z][\w-]*', c)} - known_classes())
     desktop = result.get('desktop') or {}
     hits = desktop.get('hits') if desktop else None
     page_count = desktop.get('pages') if desktop else None
     qa = {
+        'mode': 'fast' if fast else 'full',
         'overflow': hits if hits is not None else ['QA-Lauf fehlgeschlagen'],
         'overflow_pages': sorted({int(h.split(':')[0]) for h in hits or [] if h.split(':')[0].isdigit()}),
         'fill': desktop.get('fill') or [],
@@ -1097,7 +1151,8 @@ def run_qa(html_path: Path, ignore_slots: bool = False) -> dict:
     qa['hscroll_mobile'] = max((v for k, v in qa['hscroll'].items() if k != '1440' and v is not None), default=None)
     # None = Messung fehlgeschlagen: zählt als Fehler
     widths_ok = all(v is not None and v <= 0 for v in qa['hscroll'].values())
-    qa['ok'] = hits == [] and a4_pages == page_count and not placeholders and not missing and widths_ok
+    qa['ok'] = (hits == [] and (fast or a4_pages == page_count) and not placeholders and not missing
+                and widths_ok)
     return qa
 
 
@@ -1109,7 +1164,8 @@ def cv_fill(qa: dict) -> str:
 
 def print_qa(name: str, qa: dict, extra: list[str] | None = None) -> None:
     print(f'QA {name}: {"OK" if qa["ok"] else "PROBLEME"}')
-    print(f'  Seiten: HTML {qa["html_pages"]}, A4-PDF {qa["a4_pages"]}')
+    print(f'  Seiten: HTML {qa["html_pages"]}, A4-PDF '
+          + ('nicht geprüft (--qa=fast)' if qa.get('mode') == 'fast' else str(qa['a4_pages'])))
     print(f'  Überlauf: {qa["overflow"] or "keiner"}')
     cv = cv_fill(qa)
     if cv:
@@ -1121,9 +1177,110 @@ def print_qa(name: str, qa: dict, extra: list[str] | None = None) -> None:
     if qa['missing_assets']:
         print(f'  Fehlende Bilder: {", ".join(qa["missing_assets"])}')
     if qa['unknown_classes']:
-        print(f'  Hinweis: Klassen nicht in der Vorlage: {", ".join(qa["unknown_classes"])}')
+        print(f'  Hinweis: Klassen ohne CSS-Regel und ohne Partial (assets/mappe/): {", ".join(qa["unknown_classes"])}')
     for line in extra or []:
         print(f'  {line}')
+
+
+# --------------------------------------------------------------------------- Seitenbilder (Vorher/Nachher)
+
+SNAPSHOT_DIR = ROOT / '.tmp' / 'snapshots'
+SNAPSHOT_DPI = 50
+
+
+def read_pgm(path: Path) -> tuple[int, int, bytes]:
+    """Binäres Graustufenbild (PGM, P5, 8 Bit) lesen: Breite, Höhe, Pixel."""
+    data = path.read_bytes()
+    m = re.match(rb'P5(?:\s+|#[^\n]*\n)+(\d+)(?:\s+|#[^\n]*\n)+(\d+)(?:\s+|#[^\n]*\n)+(\d+)\s', data)
+    if not m or int(m.group(3)) != 255:
+        raise BuildError(f'Kein 8-Bit-PGM: {path}')
+    w, h = int(m.group(1)), int(m.group(2))
+    pixels = data[m.end():m.end() + w * h]
+    if len(pixels) != w * h:
+        raise BuildError(f'PGM unvollständig: {path}')
+    return w, h, pixels
+
+
+def render_pages(html_path: Path, out_dir: Path) -> list[Path]:
+    """A4-PDF drucken und jede Seite als Graustufenbild (50 dpi) nach out_dir schreiben."""
+    if not shutil.which('pdftoppm'):
+        raise BuildError('pdftoppm fehlt (Paket poppler bzw. poppler-utils); ohne es kein Seitenvergleich.')
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for old in out_dir.glob('page-*.pgm'):
+        old.unlink()
+    with tempfile.TemporaryDirectory() as tmp:
+        pdf = Path(tmp) / 'snapshot.pdf'
+        print_pdf(html_path, pdf)
+        subprocess.run(['pdftoppm', '-gray', '-r', str(SNAPSHOT_DPI), str(pdf), str(Path(tmp) / 'p')],
+                       check=True, capture_output=True)
+        pages = sorted(Path(tmp).glob('p-*.pgm'), key=lambda p: int(p.stem.rsplit('-', 1)[1]))
+        return [Path(shutil.copyfile(p, out_dir / f'page-{i:02d}.pgm')) for i, p in enumerate(pages, 1)]
+
+
+def snapshot_name(html_path: Path, name: str | None) -> str:
+    return slugify(name) if name else slugify(rel(html_path.resolve()).rsplit('.', 1)[0])
+
+
+def diff_pages(old: tuple[int, int, bytes], new: tuple[int, int, bytes], tolerance: int) -> dict | None:
+    """None bei gleichen Seiten, sonst Anteil geänderter Pixel, Bereich (mm) und größte Abweichung."""
+    if old == new:
+        return None
+    if old[:2] != new[:2]:
+        return {'share': 1.0, 'note': f'Größe {old[0]}×{old[1]} → {new[0]}×{new[1]} px'}
+    w, h = old[:2]
+    count = peak = 0
+    x0, y0, x1, y1 = w, h, -1, -1
+    for i, (a, b) in enumerate(zip(old[2], new[2])):
+        if a != b and abs(a - b) > tolerance:
+            count += 1
+            peak = max(peak, abs(a - b))
+            y, x = divmod(i, w)
+            x0, y0, x1, y1 = min(x0, x), min(y0, y), max(x1, x), max(y1, y)
+    if not count:
+        return None
+    mm = 25.4 / SNAPSHOT_DPI
+    return {'share': count / (w * h), 'peak': peak,
+            'box': tuple(round(v * mm) for v in (x0, y0, x1 + 1, y1 + 1))}
+
+
+def cmd_snapshot(args) -> int:
+    """Seitenbilder einer Mappe sichern (--save) oder mit der Sicherung vergleichen (--compare)."""
+    if args.name and len(args.html) > 1:
+        raise BuildError('--name gilt nur für eine einzelne Datei.')
+    rc = 0
+    for item in args.html:
+        html_path = Path(item).resolve()
+        if not html_path.is_file():
+            raise BuildError(f'Datei fehlt: {item}')
+        base = SNAPSHOT_DIR / snapshot_name(html_path, args.name)
+        if args.save:
+            pages = render_pages(html_path, base)
+            (base / 'source.txt').write_text(rel(html_path) + '\n', encoding='utf-8')
+            print(f'Seitenbilder gesichert: {rel(base)} ({len(pages)} Seiten, {SNAPSHOT_DPI} dpi)')
+            continue
+        saved = sorted(base.glob('page-*.pgm'))
+        if not saved:
+            raise BuildError(f'Keine Sicherung unter {rel(base)}. Zuerst: build_mappe.py snapshot --save "{item}"')
+        with tempfile.TemporaryDirectory() as tmp:
+            current = render_pages(html_path, Path(tmp))
+            changed = []
+            for n in range(1, max(len(saved), len(current)) + 1):
+                if n > len(saved) or n > len(current):
+                    changed.append(f'  Seite {n}: nur {"neu" if n > len(saved) else "in der Sicherung"} vorhanden')
+                    continue
+                d = diff_pages(read_pgm(saved[n - 1]), read_pgm(current[n - 1]), args.tolerance)
+                if d and 'box' in d:
+                    x0, y0, x1, y1 = d['box']
+                    changed.append(f'  Seite {n}: {100 * d["share"]:.2f} % der Fläche geändert, Bereich x {x0}–{x1} mm, '
+                                   f'y {y0}–{y1} mm, größte Abweichung {d["peak"]}/255')
+                elif d:
+                    changed.append(f'  Seite {n}: {d["note"]}')
+        print(f'Seitenvergleich {rel(html_path)}: {len(changed)} von {max(len(saved), len(current))} Seiten geändert'
+              + (f' (Toleranz {args.tolerance}/255)' if args.tolerance else ''))
+        for line in changed:
+            print(line)
+        rc = 2 if changed else rc
+    return rc
 
 
 # --------------------------------------------------------------------------- Befehle
@@ -1149,7 +1306,7 @@ def cmd_profile_template(args) -> int:
     for w in address_warnings(profile):
         print(f'  {w}')
     if args.qa:
-        qa = run_qa(out, ignore_slots=True)
+        qa = run_qa(out, ignore_slots=True, fast=args.qa == 'fast')
         print_qa(rel(out), qa, ['Platzhalter in Anschreiben und Motivationsschreiben sind in der Profilvorlage gewollt.'])
         if not qa['ok']:
             return 2
@@ -1160,74 +1317,15 @@ def cmd_profile_template(args) -> int:
     return 0
 
 
-def slot_span(doc: str, slot: str) -> tuple[int, int] | None:
-    """Start (inkl. Kommentarzeile davor) und Ende einer <section data-slot="…"> samt folgender Leerzeilen."""
-    m = re.search(rf'<section [^>]*data-slot="{slot}"[^>]*>', doc)
-    if not m:
-        return None
-    start = doc.rfind('\n', 0, m.start()) + 1
-    prev = doc.rfind('\n', 0, start - 1) + 1
-    if doc[prev:start].strip().startswith('<!--') and doc[prev:start].strip().endswith('-->'):
-        start = prev
-    depth, end = 0, None
-    for t in re.finditer(r'<(/?)section\b[^>]*>', doc[m.start():]):
-        depth += -1 if t.group(1) else 1
-        if depth == 0:
-            end = m.start() + t.end()
-            break
-    if end is None:
-        raise BuildError(f'Bereich data-slot="{slot}" ist nicht geschlossen')
-    while end < len(doc) and doc[end] == '\n':
-        end += 1
-    return start, end
-
-
-def replace_slot(doc: str, slot: str, new: str) -> str:
-    span = slot_span(doc, slot)
-    if not span:
-        raise BuildError(f'Profilvorlage hat keinen Bereich data-slot="{slot}". Profilvorlage neu bauen.')
-    return doc[:span[0]] + new + doc[span[1]:]
-
-
-def strip_slots(doc: str) -> str:
-    for slot in ('letter', 'motivation'):
-        span = slot_span(doc, slot)
-        if span:
-            doc = doc[:span[0]] + doc[span[1]:]
-    return doc
-
-
-def localize_assets(doc: str, src_dir: Path, app_dir: Path, pdir: Path) -> tuple[str, list[tuple[str, Path]]]:
-    """Kopiert alle lokal referenzierten Bilder nach application/assets/ und schreibt die Pfade um.
-
-    Jedes Bild muss (aufgelöst) unter profile/<name>/assets/ liegen. Zwei verschiedene Quelldateien mit
-    gleichem Dateinamen sind ein Fehler (kein stilles Überschreiben)."""
-    copied = []
-    assets = app_dir / 'assets'
-    allowed = (pdir / 'assets').resolve()
-    names: dict[str, Path] = {}
-
-    def repl(m):
-        src = html.unescape(m.group(1))
-        if re.match(r'(data|https?):|#', src) or src.startswith('assets/'):
-            return m.group(0)
-        path = (src_dir / src).resolve()
-        if allowed not in path.parents:
-            raise BuildError(f'Bild aus der Profilvorlage liegt nicht unter {rel(allowed)}/: {src}. '
-                             'Profilvorlage neu bauen; Profilfelder mit Dateipfaden prüfen.')
-        if not path.is_file():
-            raise BuildError(f'Bild aus der Profilvorlage fehlt: {src}')
-        if names.setdefault(path.name, path) != path:
-            raise BuildError(f'Namenskollision in application/assets/: „{path.name}“ kommt aus {rel(names[path.name])} '
-                             f'und {rel(path)}. Eine der Dateien umbenennen (Profilfelder anpassen), neu bauen.')
-        assets.mkdir(parents=True, exist_ok=True)
-        target = assets / path.name
-        if not target.exists() or target.read_bytes() != path.read_bytes():
-            shutil.copy2(path, target)
-        copied.append((f'assets/{path.name}', path))
-        return f'src="assets/{esc(path.name)}"'
-
-    return re.sub(r'src="([^"]+)"', repl, doc), copied
+def document_hash(html_path: Path) -> str:
+    """SHA-256 über die HTML-Datei und jede eingebundene Bilddatei (Name und Inhalt). Das ist der Stand, den der
+    Nutzer freigibt: Ändert sich danach ein Zeichen oder ein Bild, passt die Prüfsumme nicht mehr."""
+    data = html_path.read_bytes()
+    h = hashlib.sha256(data)
+    for path in sorted(set(local_images(data.decode('utf-8'), html_path.parent))):
+        h.update(b'\0' + path.name.encode('utf-8') + b'\0')
+        h.update(path.read_bytes() if path.is_file() else b'')
+    return h.hexdigest()
 
 
 def asset_entries(profile: dict, pdir: Path, copied: list[tuple[str, Path]]) -> list[dict]:
@@ -1487,41 +1585,28 @@ def cmd_application(args) -> int:
     pdir, user = info['profile_dir'], info['user']
     profile = load_profile(pdir)
     check_profile_assets(profile, pdir)
+    # Die Profilvorlage ist Vorschau und Freigabeobjekt für Deckblatt, Lebenslauf und Nachweise. Die Mappe selbst
+    # entsteht aus den Quellen; weicht die gespeicherte Profilvorlage davon ab, hat der Nutzer diesen Stand nie gesehen.
     tpl_path = profile_template_path(pdir)
     if not tpl_path.is_file():
         raise BuildError(f'Profilvorlage fehlt: {rel(tpl_path)}. Zuerst: build_mappe.py profile-template {rel(pdir)}')
-    if tpl_path.stat().st_mtime < profile_json_path(pdir).stat().st_mtime:
-        print('Warnung: Das Profil ist neuer als die Profilvorlage. Profilvorlage neu bauen und vom Nutzer prüfen lassen.',
+    if tpl_path.read_text(encoding='utf-8') != build_document(Ctx(profile, pdir, tpl_path.parent), warn=False)[0]:
+        print('Warnung: Die Profilvorlage ist nicht aktuell (Profil oder Vorlage wurden nach ihrem Bau geändert). '
+              f'Neu bauen und vom Nutzer prüfen lassen: build_mappe.py profile-template {rel(pdir)} --qa',
               file=sys.stderr)
     job = read_json(posting / 'job_information' / 'job.json')
     letter = read_letter(posting / 'text_generation' / 'anschreiben.md')
+    dated = letter_date(letter, posting / 'text_generation' / 'anschreiben.md')
     mot = read_motivation(posting / 'text_generation' / 'motivationsschreiben.md')
     app_dir = posting / 'application'
     app_dir.mkdir(parents=True, exist_ok=True)
     out = app_dir / html_name(user)
 
-    doc = tpl_path.read_text(encoding='utf-8')
-    ctx = Ctx(profile, pdir, tpl_path.parent)
-    starts = dict(re.findall(r'data-section="(\d)"[^>]*>\s*<header class="section-head">\s*<h2 id="[a-z]+-title">'
-                             r'[^<]*</h2>\s*<span class="folio" aria-label="Seite (\d+)"', doc))
-    letter_no = int(starts.get('2', 2))
-    mot_no = int(starts.get('4', 4))
-    doc = replace_slot(doc, 'letter', render_letter(ctx, letter_no, letter, job, info['type']))
-    doc = replace_slot(doc, 'motivation', render_motivation(ctx, mot_no, mot))
-    doc, copied = localize_assets(doc, tpl_path.parent, app_dir, pdir)
-    changed = not out.is_file() or out.read_text(encoding='utf-8') != doc
-    out.write_text(doc, encoding='utf-8')
-
-    pages = []
-    for m in re.finditer(r'<section class="page[^"]*" data-section="(\d)"[^>]*>\s*<header class="section-head">\s*'
-                         r'<h2[^>]*>(.*?)</h2>\s*<span class="folio" aria-label="Seite (\d+)"', doc):
-        page = {'number': int(m.group(3)), 'section': SECTIONS[int(m.group(1)) - 1]}
-        if 'class="continued"' in m.group(2):
-            page['continuation'] = True
-        pages.append(page)
-    if not doc.count('cover-page"'):
-        raise BuildError('Deckblatt fehlt in der Profilvorlage')
-    pages.insert(0, {'number': 1, 'section': 'deckblatt'})
+    ctx = Ctx(profile, pdir, app_dir, bundle=True)
+    doc, pages = build_document(ctx, letter, mot, job, info['type'])
+    copied = ctx.copied
+    if not out.is_file() or out.read_text(encoding='utf-8') != doc:  # unverändert nicht neu schreiben
+        out.write_text(doc, encoding='utf-8')
 
     man_path = app_dir / 'application-manifest.json'
     if man_path.is_file():
@@ -1544,12 +1629,18 @@ def cmd_application(args) -> int:
     })
     manifest.setdefault('created_at', today())
     manifest.setdefault('status', 'draft')
-    if changed and manifest['status'] in ('html_approved', 'pdf_exported'):
-        print('Hinweis: Die Mappe war freigegeben. Nach Änderungen muss der Nutzer sie erneut freigeben; '
-              'Status zurück auf draft.', file=sys.stderr)
+    # Freigegeben ist genau der Stand mit der Prüfsumme aus „status … html_approved“ (HTML und Bilder). Ergibt der
+    # Bau wieder diesen Stand, bleibt die Freigabe, auch wenn die gespeicherte Datei zwischendurch anders aussah.
+    approval_lost = ''
+    if manifest['status'] in ('html_approved', 'pdf_exported') and manifest.get('approved_sha256') != document_hash(out):
+        approval_lost = ('Die Freigabe hat keine Prüfsumme (ältere Freigabe)' if not manifest.get('approved_sha256')
+                         else 'Die Mappe weicht vom freigegebenen Stand ab (Text, Profil, Vorlage oder ein Bild '
+                              'wurde geändert)')
+        print(f'Hinweis: {approval_lost}. Der Nutzer muss die HTML-Fassung erneut freigeben; Status zurück auf draft.',
+              file=sys.stderr)
         manifest['status'] = 'draft'
         add_history(manifest, 'draft', today(), 'nach Änderung zurück auf draft')
-        for k in ('approved_at', 'pdf', 'pdf_exported_at'):
+        for k in ('approved_at', 'approved_sha256', 'pdf', 'pdf_exported_at'):
             manifest.pop(k, None)
     words_letter, words_mot = word_count(letter['paragraphs']), word_count(mot['paragraphs'])
     print(f'Mappe: {rel(out)} ({len(pages)} Seiten)')
@@ -1566,10 +1657,11 @@ def cmd_application(args) -> int:
         notes.append(f'Warnung: Anrede im Anschreiben weicht von job.json ab („{salutation}“).')
     rc = 0
     if args.qa:
-        qa = run_qa(out)
+        qa = run_qa(out, fast=args.qa == 'fast')
         qa['ok'] = qa['ok'] and email_state in ('ok', 'not_required')
         print_qa(rel(out), qa, notes)
         manifest['validation'] = {
+            'mode': qa['mode'],
             'placeholders_remaining': len(qa['placeholders']),
             'overflow': qa['overflow'],
             'overflow_pages': qa['overflow_pages'],
@@ -1589,17 +1681,26 @@ def cmd_application(args) -> int:
         for n in notes:
             print(f'  {n}')
     if args.pdf:
+        if args.qa == 'fast':
+            write_json(man_path, manifest)
+            sync_ledger(pdir)
+            raise BuildError('Kein PDF nach --qa=fast: Das finale PDF braucht die volle Prüfung (--qa).')
         if manifest['status'] not in ('html_approved', 'pdf_exported', 'sent'):
             write_json(man_path, manifest)
             sync_ledger(pdir)
-            raise BuildError('Kein PDF: Die HTML-Fassung ist nicht freigegeben. Erst nach dem ausdrücklichen Ja des '
-                             f'Nutzers: build_mappe.py status "{rel(posting)}" html_approved')
+            raise BuildError(f'Kein PDF: {approval_lost or "Die HTML-Fassung ist nicht freigegeben"}. Erst nach dem '
+                             f'ausdrücklichen Ja des Nutzers: build_mappe.py status "{rel(posting)}" html_approved')
         if email_msg:
             write_json(man_path, manifest)
             sync_ledger(pdir)
             raise BuildError(f'Kein PDF: {email_msg}')
         if rc:
             raise BuildError('Kein PDF: Die QA meldet Probleme.')
+        age = (dt.date.today() - dated).days
+        if age > LETTER_MAX_AGE_DAYS:
+            raise BuildError(f'Kein PDF: Das Briefdatum {short_date(dated.isoformat())} ist {age} Tage alt (höchstens '
+                             f'{LETTER_MAX_AGE_DAYS}). „datum“ in text_generation/anschreiben.md auf den Versandtag '
+                             'setzen, neu bauen und die HTML-Fassung erneut freigeben lassen.')
         pdf = app_dir / html_name(user, 'pdf')
         print_pdf(out, pdf)
         stamp = now_iso()
@@ -1618,7 +1719,7 @@ def cmd_application(args) -> int:
 
 def cmd_qa(args) -> int:
     html_path = Path(args.html)
-    qa = run_qa(html_path)
+    qa = run_qa(html_path, fast=args.fast)
     extra, email_ok = [], True
     if html_path.resolve().parent.name == 'application':
         try:
@@ -1649,13 +1750,153 @@ def cmd_preview(args) -> int:
     return 0
 
 
-def cmd_validate(args) -> int:
+def cmd_master(args) -> int:
+    """Master-Vorlage assets/bewerbungsmappe.html aus assets/mappe/ bauen (--check: nur vergleichen)."""
+    doc = build_master()
+    same = TEMPLATE.is_file() and TEMPLATE.read_text(encoding='utf-8') == doc
+    if args.check:
+        print(f'Master-Vorlage {rel(TEMPLATE)}: '
+              + ('aktuell' if same else 'NICHT AKTUELL. Neu bauen: python3 tools/build_mappe.py master'))
+        return 0 if same else 2
+    if not same:  # unverändert nicht neu schreiben: die Vorschau lädt sonst ohne Grund neu
+        TEMPLATE.write_text(doc, encoding='utf-8')
+    print(f'Master-Vorlage: {rel(TEMPLATE)} ({len(master_model()["pages"])} Seiten, '
+          f'{"unverändert" if same else "aktualisiert"})')
+    return 0
+
+
+def first_difference(stored: str, expected: str) -> str:
+    a, b = stored.splitlines(), expected.splitlines()
+    for n, (x, y) in enumerate(zip(a, b), 1):
+        if x != y:
+            return f'erste Abweichung in Zeile {n}'
+    return f'{len(a)} statt {len(b)} Zeilen'
+
+
+def expected_application(posting: Path) -> tuple[Path, str, list[tuple[str, Path]]]:
+    """Gespeicherte HTML-Datei einer Bewerbung, ihr Soll-Inhalt aus den Quellen und die eingebundenen Bilder.
+    Schreibt nichts."""
+    info = posting_info(posting)
+    pdir = info['profile_dir']
+    job = read_json(posting / 'job_information' / 'job.json')
+    letter = read_letter(posting / 'text_generation' / 'anschreiben.md')
+    letter_date(letter, posting / 'text_generation' / 'anschreiben.md')
+    mot = read_motivation(posting / 'text_generation' / 'motivationsschreiben.md')
+    ctx = Ctx(load_profile(pdir), pdir, posting / 'application', bundle=True, dry=True)
+    doc, _ = build_document(ctx, letter, mot, job, info['type'], warn=False)
+    return posting / 'application' / html_name(info['user']), doc, ctx.copied
+
+
+def cmd_rebuild(args) -> int:
+    """rebuild --check: Jede gespeicherte Datei muss Byte für Byte dem entsprechen, was ihre Quellen jetzt ergeben.
+
+    Ziele: „master“, ein Profilordner (Profilvorlage und alle gebauten Mappen) oder ein Stellenordner."""
+    if not args.check:
+        raise BuildError('rebuild vergleicht nur: rebuild --check <ziel>…. Gebaut wird mit master, profile-template '
+                         'und application.')
+    jobs: list[tuple[Path, object]] = []  # (gespeicherte Datei, Funktion -> (Soll-Inhalt, Bilder))
+    for item in args.target:
+        if item == 'master':
+            jobs.append((TEMPLATE, lambda: (build_master(), [])))
+            continue
+        path = Path(item).resolve()
+        pdir = profile_dir_of(path)
+        postings = [path]
+        if path == pdir:
+            tpl = profile_template_path(pdir)
+            jobs.append((tpl, lambda pdir=pdir, tpl=tpl: (
+                build_document(Ctx(load_profile(pdir), pdir, tpl.parent), warn=False)[0], [])))
+            postings = [p for p in iter_postings(pdir) if (p / 'application' / html_name(pdir.name)).is_file()]
+        for posting in postings:
+            stored = posting / 'application' / html_name(pdir.name)
+            jobs.append((stored, lambda posting=posting: expected_application(posting)[1:]))
+    rc = 0
+    for stored, build in jobs:
+        try:
+            expected, copied = build()
+        except BuildError as e:
+            print(f'FEHLER     {rel(stored)}: {e}')
+            rc = 2
+            continue
+        stale = [href for href, src in copied
+                 if not (stored.parent / href).is_file() or (stored.parent / href).read_bytes() != src.read_bytes()]
+        if not stored.is_file():
+            print(f'fehlt      {rel(stored)}')
+        elif stored.read_text(encoding='utf-8') != expected:
+            print(f'WEICHT AB  {rel(stored)}: {first_difference(stored.read_text(encoding="utf-8"), expected)}')
+        elif stale:
+            print(f'WEICHT AB  {rel(stored)}: Bild anders als die Quelle: {", ".join(stale)}')
+        else:
+            print(f'identisch  {rel(stored)}')
+            continue
+        rc = 2
+    return rc
+
+
+def cmd_contract(args) -> int:
+    """Vertrag zwischen View-Model, Partials und CSS, aus den Dateien abgeleitet (ersetzt jede Liste von Hand)."""
+    sources = partial_sources()
+    try:
+        engine = Renderer(sources)
+    except RenderError as e:
+        raise BuildError(f'Vorlage unter {rel(MAPPE)}: {e}')
+    css, used, problems = css_classes(), set(), []
+    print(f'Partials unter {rel(PARTIALS)}/ (Schlüssel: „a[].b“ = b innerhalb des Abschnitts a)')
+    for name, source in sources.items():
+        outline = engine.outline(name)
+        keys = [k for k in outline if '> ' not in k]
+        includes = sorted({k.rsplit('> ', 1)[1] for k in outline if '> ' in k})
+        classes = partial_classes(source)
+        used |= classes
+        markup = re.sub(r'<!--.*?-->', '', TAG.sub('', source), flags=re.S)
+        parts = set(re.findall(r'data-part="([^"]*)"', source))
+        if name != 'document' and re.search(r'<(?!w?br>)[a-z]', markup) and parts != {name}:
+            problems.append(f'{name}.html: das Wurzelelement braucht data-part="{name}" (gefunden: '
+                            f'{", ".join(sorted(parts)) or "keins"})')
+        problems += [f'{name}.html: Partial „{inc}“ fehlt' for inc in includes if inc not in sources]
+        print(f'\n{name}.html' + (f'  data-part="{name}"' if parts == {name} else ''))
+        print(f'  Schlüssel: {", ".join(keys) or "–"}')
+        if includes:
+            print(f'  bindet ein: {", ".join(includes)}')
+        if classes:
+            print(f'  Klassen: {", ".join(sorted(classes))}')
+        dynamic = sorted(set(re.findall(r'class="([^"]*\{\{[^"]*)"', source)))
+        if dynamic:
+            print('  Klassen mit Werten aus dem View-Model: ' + ' | '.join(dynamic))
+        origins = sorted(set(re.findall(r'data-origin="([^"{]+)"', source)))
+        if origins:
+            print(f'  feste data-origin: {", ".join(origins)}')
+    print(f'\nSymbole in {rel(MAPPE / "icons.svg")}: {len(symbol_table())}')
+    print(f'Klassen in Partials ohne CSS-Regel: {", ".join(sorted(used - css)) or "keine"}')
+    print('CSS-Klassen, die kein Partial fest nennt (vom View-Model gesetzt, Variante oder unbenutzt): '
+          + (', '.join(sorted(css - used)) or 'keine'))
+    for p in problems:
+        print(f'FEHLER  {p}')
+    return 1 if problems else 0
+
+
+def schema_errors(data, schema: dict) -> list[str]:
+    """Verstöße gegen ein Schema als „Pfad: Meldung“. Maßgeblich ist tools/schema_lite.py (läuft ohne Installation).
+    Ist das Paket jsonschema vorhanden, prüft es zusätzlich; was nur es findet, wird mit „(jsonschema)“ gemeldet."""
+    try:
+        found = schema_lite.errors(data, schema)
+    except schema_lite.SchemaError as e:
+        raise BuildError(f'Schema {schema.get("$id", "")}: {e}')
+    out = [f'{where}: {message}' for where, message in sorted(found)]
     try:
         import jsonschema  # optional, nicht Teil der Standardbibliothek
     except ImportError:
-        print('Das Paket jsonschema fehlt. Einmalig: python3 -m venv .tmp/venv && .tmp/venv/bin/pip install jsonschema '
-              '&& .tmp/venv/bin/python tools/build_mappe.py validate …')
-        return 3
+        return out
+    seen = {where for where, _ in found}
+    validator = jsonschema.Draft202012Validator(schema, format_checker=jsonschema.FormatChecker())
+    for e in sorted(validator.iter_errors(data), key=lambda e: [str(x) for x in e.path]):
+        where = '/'.join(str(x) for x in e.path) or '(root)'
+        if where not in seen:
+            out.append(f'{where}: {e.message} (jsonschema)')
+    return out
+
+
+def cmd_validate(args) -> int:
     path = Path(args.dir).resolve()
     pdir = profile_dir_of(path)
     checks = []
@@ -1686,12 +1927,10 @@ def cmd_validate(args) -> int:
             print(f'fehlt   {rel(file)}')
             bad += 1
             continue
-        validator = jsonschema.Draft202012Validator(read_json(SCHEMAS / schema),
-                                                    format_checker=jsonschema.FormatChecker())
-        errors = sorted(validator.iter_errors(read_json(file)), key=lambda e: list(e.path))
+        errors = schema_errors(read_json(file), read_json(SCHEMAS / schema))
         print(f'{"ok    " if not errors else "FEHLER"}  {rel(file)}')
-        for e in errors[:20]:
-            print(f'        {"/".join(str(x) for x in e.path) or "(root)"}: {e.message}')
+        for line in errors[:20]:
+            print(f'        {line}')
         bad += bool(errors)
     for posting in postings:
         if posting_info(posting)['dropped']:
@@ -1913,9 +2152,19 @@ def cmd_status(args) -> int:
     ensure_history(manifest, find_entry(load_ledger(pdir), info['folder'], job.get('reference_number')))
     stamp = (dt.datetime.fromisoformat(args.date).astimezone().replace(microsecond=0).isoformat()
              if args.date else now_iso())
-    manifest['status'] = args.status
     if args.status == 'html_approved':
+        html_file = posting / 'application' / manifest.get('html', html_name(info['user']))
+        if not html_file.is_file():
+            raise BuildError(f'HTML-Fassung fehlt: {rel(html_file)}. Zuerst: build_mappe.py application '
+                             f'"{rel(posting)}" --qa')
+        if html_file.read_text(encoding='utf-8') != expected_application(posting)[1]:
+            raise BuildError(f'Die gespeicherte Mappe {rel(html_file)} entspricht nicht ihren Quellen (Text, Profil '
+                             'oder Vorlage wurden nach dem Bau geändert). Freigeben lässt sich nur, was der Nutzer '
+                             f'gesehen hat: zuerst build_mappe.py application "{rel(posting)}" --qa, die Mappe zeigen '
+                             'und erneut fragen.')
         manifest['approved_at'] = stamp
+        manifest['approved_sha256'] = document_hash(html_file)  # genau dieser Stand ist freigegeben
+    manifest['status'] = args.status
     if args.status == 'sent':
         manifest['sent_at'] = stamp
     if args.channel:
@@ -2016,13 +2265,22 @@ def cmd_stats(args) -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='cmd', required=True)
-    s = sub.add_parser('profile-template'); s.add_argument('dir'); s.add_argument('--qa', action='store_true')
+    s = sub.add_parser('profile-template'); s.add_argument('dir'); s.add_argument('--qa', choices=QA_MODES)
     s.add_argument('--pdf', action='store_true'); s.set_defaults(fn=cmd_profile_template)
-    s = sub.add_parser('application'); s.add_argument('dir'); s.add_argument('--qa', action='store_true')
+    s = sub.add_parser('application'); s.add_argument('dir'); s.add_argument('--qa', choices=QA_MODES)
     s.add_argument('--pdf', action='store_true'); s.set_defaults(fn=cmd_application)
-    s = sub.add_parser('qa'); s.add_argument('html'); s.set_defaults(fn=cmd_qa)
+    s = sub.add_parser('qa'); s.add_argument('html'); s.add_argument('--fast', action='store_true')
+    s.set_defaults(fn=cmd_qa)
     s = sub.add_parser('preview'); s.add_argument('html'); s.add_argument('out')
     s.add_argument('--dpi', type=int, default=70); s.set_defaults(fn=cmd_preview)
+    s = sub.add_parser('snapshot'); s.add_argument('html', nargs='+')
+    mode = s.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--save', action='store_true'); mode.add_argument('--compare', action='store_true')
+    s.add_argument('--name'); s.add_argument('--tolerance', type=int, default=0); s.set_defaults(fn=cmd_snapshot)
+    s = sub.add_parser('master'); s.add_argument('--check', action='store_true'); s.set_defaults(fn=cmd_master)
+    s = sub.add_parser('rebuild'); s.add_argument('target', nargs='+'); s.add_argument('--check', action='store_true')
+    s.set_defaults(fn=cmd_rebuild)
+    s = sub.add_parser('contract'); s.set_defaults(fn=cmd_contract)
     s = sub.add_parser('validate'); s.add_argument('dir'); s.set_defaults(fn=cmd_validate)
     s = sub.add_parser('check-duplicate'); s.add_argument('dir'); s.set_defaults(fn=cmd_check_duplicate)
     s = sub.add_parser('ledger'); s.add_argument('action', choices=['sync']); s.add_argument('dir')
@@ -2037,6 +2295,8 @@ def main(argv=None) -> int:
     s.add_argument('--date'); s.set_defaults(fn=cmd_drop)
     s = sub.add_parser('restore'); s.add_argument('dir'); s.set_defaults(fn=cmd_restore)
     s = sub.add_parser('stats'); s.add_argument('dir'); s.set_defaults(fn=cmd_stats)
+    # „--qa“ ohne Wert heißt volle Prüfung; so bleibt die Reihenfolge von Schalter und Ordner frei.
+    argv = ['--qa=full' if a == '--qa' else a for a in (sys.argv[1:] if argv is None else argv)]
     args = ap.parse_args(argv)
     try:
         return args.fn(args)

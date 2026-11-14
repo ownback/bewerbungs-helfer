@@ -1,0 +1,3 @@
+{{! Skala 1 bis 5 als fünf Leisten. Klasse s<scale>, is-future bei Lernwunsch. Die Musterleisten der Legende
+   haben kein label und damit keine Rolle für Screenreader. }}
+<span class="bars s{{scale}}{{#future}} is-future{{/future}}" data-part="bars"{{#label}} role="img" aria-label="{{scale}} von 5: {{label}}"{{/label}}><span></span><span></span><span></span><span></span><span></span></span>

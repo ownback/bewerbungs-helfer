@@ -5,8 +5,11 @@ The documents never contain the Tencil script tag (they are exported to PDF); th
 server injects it on the fly, together with:
 
 * ``data-tencil-src="<repo-relative path>:<line>:<col>"`` and ``data-tencil-component``
-  on every element in <body>, so each Tencil pin names the exact source line.
-  Attributes are inserted inside existing start tags, so line numbers never shift.
+  on every element in <body>. All served documents are build outputs, so the path is not
+  the served file but its source: the build marks elements with ``data-origin`` (where
+  the content comes from) and ``data-part`` (the partial that draws them), and this server
+  resolves them to file and line (class SourceMap). The content source wins; the label
+  names both. Attributes are inserted inside existing start tags, nothing else changes.
 * a tiny live-reload poller that reloads the page when the file changes.
 
 Modes
@@ -53,12 +56,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_REL = ".agents/skills/bewerbungshelfer/assets/bewerbungsmappe.html"
 TEMPLATE = REPO_ROOT / TEMPLATE_REL
+MAPPE = REPO_ROOT / ".agents/skills/bewerbungshelfer/assets/mappe"  # sources of the template
+PARTIALS = MAPPE / "partials"
+BUILD_SCRIPT = REPO_ROOT / "tools" / "build_mappe.py"
 
 # Same skip list as Tencil's own source tagging, plus <body> itself.
 SKIP_TAGS = {
     "html", "head", "body", "meta", "link", "script", "style", "title",
     "base", "noscript", "template", "slot",
 }
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
 
 SESSION_COOKIE = "mappe_review"
 SESSION_TTL = 12 * 3600
@@ -74,34 +81,49 @@ RELOAD_SNIPPET = """<script data-review-only>(()=>{let v=null;const tick=async()
 
 
 class _TagCollector(HTMLParser):
-    """Records where each start tag in <body> sits in the source."""
+    """Records where each start tag in <body> sits in the source, with the nearest data-part and data-origin
+    (own attribute or inherited from an ancestor) and the index of the parent element."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.inserts: list[tuple[int, int, int, str, dict[str, str | None]]] = []
+        # (line, col, tag-name length, tag, attrs, data-part, data-origin, index of the parent insert or None)
+        self.inserts: list[tuple[int, int, int, str, dict[str, str | None], str | None, str | None, int | None]] = []
+        self.stack: list[tuple[str, str | None, str | None, int | None]] = []  # open elements: tag, part, origin, index
         self.in_body = False
         self.svg_depth = 0
 
-    def _record(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if not self.in_body or tag in SKIP_TAGS or self.svg_depth > 0:
+    def _record(self, tag: str, attrs: list[tuple[str, str | None]], opens: bool) -> None:
+        if not self.in_body or tag in SKIP_TAGS:
             return
-        line, col = self.getpos()  # 1-based line, 0-based column
-        raw = self.get_starttag_text() or ""
-        name_len = len(re.match(r"<\s*([^\s/>]+)", raw).group(1)) if raw else len(tag)
-        self.inserts.append((line, col, name_len, tag, dict(attrs)))
+        values = dict(attrs)
+        _, part, origin, parent = self.stack[-1] if self.stack else ("", None, None, None)
+        part = values.get("data-part") or part
+        origin = values.get("data-origin") or origin
+        index = parent
+        if self.svg_depth == 0:
+            line, col = self.getpos()  # 1-based line, 0-based column
+            raw = self.get_starttag_text() or ""
+            name_len = len(re.match(r"<\s*([^\s/>]+)", raw).group(1)) if raw else len(tag)
+            index = len(self.inserts)
+            self.inserts.append((line, col, name_len, tag, values, part, origin, parent))
+        if opens and tag not in VOID_TAGS:
+            self.stack.append((tag, part, origin, index))
 
     def handle_starttag(self, tag, attrs):
         if tag == "body":
             self.in_body = True
             return
-        self._record(tag, attrs)
+        self._record(tag, attrs, opens=True)
         if tag == "svg":
             self.svg_depth += 1
 
     def handle_startendtag(self, tag, attrs):
-        self._record(tag, attrs)
+        self._record(tag, attrs, opens=False)
 
     def handle_endtag(self, tag):
+        if any(open_tag == tag for open_tag, *_ in self.stack):
+            while self.stack.pop()[0] != tag:
+                pass
         if tag == "svg" and self.svg_depth > 0:
             self.svg_depth -= 1
         elif tag == "body":
@@ -115,6 +137,195 @@ def _label(tag: str, attrs: dict[str, str | None]) -> str:
     return f"{tag}.{classes[0]}" if classes else tag
 
 
+# --------------------------------------------------------------------------- pin mapping
+#
+# Built documents carry two hooks (see references/template.md, Attribute für Pins):
+#   data-part="<name>"     the partial assets/mappe/partials/<name>.html that draws the element (looks)
+#   data-origin="<source>" where the content comes from: profile:<path>, job:<path>, master:<path>,
+#                          text:<file>#<anchor>, build:<name in build_mappe.py>
+# SourceMap turns both into "<repo-relative file>:<line>", so a pin names the file to edit, not the built file.
+
+_JSON_WS = re.compile(r"\s*")
+_JSON_STRING = re.compile(r'"(?:[^"\\]|\\.)*"')
+_JSON_SCALAR = re.compile(r"[^,\]\}\s]+")
+
+
+def _json_scan(text: str, pos: int):
+    """Minimal JSON reader that keeps offsets. Returns (node, end); node is ("obj", {key: (offset, node)}),
+    ("arr", [(offset, node)]) or ("val", raw text)."""
+    pos = _JSON_WS.match(text, pos).end()
+    if text[pos] == "{":
+        members: dict[str, tuple[int, tuple]] = {}
+        pos += 1
+        while True:
+            pos = _JSON_WS.match(text, pos).end()
+            if text[pos] == "}":
+                return ("obj", members), pos + 1
+            if text[pos] == ",":
+                pos += 1
+                continue
+            key = _JSON_STRING.match(text, pos)
+            colon = text.index(":", key.end())
+            node, end = _json_scan(text, colon + 1)
+            members[json.loads(key.group())] = (pos, node)
+            pos = end
+    if text[pos] == "[":
+        items: list[tuple[int, tuple]] = []
+        pos += 1
+        while True:
+            pos = _JSON_WS.match(text, pos).end()
+            if text[pos] == "]":
+                return ("arr", items), pos + 1
+            if text[pos] == ",":
+                pos += 1
+                continue
+            node, end = _json_scan(text, pos)
+            items.append((pos, node))
+            pos = end
+    match = _JSON_STRING.match(text, pos) or _JSON_SCALAR.match(text, pos)
+    return ("val", match.group()), match.end()
+
+
+def json_line(text: str, path: str) -> int | None:
+    """Line of a path like ``person.address``, ``skills.groups[0].items[2]`` or ``experience[exp-id]`` in a JSON
+    text. ``[x]`` selects the array entry whose "id" is x, otherwise entry number x. If the path ends early, the
+    line of the deepest part found is returned."""
+    try:
+        node, _ = _json_scan(text, 0)
+    except (IndexError, AttributeError, ValueError):
+        return None
+    pos = 0
+    for token in re.findall(r"[^.\[\]]+|\[[^\]]*\]", path):
+        found = None
+        if token.startswith("[") and node[0] == "arr":
+            key = token[1:-1]
+            for start, item in node[1]:
+                ident = item[1].get("id") if item[0] == "obj" else None
+                if ident and ident[1][0] == "val" and str(json.loads(ident[1][1])) == key:
+                    found = (start, item)
+                    break
+            if found is None and key.isdigit() and int(key) < len(node[1]):
+                found = node[1][int(key)]
+        elif node[0] == "obj":
+            found = node[1].get(token)
+        if found is None:
+            break
+        pos, node = found
+    return text.count("\n", 0, pos) + 1
+
+
+def markdown_line(text: str, anchor: str) -> int | None:
+    """Line of an anchor in anschreiben.md or motivationsschreiben.md: a key of the head (``datum``, ``betreff``),
+    ``pN`` (Nth paragraph; in a file with a "## Text" section the Nth paragraph of that section), ``einstieg``
+    (first paragraph of "## Einstieg") or ``belegN`` (Nth list line of "## Belege"). Mirrors the reading rules of
+    tools/build_mappe.py (comments and headings are no paragraphs)."""
+    lines = text.split("\n")
+    body = 0
+    if lines and lines[0].startswith("---"):
+        for i in range(1, len(lines)):
+            if lines[i].startswith("---"):
+                body = i + 1
+                break
+            if ":" in lines[i] and lines[i].split(":", 1)[0].strip().lower() == anchor:
+                return i + 1
+    blanked = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), "\n".join(lines[body:]), flags=re.S)
+    paragraphs: list[tuple[str | None, int]] = []  # (section, line) of each paragraph start
+    bullets: list[tuple[str | None, int]] = []
+    section, inside = None, False
+    for i, line in enumerate(blanked.split("\n"), body + 1):
+        stripped = line.strip()
+        heading = re.match(r"#+\s*(.+?)\s*$", stripped)
+        if heading:
+            section, inside = heading.group(1).lower(), False
+        elif not stripped:
+            inside = False
+        else:
+            if stripped.startswith(("-", "*")):
+                bullets.append((section, i))
+            if not inside:
+                paragraphs.append((section, i))
+            inside = True
+    match = re.fullmatch(r"(p|beleg)(\d+)", anchor)
+    if not match:
+        pool, number = [n for sec, n in paragraphs if sec == anchor], 1
+    elif match.group(1) == "p":
+        pool, number = [n for sec, n in paragraphs if sec == "text"] or [n for _, n in paragraphs], int(match.group(2))
+    else:
+        pool, number = [n for sec, n in bullets if sec == "belege"], int(match.group(2))
+    return pool[number - 1] if 0 < number <= len(pool) else None
+
+
+class SourceMap:
+    """Resolves data-part and data-origin of one served document to "<repo-relative file>:<line>"."""
+
+    def __init__(self, rel: str) -> None:
+        doc = REPO_ROOT / rel
+        self.files: dict[str, Path] = {"master": MAPPE / "master.json"}
+        self.texts: Path | None = None
+        parts = Path(rel).parts
+        if len(parts) > 2 and parts[0] == "profile":
+            name = parts[1]
+            self.files["profile"] = REPO_ROOT / "profile" / name / "assets" / "profile" / f"{name}_profile.json"
+            if doc.parent.name == "application":
+                posting = doc.parent.parent
+                self.files["job"] = posting / "job_information" / "job.json"
+                self.texts = posting / "text_generation"
+        self._cache: dict[Path, str | None] = {}
+        self._parts: dict[str, list[str] | None] = {}
+
+    def _text(self, path: Path) -> str | None:
+        if path not in self._cache:
+            try:
+                self._cache[path] = path.read_text(encoding="utf-8")
+            except OSError:
+                self._cache[path] = None
+        return self._cache[path]
+
+    @staticmethod
+    def _ref(path: Path, line: int | None) -> tuple[str, int]:
+        return path.relative_to(REPO_ROOT).as_posix(), line or 1
+
+    def origin(self, origin: str) -> tuple[str, int] | None:
+        scheme, _, rest = origin.partition(":")
+        if scheme in self.files:
+            text = self._text(self.files[scheme])
+            return None if text is None else self._ref(self.files[scheme], json_line(text, rest))
+        if scheme == "text" and self.texts is not None:
+            name, _, anchor = rest.partition("#")
+            path = self.texts / Path(name).name
+            text = self._text(path)
+            return None if text is None else self._ref(path, markdown_line(text, anchor))
+        if scheme == "build":
+            text = self._text(BUILD_SCRIPT) or ""
+            found = re.search(rf"^(?:def {re.escape(rest)}\b|{re.escape(rest)}\s*=)", text, re.M)
+            return self._ref(BUILD_SCRIPT, text.count("\n", 0, found.start()) + 1 if found else None)
+        return None
+
+    def part(self, part: str, tag: str, attrs: dict[str, str | None], inherited: tuple[str, int] | None) \
+            -> tuple[str, int] | None:
+        """Line in the partial that draws this element: the line naming its tag and one of its classes, else the
+        line of the parent element (same partial), else the line carrying data-part."""
+        path = PARTIALS / f"{Path(part).name}.html"
+        if part not in self._parts:
+            text = self._text(path)
+            self._parts[part] = None if text is None else text.split("\n")
+        lines = self._parts[part]
+        if lines is None:
+            return None
+        if attrs.get("data-part") != part:
+            for cls in (attrs.get("class") or "").split():
+                rx = re.compile(rf'<{re.escape(tag)}\b[^>]*class="[^"]*(?<![\w-]){re.escape(cls)}(?![\w-])')
+                for number, line in enumerate(lines, 1):
+                    if rx.search(line):
+                        return self._ref(path, number)
+            if inherited and inherited[0] == path.relative_to(REPO_ROOT).as_posix():
+                return inherited
+        for number, line in enumerate(lines, 1):
+            if f'data-part="{part}"' in line:
+                return self._ref(path, number)
+        return self._ref(path, 1)
+
+
 def render_template(source: str, tencil_src: str, rel: str = TEMPLATE_REL, back_link: bool = False) -> str:
     parser = _TagCollector()
     parser.feed(source)
@@ -124,13 +335,28 @@ def render_template(source: str, tencil_src: str, rel: str = TEMPLATE_REL, back_
     for match in re.finditer("\n", source):
         line_starts.append(match.end())
 
+    sources = SourceMap(rel)
+    part_refs: list[tuple[str, int] | None] = []
     pieces: list[str] = []
     last = 0
-    for line, col, name_len, tag, attrs in parser.inserts:
+    for line, col, name_len, tag, attrs, part, origin, parent in parser.inserts:
         at = line_starts[line - 1] + col + 1 + name_len
+        part_ref = sources.part(part, tag, attrs, part_refs[parent] if parent is not None else None) if part else None
+        part_refs.append(part_ref)
+        origin_ref = sources.origin(origin) if origin else None
+        # Content source first (it is the file a wording or data pin has to change), else the partial, else the
+        # position in the served file. The label names both, so the pin context shows looks and content.
+        target = origin_ref or part_ref
+        src = f"{target[0]}:{target[1]}:1" if target else f"{rel}:{line}:{col + 1}"
+        notes = []
+        if part_ref:
+            notes.append(f"Aussehen {part_ref[0]}:{part_ref[1]}")
+        if origin:
+            notes.append(f"Inhalt {origin}")
+        label = _label(tag, attrs) + (f" [{' · '.join(notes)}]" if notes else "")
         extra = (
-            f' data-tencil-src="{html.escape(f"{rel}:{line}:{col + 1}")}"'
-            f' data-tencil-component="{html.escape(_label(tag, attrs))}"'
+            f' data-tencil-src="{html.escape(src)}"'
+            f' data-tencil-component="{html.escape(label)}"'
         )
         pieces.append(source[last:at])
         pieces.append(extra)
@@ -210,9 +436,9 @@ def resolve_doc(url_path: str) -> Path | None:
 
 
 KIND_NOTES = {
-    "master": "Pins ändern direkt diese Datei. Danach Profilvorlagen und Mappen neu bauen.",
-    "profile": "Gebaute Datei. Pins werden in die Master-Vorlage, das Profil-JSON oder das Build-Skript übersetzt, dann neu gebaut.",
-    "application": "Gebaute Datei. Pins werden in Master-Vorlage, Profil, Texte (.md) oder Build-Skript übersetzt, dann neu gebaut.",
+    "master": "Gebaute Datei mit Platzhaltern. Pins zum Aussehen ändern die Quellen unter assets/mappe/ (Partial und CSS), dann wird sie neu gebaut.",
+    "profile": "Gebaute Datei. Pins zum Aussehen ändern die Quellen unter assets/mappe/, Pins zum Inhalt das Profil-JSON; dann wird neu gebaut.",
+    "application": "Gebaute Datei. Pins zum Aussehen ändern die Quellen unter assets/mappe/, Pins zum Inhalt Profil, job.json oder die Texte (.md); dann wird neu gebaut.",
 }
 
 

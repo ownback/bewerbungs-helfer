@@ -30,7 +30,7 @@ Enthält ein Auftrag einen Block `<tencil-context>`, ist er ein Pin aus der visu
 - Nichts automatisch senden, kein Portal ausfüllen, nichts hochladen.
 - Finales PDF erst nach ausdrücklicher Freigabe der HTML-Fassung.
 - Keine Fotos fremder Personen; nur das eigene, freigegebene Foto des Nutzers.
-- Generiertes HTML nie von Hand bearbeiten: Inhalte in den `.md`- und Profil-Dateien ändern, Design nur in der Skill-Vorlage `assets/bewerbungsmappe.html`, dann `tools/build_mappe.py` erneut ausführen.
+- Generiertes HTML nie von Hand bearbeiten, auch die Master-Vorlage `assets/bewerbungsmappe.html` nicht: Inhalte in den `.md`- und Profil-Dateien ändern, Design nur in den Quellen unter `assets/mappe/`, dann `tools/build_mappe.py master` und neu bauen.
 
 ## Daten
 

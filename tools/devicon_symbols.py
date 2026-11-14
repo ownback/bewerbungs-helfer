@@ -27,8 +27,9 @@ Prüfungen (jede Datei einzeln; ein Fehler nennt die Datei und bricht nur diese 
 - das fertige Symbol wird nochmals als XML gelesen und gegen dieselben Regeln geprüft
 
 Ausgabe: je gültiger Datei eine Zeile <symbol id="…" viewBox="…">…</symbol> auf stdout, Fehler auf stderr.
-Die Zeilen kommen in die SVG-Bibliothek von assets/bewerbungsmappe.html (alphabetisch nach id), danach die
-Tabelle in references/template.md und assets/icons/README.md ergänzen."""
+Die Zeilen kommen nach assets/mappe/icons.svg (alphabetisch nach id, eine Zeile pro Symbol), danach die
+Tabelle in references/template.md und assets/icons/README.md ergänzen und die Master-Vorlage neu bauen
+(build_mappe.py master)."""
 import argparse
 import pathlib
 import re

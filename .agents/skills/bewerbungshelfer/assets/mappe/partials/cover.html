@@ -1,0 +1,57 @@
+{{! Deckblatt: oben der Farbraum (.cover-stage) mit Name, Beruf und Glasleiste, darunter auf Papier (.cover-intro)
+   Kurzprofil und Beginn. Die Klasse am Namen (is-long, is-xlong) setzt das Skript nach dem längsten Namensteil.
+   Das Foto erscheint nur mit person.photo.valid und consent; sonst entfällt der Block ohne Platzhalterrahmen. }}
+  <!-- Deckblatt -->
+  <section class="page cover-page" data-section="{{section_no}}" aria-labelledby="cover-title" data-part="cover">
+    <div class="cover-layout">
+      <div class="cover-stage">
+      <div class="cover-main">
+        <p class="cover-mark"><svg class="icon"><use href="#i-folder"/></svg>Bewerbungsmappe</p>
+        <div class="cover-hero">
+{{#name}}
+          <h1 id="cover-title"{{#cls}} class="{{cls}}"{{/cls}} data-origin="{{origin}}">{{first}}<br>{{last}}</h1>
+{{/name}}
+{{#role}}
+          <p class="cover-role" data-origin="{{origin}}">{{> text}}</p>
+{{/role}}
+        </div>
+      </div>
+
+      <aside class="cover-panel glass glass-dark" aria-label="Kontakt und Inhalt">
+{{#photo}}
+        <figure class="cover-photo"{{#style}} style="{{style}}"{{/style}} data-origin="{{origin}}"><img src="{{src}}" alt="{{alt}}"></figure>
+{{/photo}}
+        <p class="label"><svg class="icon"><use href="#i-user"/></svg>Kontakt</p>
+        <div class="contact-list">
+{{#phone}}
+          <p class="contact-item" data-origin="{{origin}}"><svg class="icon"><use href="#i-phone"/></svg><span>{{text}}</span></p>
+{{/phone}}
+{{#email}}
+          <p class="contact-item" data-origin="{{origin}}"><svg class="icon"><use href="#i-mail"/></svg><span>{{> text}}</span></p>
+{{/email}}
+{{#address}}
+          <p class="contact-item" data-origin="{{origin}}"><svg class="icon"><use href="#i-pin"/></svg><span>{{> text}}</span></p>
+{{/address}}
+        </div>
+        <div class="panel-spacer"></div>
+        <nav aria-label="Inhalt">
+          <p class="label"><svg class="icon"><use href="#i-list"/></svg>Inhalt</p>
+          <ol class="toc-list" data-origin="build:plan_pages">
+{{#toc}}
+            <li class="toc-row"><span>{{title}}</span><span class="toc-page">{{page}}</span></li>
+{{/toc}}
+          </ol>
+        </nav>
+      </aside>
+      </div>
+
+      <div class="cover-intro">
+{{#bio}}
+        <p class="cover-bio" data-origin="{{origin}}">{{text}}</p>
+{{/bio}}
+{{#start}}
+        <p class="cover-start" data-origin="{{origin}}"><svg class="icon"><use href="#i-calendar"/></svg>{{text}}</p>
+{{/start}}
+      </div>
+    </div>
+  </section>

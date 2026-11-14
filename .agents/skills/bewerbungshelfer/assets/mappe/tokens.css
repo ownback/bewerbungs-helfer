@@ -1,0 +1,90 @@
+/* ------------------------------------------------------------------
+   Bewerbungsmappe · Design „Glisse“ · Quellen unter assets/mappe/
+   tokens.css  Farben, Maße, Schriftgrößen, Glasrezepte (nur :root)
+   mappe.css   Papier: Grundregeln, dann ein Block je Seite bzw. Partial, zuletzt @media print
+   screen.css  Bildschirm: Leiste, Navigation, schmale Fenster; nie im PDF
+   Das Build-Skript setzt die drei Dateien in dieser Reihenfolge in jede Mappe ein (build_mappe.py).
+   Zwei Ebenen wie bei Apple-Materialien:
+   1. Inhaltsebene: weißes Papier, Text, Scans. Nie Glas.
+   2. Funktionsebene (Glisse): Deckblatt-Leiste mit Kontakt und Inhalt, Registerreiter mit
+      Seitenzahl, Bildschirmleiste und Seitennavigation. Glas ist druckfest aus Verläufen,
+      Innenkante und Haarlinie gebaut; backdrop-filter nur zusätzlich auf dem Bildschirm.
+   Registerreiter: Jede Inhaltsseite trägt oben einen Reiter in der Spalte ihres Abschnitts
+   (6 Spalten = 6 Abschnitte, data-section="1…6"); im Reiter steht die Seitenzahl.
+   Eckige Klammern sind Platzhalter und müssen vor der Freigabe ersetzt werden.
+   Keine persönlichen Daten, keine Unternehmensnamen, keine externen Ressourcen.
+   Schrift: Inter (OFL), statisch und eingebettet (fonts.css, Block <style id="font-inter"> am Ende des Kopfs).
+   SF Pro bewusst nicht im Stapel: dessen Lizenz erlaubt keine Verwendung in eigenen Dokumenten.
+   ------------------------------------------------------------------ */
+:root {
+  /* Primitive */
+  --white: #ffffff;
+  --ink-900: #1d1d1f;
+  --ink-700: #424245;
+  --ink-500: #6e6e73;
+  --gray-100: #f5f5f7;
+  --gray-200: #e8e8ed;
+  --petrol-950: #071d23;
+  --petrol-900: #0a2c35;
+  --petrol-850: #0f4753;          /* Deckblatt oben links */
+  --petrol-800: #0d4250;
+  --petrol-700: #0b4f5c;
+  --petrol-600: #146574;
+  --petrol-400: #3f97a5;
+  --petrol-200: #b9dde2;
+  --petrol-100: #e4f0f2;
+
+  /* Semantik. Akzent nur ändern, wenn Text darauf und daneben ≥ 4,5:1 bleibt. */
+  --paper: var(--white);
+  --fg: var(--ink-900);            /* 16,8:1 auf Weiß */
+  --fg-muted: var(--ink-700);      /* 10,2:1 */
+  --fg-faint: var(--ink-500);      /*  5,1:1 */
+  --accent: var(--petrol-700);     /*  9,2:1 */
+  --accent-soft: var(--petrol-100);
+  --surface: var(--gray-100);      /* Standardfläche der Inhaltsebene (Seitenleisten, Scan-Hintergrund) */
+  --line: rgb(0 0 0 / .1);
+  --bar-off: var(--gray-200);
+  --on-dark: var(--white);
+  --on-dark-muted: rgb(255 255 255 / .74);  /* ≥ 7:1 auf dem Deckblattgrund */
+  --on-dark-accent: var(--petrol-200);
+
+  /* Satzspiegel A4 */
+  --page-w: 210mm;
+  --page-h: 297mm;
+  --pad-x: 20mm;
+  --pad-top: 24mm;
+  --pad-bottom: 20mm;
+  --slot: calc((var(--page-w) - 2 * var(--pad-x)) / 6);  /* Registerspalte */
+  --rail: 34mm;                                        /* Datumsspalte im Lebenslauf */
+
+  /* Typografie: eine Familie (Inter, statisch 400/500/600/700), Hierarchie über Größe und Gewicht.
+     Gewichte nur 400, 500, 600, 700 verwenden (andere Werte fallen auf den nächsten Schnitt). */
+  --sans: "Inter", "Helvetica Neue", "Segoe UI", "Noto Sans", Arial, sans-serif;
+  --fs-caption: 7.4pt;
+  --fs-small: 8.5pt;
+  --fs-body: 9.6pt;
+  --fs-h4: 10.2pt;
+  --fs-h3: 12pt;
+  --fs-lead: 15.5pt;
+  --fs-h2: 25pt;
+  --track-display: -.028em;
+  --track-title: -.018em;
+
+  --radius-s: 1.6mm;
+  --radius-m: 3mm;
+  --radius-l: 5mm;
+  --shadow-page: 0 1px 2px rgb(0 0 0 / .06), 0 18px 50px rgb(16 40 48 / .16);
+
+  /* Glisse: druckfeste Glasrezepte. Die Deckblatt-Leiste ist leicht: wenig Füllung, feine Kante, kurzer Schatten. */
+  --glass-dark-fill: linear-gradient(158deg, rgb(255 255 255 / .13) 0%, rgb(255 255 255 / .06) 40%, rgb(255 255 255 / .035) 100%);
+  --glass-dark-edge: rgb(255 255 255 / .18);
+  --glass-dark-shine: inset 0 .3mm 0 rgb(255 255 255 / .24), inset 0 -.25mm 0 rgb(0 0 0 / .1);
+  --glass-dark-shadow: 0 3mm 9mm rgb(0 0 0 / .16);
+  --glass-light-fill: linear-gradient(180deg, rgb(255 255 255 / .82), rgb(255 255 255 / .64));
+  --glass-light-edge: rgb(0 0 0 / .08);
+  --glass-tint-fill: linear-gradient(180deg, var(--petrol-600) 0%, var(--petrol-700) 62%, #094350 100%);
+}
+
+@media (prefers-contrast: more) {
+  :root { --line: rgb(0 0 0 / .35); --fg-faint: var(--ink-700); --bar-off: #b8b8c0; --glass-dark-edge: rgb(255 255 255 / .55); }
+}

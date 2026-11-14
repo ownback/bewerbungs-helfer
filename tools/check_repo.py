@@ -8,9 +8,12 @@ Befehle:
             profile/privacy-needles.txt (ein Suchtext pro Zeile). Meldet Datei, Zeile und Art, nie den Wert.
   stray     Dateien außerhalb der Konventionen: unbekannter Ort, leere Datei, Reste wie *.orig, *.bak, EOF.
   schemas   Alle JSON-Dateien lesbar; Schemas in sich stimmig; Vorlagen passen in Feldern und Typen zum Schema.
-  all       privacy, stray und schemas.
+  template  Die Master-Vorlage assets/bewerbungsmappe.html entspricht Byte für Byte ihren Quellen unter
+            assets/mappe/ (build_mappe.py master); jedes Partial hält seinen Vertrag ein (build_mappe.py contract).
+  all       privacy, stray, schemas und template.
   hook      Für den Claude-Code-Hook PostToolUse (Edit|Write): liest das Hook-JSON von stdin und prüft nur die
-            geänderte Datei. Exit 2 mit Meldung auf stderr bei Befund, sonst still.
+            geänderte Datei; nach einer Änderung an der Vorlage oder ihren Quellen zusätzlich template.
+            Exit 2 mit Meldung auf stderr bei Befund, sonst still.
 
 Option --quiet: keine Ausgabe ohne Befund. Exit-Codes: 0 ok, 1 Befund (hook: 2).
 """
@@ -43,6 +46,8 @@ ALLOWED = (
     f'{SKILL}/SKILL.md',
     f'{SKILL}/agents/*.yaml',
     f'{SKILL}/assets/bewerbungsmappe.html',
+    f'{SKILL}/assets/mappe/*.css', f'{SKILL}/assets/mappe/icons.svg', f'{SKILL}/assets/mappe/qa.js',
+    f'{SKILL}/assets/mappe/qa.html', f'{SKILL}/assets/mappe/master.json', f'{SKILL}/assets/mappe/partials/*.html',
     f'{SKILL}/assets/fonts/*.woff2', f'{SKILL}/assets/fonts/OFL.txt', f'{SKILL}/assets/fonts/README.md',
     f'{SKILL}/assets/icons/*.md',
     f'{SKILL}/assets/schemas/*.schema.json',
@@ -336,6 +341,32 @@ def check_schemas(files: list[str] | None = None) -> list[str]:
     return out
 
 
+# --------------------------------------------------------------------------- template
+
+TEMPLATE_SOURCES = (f'{SKILL}/assets/mappe/', f'{SKILL}/assets/fonts/', f'{SKILL}/assets/bewerbungsmappe.html')
+
+
+def check_template(files: list[str] | None = None) -> list[str]:
+    """Die Master-Vorlage ist ein Bauergebnis: Sie muss Byte für Byte dem entsprechen, was assets/mappe/ ergibt,
+    und jedes Partial muss seinen Vertrag einhalten (build_mappe.py contract)."""
+    import contextlib
+    import io
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import build_mappe
+    master = f'{SKILL}/assets/bewerbungsmappe.html'
+    try:
+        expected = build_mappe.build_master()
+        with contextlib.redirect_stdout(io.StringIO()) as report:
+            build_mappe.cmd_contract(None)
+    except build_mappe.BuildError as e:
+        return [f'template: {e}']
+    out = [f'template: {line[8:]}' for line in report.getvalue().splitlines() if line.startswith('FEHLER  ')]
+    if not (ROOT / master).is_file() or (ROOT / master).read_text(encoding='utf-8') != expected:
+        out.append(f'template: {master} entspricht nicht den Quellen unter {SKILL}/assets/mappe/. Die Datei nie von '
+                   'Hand ändern; Quellen ändern und neu bauen: python3 tools/build_mappe.py master')
+    return out
+
+
 # --------------------------------------------------------------------------- Befehle
 
 def cmd_hook() -> int:
@@ -353,10 +384,13 @@ def cmd_hook() -> int:
     if rel.endswith('.json'):
         schema_dir = f'{SKILL}/assets/schemas/'
         findings += check_schemas(git_files() if rel.startswith(schema_dir) else [rel])
+    if rel.startswith(TEMPLATE_SOURCES):
+        findings += check_template()
     if findings:
         print('tools/check_repo.py (Hook nach Edit/Write):\n' + '\n'.join(findings)
               + '\nBitte beheben: persönliche Daten nur unter profile/<name>/ und .tmp/, Dateien nur an den '
-                'erlaubten Orten (references/qa-and-export.md, Repository-Prüfung).', file=sys.stderr)
+                'erlaubten Orten, Master-Vorlage nur über ihre Quellen (references/qa-and-export.md, '
+                'Repository-Prüfung).', file=sys.stderr)
         return 2
     return 0
 
@@ -366,7 +400,8 @@ def main(argv: list[str] | None = None) -> int:
     quiet = '--quiet' in args
     args = [a for a in args if a != '--quiet']
     checks = {'privacy': [check_privacy], 'stray': [check_stray], 'schemas': [check_schemas],
-              'all': [check_privacy, check_stray, check_schemas]}
+              'template': [check_template],
+              'all': [check_privacy, check_stray, check_schemas, check_template]}
     if args == ['hook']:
         return cmd_hook()
     if len(args) != 1 or args[0] not in checks:
@@ -379,7 +414,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f'check_repo {args[0]}: {len(findings)} Befund(e)')
         return 1
     if not quiet:
-        note = '' if args[0] == 'stray' or args[0] == 'schemas' or load_needles() else \
+        note = '' if args[0] in ('stray', 'schemas', 'template') or load_needles() else \
             ' (kein Profil unter profile/: keine Suchmuster für persönliche Daten)'
         print(f'check_repo {args[0]}: ok, {len(files)} Dateien{note}')
     return 0

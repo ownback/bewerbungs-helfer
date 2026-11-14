@@ -25,7 +25,7 @@ Nur lesen, was der aktuelle Schritt braucht:
 |---|---|
 | Profil wählen, Import, Interview | `references/interview.md` |
 | Profildaten und Schema | `references/profile-schema.md` |
-| Vorlage, Seiten, Design, Datenvertrag | `references/template.md` |
+| Quellen der Vorlage, Seiten, Design, Attribute für Pins | `references/template.md` |
 | Vorlage visuell prüfen und ändern (Tencil) | `references/tencil.md` |
 | BA-Suche und Erfassung im Browser | `references/job-search.md` |
 | Ordner, Namen, Ledger, Status, Übersicht, Duplikate, Aussortieren, Statistik | `references/applications.md` |
@@ -33,7 +33,7 @@ Nur lesen, was der aktuelle Schritt braucht:
 | Anschreiben, Motivation, E-Mail, Kontaktdaten | `references/writing.md` |
 | Build, QA, Freigabe, PDF, Datenschutz | `references/qa-and-export.md` |
 
-Vorlagen und Schemas: `assets/bewerbungsmappe.html`, `assets/templates/`, `assets/schemas/`. Das Werkzeug für Bau, Prüfung und Stand ist `tools/build_mappe.py` im Repository (nur Python-Standardbibliothek, Chromium für A4). `tools/check_repo.py` prüft das Repository vor jedem Commit (`references/qa-and-export.md`, Datenschutzprüfung).
+Vorlagen und Schemas: `assets/mappe/` (Quellen der Mappe: CSS, Partials, Symbole), `assets/bewerbungsmappe.html` (daraus gebaute Master-Vorlage mit Platzhaltern), `assets/templates/`, `assets/schemas/`. Das Werkzeug für Bau, Prüfung und Stand ist `tools/build_mappe.py` im Repository (nur Python-Standardbibliothek, Chromium für A4). `tools/check_repo.py` prüft das Repository vor jedem Commit (`references/qa-and-export.md`, Datenschutzprüfung).
 
 ## Ablauf
 
@@ -53,7 +53,7 @@ Nach `references/interview.md`:
 - Nur nach Lücken, Widersprüchen und defekten Dateien fragen. Nichts erfinden, nichts raten.
 - Pro Projekt nach einem eigenen Foto und der Einwilligung fragen (`references/interview.md`, Block 5). Ohne Foto entfällt es, die Mappe baut trotzdem.
 - Bestätigte Angaben in `assets/profile/<name>_profile.json` speichern, `<name>_profile.md` als lesbare Fassung pflegen.
-- Prüfen: `python3 tools/build_mappe.py validate profile/<name>` (braucht `jsonschema`, siehe `references/qa-and-export.md`).
+- Prüfen: `python3 tools/build_mappe.py validate profile/<name>` (läuft ohne Installation, siehe `references/qa-and-export.md`).
 
 ### 3. Profilvorlage bauen und freigeben
 
@@ -61,11 +61,11 @@ Nach `references/interview.md`:
 python3 tools/build_mappe.py profile-template profile/<name> --qa --pdf
 ```
 
-Das erzeugt `assets/profile/<name>_template.html` und die A4-Vorschau `<name>_template.pdf`: Skill-Vorlage plus stabile Teile (Deckblatt, Absender, Lebenslauf, Zertifikate, Zeugnisse); Anschreiben und Motivationsschreiben bleiben Platzhalter. Zeige dem Nutzer die Vorschau und frage, ob sie passt.
+Das erzeugt `assets/profile/<name>_template.html` und die A4-Vorschau `<name>_template.pdf`: die stabilen Teile aus dem Profil (Deckblatt, Absender, Lebenslauf, Zertifikate, Zeugnisse); Anschreiben und Motivationsschreiben bleiben Platzhalter. Zeige dem Nutzer die Vorschau und frage, ob sie passt.
 
 - Das Skript meldet den Füllgrad der Lebenslauf-Seiten und ausgeblendete Schulen; die Aufteilung folgt `references/template.md` (Lebenslauf).
 - Inhaltliche Änderungen: im Profil-JSON, dann neu bauen.
-- Designänderungen: nur in der Skill-Vorlage `assets/bewerbungsmappe.html`, visuell über Tencil (`references/tencil.md`), dann neu bauen.
+- Designänderungen: nur in den Quellen unter `assets/mappe/` (`references/template.md`), visuell über Tencil (`references/tencil.md`), dann `build_mappe.py master` und neu bauen.
 - Generiertes HTML nie von Hand bearbeiten.
 
 Schleife, bis der Nutzer zufrieden ist. Jede spätere Profiländerung braucht einen neuen Bau und einen neuen Blick des Nutzers.
@@ -109,7 +109,7 @@ python3 tools/build_mappe.py status <stellenordner> html_approved
 python3 tools/build_mappe.py application <stellenordner> --qa --pdf
 ```
 
-Das Skript verweigert das PDF ohne Freigabe, mit QA-Befund oder bei Bewerbungsweg `email` ohne gültigen Entwurf `email.md`. Ändert sich danach ein Text, fällt der Status auf `draft` zurück und die Freigabe ist neu einzuholen.
+Die Freigabe gilt für genau den gezeigten Stand (Prüfsumme im Manifest). Das Skript verweigert das PDF ohne Freigabe, mit QA-Befund, mit einem Briefdatum älter als 7 Tage oder bei Bewerbungsweg `email` ohne gültigen Entwurf `email.md` (`references/qa-and-export.md`, PDF). Ändert sich danach ein Text, das Profil, die Vorlage oder ein Bild, fällt der Status auf `draft` zurück und die Freigabe ist neu einzuholen.
 
 ### 7. Versand durch den Nutzer und Ablage
 
@@ -131,6 +131,6 @@ Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status
 - Kein automatisches Senden, kein Portal ausfüllen, kein Upload.
 - Finales PDF erst nach ausdrücklicher HTML-Freigabe.
 - Keine Fotos fremder Personen, keine generierten Porträts oder Projektbilder; Projektfotos nur mit `consent` und `valid` und nur am Beleg mit gleichem Projektnamen; defekte Dateien nicht einbinden.
-- Generiertes HTML nie von Hand bearbeiten; Design nur in der Skill-Vorlage.
+- Generiertes HTML nie von Hand bearbeiten, auch die Master-Vorlage `assets/bewerbungsmappe.html` nicht; Design nur in den Quellen unter `assets/mappe/`.
 - Entscheidungen des Nutzers, die die Ausgabe prägen, gehören in ein Profilfeld (mit Interviewfrage) oder in Vorlage und Referenzen, nie nur in ein Gespräch oder in `.tmp/`. Ein neuer Durchlauf aus demselben Profil muss dieselbe Mappe ergeben.
 - Persönliche Daten nur in `profile/` und `.tmp/`; nichts davon committen.

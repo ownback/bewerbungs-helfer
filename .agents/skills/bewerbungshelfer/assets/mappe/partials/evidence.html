@@ -1,0 +1,24 @@
+{{! Zertifikate und Zeugnisse: Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe. Zwei Karten
+   nebeneinander (is-pair) nur für kurze, gut lesbare Dokumente. Ohne Bild steht der Hinweistext in der Fläche. }}
+  <!-- {{comment}} -->
+  <section class="page" data-section="{{section_no}}" aria-labelledby="{{aria}}" data-part="evidence">
+{{#head}}
+{{> section-head}}
+{{/head}}
+    <div class="evidence-grid{{#pair}} is-pair{{/pair}}">
+{{#cards}}
+      <article class="evidence-card" data-origin="{{origin}}">
+        <div class="evidence-meta"><h3>{{title}}</h3><p>{{issuer}}</p></div>
+{{#image}}
+        <div class="document-stage"><img src="{{src}}" alt="{{alt}}"></div>
+{{/image}}
+{{#placeholder}}
+        <div class="document-stage"><div class="document-placeholder">{{> text}}</div></div>
+{{/placeholder}}
+{{#caption}}
+        <div class="document-caption"><span class="caption-note"><svg class="icon"><use href="#i-scan"/></svg>{{note}}</span><span class="caption-date">Ausgestellt am {{date}}</span></div>
+{{/caption}}
+      </article>
+{{/cards}}
+    </div>
+  </section>

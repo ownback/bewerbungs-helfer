@@ -1,0 +1,33 @@
+{{! Motivationsschreiben: Einstieg in einem Satz, Text, daneben die Belege. Ein Projektfoto steht nur an einem
+   Beleg, dessen Titel einem Projekt mit freigegebenem, gültigem Bild entspricht; der Platzhalter erscheint nur
+   in Vorlagen. In der Profilvorlage stehen hier die Platzhalter aus master.json (slots.motivation). }}
+  <!-- Motivationsschreiben -->
+  <section class="page" data-section="{{section_no}}" aria-labelledby="{{aria}}" data-part="motivation">
+{{#head}}
+{{> section-head}}
+{{/head}}
+
+{{#lead}}
+    <p class="motivation-lead" data-origin="{{origin}}">{{text}}</p>
+{{/lead}}
+    <div class="motivation-layout">
+      <div>
+        <div class="motivation-copy{{#dense}} is-dense{{/dense}}">
+{{#paragraphs}}
+          <p data-origin="{{origin}}">{{text}}</p>
+{{/paragraphs}}
+        </div>
+        <div class="signature">
+{{#signer}}
+          <div class="signature-name" data-origin="{{origin}}"><strong>{{name}}</strong>{{city}}</div>
+{{/signer}}
+        </div>
+      </div>
+      <aside class="motivation-aside" aria-label="Belege aus eigenen Projekten">
+        <p class="label"><svg class="icon"><use href="#i-badge"/></svg>Belege</p>
+{{#proofs}}
+        <div class="proof-item" data-origin="{{origin}}"><svg class="icon"><use href="#{{icon}}"/></svg><div><strong>{{title}}</strong><span>{{text}}</span></div>{{#photo}}<figure class="proof-photo" data-origin="{{origin}}"><img src="{{src}}" alt="{{alt}}"></figure>{{/photo}}{{#placeholder}}<figure class="proof-photo is-placeholder">{{placeholder}}</figure>{{/placeholder}}</div>
+{{/proofs}}
+      </aside>
+    </div>
+  </section>

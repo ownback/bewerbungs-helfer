@@ -20,7 +20,7 @@ Deckblatt, Lebenslauf, Zertifikate und Zeugnisse kommen aus deiner persönlichen
 - ein Agent-Harness mit Dateizugriff, Shell und Browser, z. B. [Claude Code](https://claude.com/claude-code) oder Codex
 - Python 3.10 oder neuer (nur Standardbibliothek)
 - Chromium oder Google Chrome für A4-Prüfung und PDF-Export
-- optional: `pdftoppm` (Poppler) für Seitenbilder, `jsonschema` für die Schemaprüfung
+- optional: `pdftoppm` (Poppler) für Seitenbilder und den Seitenvergleich
 
 ## Starten
 
@@ -30,7 +30,7 @@ cd bewerbungs-helfer
 git config core.hooksPath tools/hooks
 ```
 
-Die letzte Zeile schaltet einmal pro Klon den Git-Hook `tools/hooks/pre-commit` ein. Er ruft vor jedem Commit `python3 tools/check_repo.py all` auf und bricht ab, wenn persönliche Daten aus deinem Profil, verirrte Dateien oder kaputte Schemas im Commit lägen. Claude Code führt dieselbe Prüfung nach jedem Schreiben einer Datei aus (Hook in `.claude/settings.json`).
+Die letzte Zeile schaltet einmal pro Klon den Git-Hook `tools/hooks/pre-commit` ein. Er ruft vor jedem Commit `python3 tools/check_repo.py all` auf und bricht ab, wenn persönliche Daten aus deinem Profil, verirrte Dateien, kaputte Schemas oder eine Master-Vorlage, die nicht zu ihren Quellen passt, im Commit lägen. Claude Code führt dieselbe Prüfung nach jedem Schreiben einer Datei aus (Hook in `.claude/settings.json`).
 
 Dann im Ordner den Agenten starten und den Skill aufrufen:
 
@@ -59,11 +59,17 @@ Alles Persönliche bleibt auf deinem Rechner: `profile/` und `.tmp/` sind gitign
 
 ```text
 CLAUDE.md                          Anweisungen für Agenten (AGENTS.md verweist darauf)
-.agents/skills/bewerbungshelfer/   Skill: Ablauf, Referenzen, HTML-Vorlage, Schemas, Textvorlagen
+.agents/skills/bewerbungshelfer/   Skill: Ablauf, Referenzen, Schemas, Textvorlagen
+  assets/mappe/                    Quellen der Mappe: CSS, Partials (Markup), Symbole, Platzhalter-Modell
+  assets/bewerbungsmappe.html      Master-Vorlage mit Platzhaltern, gebaut aus assets/mappe/ (nie von Hand ändern)
 .claude/agents/                    Subagenten für Claude Code (Texte + Mappe, QA)
 .claude/settings.json              Claude-Code-Hook: Repository-Prüfung nach jedem Edit/Write
 tools/build_mappe.py               Baut, prüft und exportiert die Mappen; führt Ledger und Status
-tools/check_repo.py                Prüft vor Commits auf persönliche Daten, verirrte Dateien, Schemas
+tools/mustache_lite.py             Rendert die Partials (Mustache-Teilmenge mit strengen Schlüsseln)
+tools/schema_lite.py               JSON-Schema-Prüfung ohne Installation (für validate)
+tools/serve_template.py            Vorschau-Server für die visuelle Prüfung (Tencil)
+tools/check_repo.py                Prüft vor Commits auf persönliche Daten, verirrte Dateien, Schemas, Master-Vorlage
+tools/fresh_clone_test.py          Beweist an einem frischen Klon, dass dieselben Mappen entstehen
 tools/hooks/pre-commit             Git-Hook für tools/check_repo.py
 tools/devicon_symbols.py           Wandelt Logo-SVGs in Vorlagen-Symbole (nur für neue Logos)
 profile/                           deine Profile und Bewerbungen (lokal, nicht versioniert)

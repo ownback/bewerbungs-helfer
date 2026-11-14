@@ -1,0 +1,86 @@
+{{! Lebenslauf-Seite. Der Kopf (hero) steht nur auf der ersten Seite. Jeder Eintrag in blocks hat genau einen
+   der fünf Blöcke gesetzt; welche Blöcke auf welcher Seite stehen, legt presentation.cv_layout im Profil fest.
+   Zeiträume, Texte, Chips und Skalen kommen nur aus dem Profil. Kein Kurzprofil hier: es steht auf dem Deckblatt. }}
+  <!-- {{comment}} -->
+  <section class="page{{#compact}} cv-compact{{/compact}}" data-section="{{section_no}}" aria-labelledby="{{aria}}" data-part="cv">
+{{#head}}
+{{> section-head}}
+{{/head}}
+
+{{#hero}}
+    <div class="cv-hero">
+      <div>
+{{#name}}
+        <p class="cv-name" data-origin="{{origin}}">{{text}}</p>
+{{/name}}
+{{#goal}}
+        <p class="cv-goal" data-origin="{{origin}}">{{text}}</p>
+{{/goal}}
+      </div>
+      <ul class="cv-facts" aria-label="Persönliche Daten">
+{{#facts}}
+        <li data-origin="{{origin}}"><svg class="icon"><use href="#{{icon}}"/></svg><span>{{> text}}</span></li>
+{{/facts}}
+      </ul>
+    </div>
+
+{{/hero}}
+{{#blocks}}
+{{#experience}}
+    <section class="cv-section" aria-labelledby="experience-title">
+      <h3 class="cv-section-head" id="experience-title"><svg class="icon"><use href="#i-briefcase"/></svg>Praktische Erfahrung</h3>
+{{#items}}
+{{> timeline-item}}
+{{/items}}
+    </section>
+
+{{/experience}}
+{{#education}}
+    <section class="cv-section" aria-labelledby="education-title">
+      <h3 class="cv-section-head" id="education-title"><svg class="icon"><use href="#i-graduation"/></svg>Schulbildung</h3>
+{{#items}}
+{{> timeline-item}}
+{{/items}}
+    </section>
+
+{{/education}}
+{{#projects}}
+    <section class="cv-section" aria-labelledby="projects-title">
+      <h3 class="cv-section-head" id="projects-title" data-origin="{{origin}}"><svg class="icon"><use href="#{{icon}}"/></svg>{{title}}</h3>
+{{#items}}
+{{> timeline-item}}
+{{/items}}
+    </section>
+
+{{/projects}}
+{{#skills}}
+    <section class="skills-band" aria-labelledby="skills-title">
+      <h3 class="cv-section-head" id="skills-title"><svg class="icon"><use href="#i-wrench"/></svg>Fähigkeiten</h3>
+      <div class="skill-legend" aria-label="Skala">
+        <p class="skill-legend-title">Skala <span>1–5</span></p>
+{{#legend}}
+        <span class="scale-item">{{#bars}}{{> bars}}{{/bars}}{{label}}</span>
+{{/legend}}
+      </div>
+{{#groups}}
+      <div class="skill-group" data-origin="{{origin}}">
+        <p class="skill-head"><svg class="icon"><use href="#{{icon}}"/></svg>{{name}}</p>
+{{#rows}}
+        <div class="skill-row" data-origin="{{origin}}"><span class="skill-name">{{name}}{{#note}}<small>{{note}}</small>{{/note}}</span><span class="skill-chips">{{#chips}}{{> chip}}{{/chips}}</span>{{#bars}}{{> bars}}{{/bars}}</div>
+{{/rows}}
+      </div>
+{{/groups}}
+    </section>
+{{/skills}}
+{{#languages}}
+    <section class="cv-section" aria-labelledby="languages-title">
+      <h3 class="cv-section-head" id="languages-title"><svg class="icon"><use href="#i-globe"/></svg>Sprachen</h3>
+      <div class="language-list">
+{{#items}}
+        <div class="language" data-origin="{{origin}}"><span class="language-name">{{name}}</span>{{#bars}}{{> bars}}{{/bars}}<span class="language-level">{{level}}</span></div>
+{{/items}}
+      </div>
+    </section>
+{{/languages}}
+{{/blocks}}
+  </section>

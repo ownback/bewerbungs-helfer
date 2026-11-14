@@ -59,7 +59,7 @@ Generierte Dateinamen enthalten den Profilnamen, z. B. `bewerbungsmappe - max.mu
 |---|---|---|
 | `captured` | Anzeige erfasst (`job.json` liegt vor), noch keine Mappe | ergibt sich aus dem Ordner |
 | `draft` | Mappe gebaut, nicht freigegeben | `application` |
-| `html_approved` | Nutzer hat die HTML-Fassung ausdrücklich freigegeben | `status … html_approved` |
+| `html_approved` | Nutzer hat die HTML-Fassung ausdrücklich freigegeben; das Manifest hält die Prüfsumme dieses Stands fest (`references/qa-and-export.md`, Freigabe) | `status … html_approved` |
 | `pdf_exported` | finales PDF erzeugt und geprüft | `application --pdf` |
 | `sent` | Nutzer hat bestätigt, dass er gesendet hat | nur `mark-sent --channel …` |
 | `interview`, `offer`, `rejected`, `withdrawn` | Rückmeldung nach dem Versand | `status …` |

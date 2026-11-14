@@ -1,6 +1,6 @@
 # Technologie-Logos der Mappe
 
-Die Logos stehen als einfarbige `<symbol>` in der SVG-Bibliothek von `assets/bewerbungsmappe.html` (Ids `dv-…` und `si-…`). Zur Laufzeit gibt es keinen Abruf (kein CDN). Dieser Ordner hält Quellen, Lizenzen und den Weg, ein Logo aufzunehmen. Ein Logo im Vorrat sagt nichts über den Bewerber: Was in einer Mappe erscheint, steht allein im Profil.
+Die Logos stehen als einfarbige `<symbol>` in `assets/mappe/icons.svg` (Ids `dv-…` und `si-…`, ein Symbol pro Zeile). Der Bau bettet in jede Mappe nur die Symbole ein, die sie verwendet. Zur Laufzeit gibt es keinen Abruf (kein CDN). Dieser Ordner hält Quellen, Lizenzen und den Weg, ein Logo aufzunehmen. Ein Logo im Vorrat sagt nichts über den Bewerber: Was in einer Mappe erscheint, steht allein im Profil.
 
 ## Quellen und Lizenzen
 
@@ -9,7 +9,7 @@ Die Logos stehen als einfarbige `<symbol>` in der SVG-Bibliothek von `assets/bew
 | `dv-` | Devicon, https://devicon.dev, npm-Paket `devicon` | 2.17.0 | MIT, Copyright (c) 2015 konpa (`LICENSES.md`) | Vorrang, weil dort die meisten Logos liegen |
 | `si-` | Simple Icons, https://simpleicons.org, npm-Paket `simple-icons` | 15.0.0 | CC0 1.0 (gemeinfrei) | nur, wo Devicon kein brauchbares einfarbiges Logo hat (nginx, Proxmox: bei Devicon nur Schriftzüge) |
 
-Die Marken gehören ihren Inhabern. Die Logos stehen nur neben dem Namen der Technik und behaupten keine Zugehörigkeit. Der Lizenzhinweis steht zusätzlich im Kommentar der SVG-Bibliothek der Vorlage.
+Die Marken gehören ihren Inhabern. Die Logos stehen nur neben dem Namen der Technik und behaupten keine Zugehörigkeit. Der Lizenzhinweis steht zusätzlich im Kommentar von `assets/mappe/icons.svg` und, kurz, im Kopf jeder gebauten Datei (`assets/mappe/partials/document.html`).
 
 ## Zuordnung Symbol → Quelldatei
 
@@ -64,6 +64,6 @@ Das ist eine Designänderung an der Vorlage (`references/tencil.md`).
    - nur bekannte Attribute; keine Ereignis-Attribute, keine `href`/`xlink:href`, kein `url(…)`, kein `data:`/`http(s):`
    - Füllfarben werden entfernt (erben `currentColor`), Weiß wird Aussparung; das gilt auch für `fill` im `style`-Attribut. Im `style`-Attribut sind nur `fill`, `fill-rule`, `clip-rule`, `opacity`, `fill-opacity` erlaubt; `stroke` nur `none`/`currentColor` (Strichfarben gehen sonst verloren: anderes Logo wählen)
    - das fertige Symbol wird erneut als XML gelesen und gegen dieselben Regeln geprüft
-   Probe auf Reproduzierbarkeit: Die 34 Quelldateien aus der Tabelle oben laden (Devicon 2.17.0, Simple Icons 15.0.0) und umwandeln; die Ausgabe muss mit den `<symbol>`-Zeilen der SVG-Bibliothek in `assets/bewerbungsmappe.html` Byte für Byte übereinstimmen.
-4. Die Zeilen alphabetisch in die SVG-Bibliothek der Vorlage einfügen, die Tabellen in `references/template.md` und diese Datei ergänzen, im Profil `chips[].logo` setzen, neu bauen und die Chips ansehen (Chip-Höhe 3,1 mm: feine Logos müssen lesbar bleiben).
+   Probe auf Reproduzierbarkeit: Die 34 Quelldateien aus der Tabelle oben laden (Devicon 2.17.0, Simple Icons 15.0.0) und umwandeln; die Ausgabe muss mit den `dv-…`- und `si-…`-Zeilen in `assets/mappe/icons.svg` Byte für Byte übereinstimmen.
+4. Die Zeilen alphabetisch in `assets/mappe/icons.svg` einfügen (eine Zeile pro Symbol), die Tabellen in `references/template.md` und diese Datei ergänzen, im Profil `chips[].logo` setzen, `build_mappe.py master` ausführen, neu bauen und die Chips ansehen (Chip-Höhe 3,1 mm: feine Logos müssen lesbar bleiben).
 5. Das Schema (`profile.schema.json`, `$defs/chip`) erlaubt `dv-…` und `si-…`; ein neues Präfix braucht eine Schemaänderung.
