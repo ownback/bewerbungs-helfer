@@ -10,10 +10,11 @@
 | `application <stelle> [--qa] [--pdf]` | Mappe bauen, Manifest und Ledger aktualisieren; `--pdf` nur nach Freigabe |
 | `qa <html>` | Prüfung einer beliebigen Mappe (liegt sie in `<stelle>/application/`, zusätzlich der E-Mail-Entwurf) |
 | `preview <html> <ordner>` | A4-PDF und PNG-Seiten zum Ansehen, Ziel immer unter `.tmp/` |
-| `validate <profil|stelle>` | Schemaprüfung (braucht `jsonschema`), Asset-Pfade des Profils und bei Bewerbungsweg `email` der E-Mail-Entwurf `application/email.md` |
-| `check-duplicate`, `status`, `mark-sent`, `stats` | Ledger, siehe `references/applications.md`; `status sent` gibt es nicht, nur `mark-sent` |
+| `validate <profil|stelle>` | Schemaprüfung (braucht `jsonschema`), Asset-Pfade des Profils, bei Bewerbungsweg `email` der E-Mail-Entwurf `application/email.md` und offene blockierende Fragen der Stellen (`references/job-search.md`, Abschnitt 8) |
+| `status <profil>` | Übersicht aller Stellen mit nächstem Schritt |
+| `ledger sync`, `status <stelle> <status>`, `check-duplicate`, `mark-sent`, `drop`, `restore`, `stats` | Stand, Ledger und Ablage, siehe `references/applications.md` |
 
-Exit-Codes: 0 ok, 1 Fehler, 2 QA meldet Probleme, 3 Duplikat bzw. `jsonschema` fehlt.
+Exit-Codes: 0 ok, 1 Fehler, 2 QA meldet Probleme, 3 `same_posting` ohne Entscheidung (`check-duplicate`) bzw. `jsonschema` fehlt (`validate`).
 
 Schemaprüfung ohne installiertes Paket:
 
@@ -28,7 +29,7 @@ python3 -m venv .tmp/venv && .tmp/venv/bin/pip install jsonschema
 - **Seitenzahl:** Anzahl der `.page`-Abschnitte = Seiten im A4-PDF (sonst bricht etwas um).
 - **Füllgrad der Lebenslauf-Seiten:** nur Information (Richtwert 90–98 %), Grundlage für `presentation.cv_layout` (`references/template.md`, Lebenslauf).
 - **Bildschirmbreiten:** kein horizontaler Überlauf bei 1440 (Desktop, Fenster 1440 × 900), 390 (390 × 844) und 375 px (375 × 812). Die Ausgabe nennt immer alle drei Werte: `Horizontaler Überlauf (px): 1440: 0 · 390: 0 · 375: 0`; im Manifest steht `validation.hscroll` je Breite, `hscroll_mobile` ist der größere der beiden Mobilwerte. Headless-Chromium erzwingt mindestens ca. 500 px Fensterbreite, deshalb misst das Skript die beiden Mobilbreiten in einem iframe exakter Breite (Media-Queries gelten dort für die Iframe-Breite); stimmt die gemessene Breite nicht, gilt die Messung als Fehler.
-- **E-Mail-Entwurf:** ist der Bewerbungsweg in `job.json` (`application.method`) `email`, muss `application/email.md` existieren, darf nicht leer sein und keine offenen `[Platzhalter]` enthalten (Vorlage `assets/templates/email.md`). Sonst meldet `application --qa` (und `qa <html>` im Bewerbungsordner) einen FEHLER mit Exit-Code 2, `validate` meldet FEHLER, und `application --pdf` verweigert den Export. Das HTML wird trotzdem gebaut (Entwürfe bleiben möglich); die Freigabe (`status … html_approved`) warnt, bis der Entwurf vorliegt. Bei `post`, `portal` und `unknown` ist kein Entwurf nötig. Ergebnis im Manifest: `validation.email_draft` (`ok`, `missing`, `empty`, `placeholders`, `not_required`).
+- **E-Mail-Entwurf:** ist der Bewerbungsweg in `job.json` (`application.method`) `email`, muss `application/email.md` existieren, darf nicht leer sein und keine offenen `[Platzhalter]` enthalten (Vorlage `assets/templates/email.md`). Sonst meldet `application --qa` (und `qa <html>` im Bewerbungsordner) einen FEHLER mit Exit-Code 2, `validate` meldet FEHLER, sobald die Mappe gebaut ist (ab Status `draft`; bei `captured` ist der Entwurf noch nicht fällig), und `application --pdf` verweigert den Export. Das HTML wird trotzdem gebaut (Entwürfe bleiben möglich); die Freigabe (`status … html_approved`) warnt, bis der Entwurf vorliegt. Bei `post`, `portal` und `unknown` ist kein Entwurf nötig. Ergebnis im Manifest: `validation.email_draft` (`ok`, `missing`, `empty`, `placeholders`, `not_required`).
 - **Platzhalter:** keine `[GROSSBUCHSTABEN …]` außerhalb von Kommentaren (in der Profilvorlage sind die Platzhalter in Anschreiben und Motivationsschreiben gewollt).
 - **Bilder:** alle lokalen Bilder vorhanden.
 - **Datenvertrag:** Hinweis auf Klassen, die die Vorlage nicht kennt.
@@ -53,10 +54,10 @@ und jede PNG-Seite ansehen.
 
 ### Daten
 
-- [ ] Profil, `job.json`, Manifest und Ledger gültig (`validate`)
+- [ ] Profil, `job.json`, Manifest und Ledger gültig, keine blockierende Frage der Stelle `open` (`validate`)
 - [ ] Profil vom Nutzer bestätigt, nichts Blockierendes offen
 - [ ] Profilvorlage aktuell (kein Hinweis „Profil ist neuer als die Profilvorlage“)
-- [ ] Kein Duplikat im Ledger oder vom Nutzer ausdrücklich gewollt
+- [ ] Kein ungeklärtes Duplikat: `check-duplicate` endet ohne Exit-Code 3 (`references/applications.md`, Duplikate)
 - [ ] Näherungen als `inferred` gespeichert und mit „ca.“ dargestellt
 - [ ] Adressen ausgeschrieben („Straße“), zweizeilig, ohne Punkt und Komma (das Skript warnt bei „Str.“)
 - [ ] Lebenslauf: nur Einträge mit `show_in_cv` ungleich `false`; Seiten ausgewogen (Füllgrad), Verdichtung nur wo nötig
@@ -132,18 +133,33 @@ Persönliche Daten bleiben in `profile/` und `.tmp/` (beide gitignoriert). Der B
 Vor jedem Commit:
 
 ```bash
-git status --short
-git ls-files profile/            # nur profile/README.md und .gitkeep
-git ls-files | xargs grep -n -i -e '<nachname>' -e '<telefon>' -e '<e-mail>' -e '<straße>'
+python3 tools/check_repo.py all
 ```
 
-Platzhalter durch die echten Werte des Nutzers ersetzen (aus dem Profil lesen, nicht in eine Datei schreiben). Jeder Treffer blockiert den Commit. Commit und Push nur mit Zustimmung des Nutzers.
+Der Befehl braucht nur die Python-Standardbibliothek. Jeder Befund blockiert den Commit. Commit und Push nur mit Zustimmung des Nutzers.
+
+- `privacy` baut seine Suchmuster aus jedem Profil unter `profile/`: Vor- und Nachname, Telefon in jeder Schreibweise, E-Mail, eigene Domain der E-Mail-Adresse (nicht bei großen Anbietern), Straße, PLZ mit Ort, Geburtsdatum, Geburtsort. Weitere Suchtexte (z. B. zusätzliche Domains) stehen zeilenweise in der gitignorierten Datei `profile/privacy-needles.txt`.
+- Geprüft werden alle Dateien, die Git aufnimmt (getrackt oder neu und nicht ignoriert), ihre Pfade und der Staging-Diff. Dateien unter `profile/` (außer `README.md` und `.gitkeep`) und `.tmp/` dürfen nie dabei sein.
+- Die Ausgabe nennt Datei, Zeile und Art des Treffers, nie den Wert.
+- Ausnahmen stehen ausschließlich in der Liste `ALLOW` in `tools/check_repo.py` und brauchen die Zustimmung des Nutzers.
+- Beispiele in Dokumentation und Vorlagen bleiben neutral: „Max Mustermann“, „Musterstraße 6“, „Krakau, Polen“.
+
+Die Prüfung läuft an zwei Stellen von selbst:
+
+- **Git:** `tools/hooks/pre-commit`, einmal pro Klon eingeschaltet mit `git config core.hooksPath tools/hooks`.
+- **Claude Code:** als Hook `PostToolUse` für `Edit|Write` in `.claude/settings.json` mit dem Befehl `python3 "$CLAUDE_PROJECT_DIR/tools/check_repo.py" hook`. Er prüft nur die gerade geschriebene Datei, schweigt ohne Befund und meldet einen Befund sofort an den Agenten. Dateien unter `profile/<name>/` und `.tmp/` überspringt er.
 
 ## Repository-Prüfung
 
-- keine Profil-, Stellen- oder Bewerbungsdaten im Git; `.tmp/` nicht getrackt
-- alle JSON-Dateien im Skill gültig: `python3 -m json.tool <datei>`
-- alle Schemas gültig (Draft 2020-12): `python3 -c "import json,jsonschema; jsonschema.Draft202012Validator.check_schema(json.load(open('<schema>')))"`
+`python3 tools/check_repo.py all` deckt ab:
+
+- `privacy`: siehe Datenschutzprüfung
+- `stray`: jede Datei liegt an einem erlaubten Ort (Liste `ALLOWED` in `tools/check_repo.py`), keine leeren Dateien, keine Reste wie `*.orig`, `*.bak`, `EOF` oder Namen mit Leerzeichen. Eine neue Dateiart im Repository braucht zuerst einen Eintrag in `ALLOWED`.
+- `schemas`: alle JSON-Dateien lesbar; Schemas in sich stimmig (Verweise, Pflichtfelder, Aufzählungen, Muster); die Vorlagen in `assets/templates/` passen in Feldern, Typen und Aufzählungen zu ihrem Schema
+
+Dazu von Hand:
+
+- alle Schemas gültig nach Draft 2020-12 (braucht `jsonschema`): `.tmp/venv/bin/python -c "import json,sys,jsonschema; [jsonschema.Draft202012Validator.check_schema(json.load(open(f))) for f in sys.argv[1:]]" .agents/skills/bewerbungshelfer/assets/schemas/*.json`
 - `python3 tools/build_mappe.py --help` läuft
 - Symbole der Vorlage reproduzierbar: `python3 tools/devicon_symbols.py` auf den Quellen aus `assets/icons/README.md` liefert die 34 Symbole (25 Devicon, 9 Simple Icons) der SVG-Bibliothek Byte für Byte
 - Verweise zwischen SKILL.md, Referenzen und Vorlagen stimmen

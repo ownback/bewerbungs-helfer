@@ -19,12 +19,21 @@ Befehle:
   qa <html>                      Überlauf-, Platzhalter-, Seiten- und Breitenprüfung (1440/390/375 px,
                                  Headless-Chromium); bei Bewerbungsweg „email“ auch der E-Mail-Entwurf.
   preview <html> <ausgabe-ordner> A4-Vorschau als PDF und PNG-Seiten (PNG nur mit pdftoppm).
-  validate <profil-|stellen-ordner>  JSON-Schemaprüfung (benötigt das Paket jsonschema), Asset-Pfade und
-      bei Bewerbungsweg „email“ der E-Mail-Entwurf application/email.md.
-  check-duplicate <stellen-ordner>   Ledger auf gleiche Referenznummer oder Firma+Titel prüfen.
-  status <stellen-ordner> <status>   Status in Manifest und Ledger setzen (nicht „sent“: dafür mark-sent).
+  validate <profil-|stellen-ordner>  JSON-Schemaprüfung (benötigt das Paket jsonschema), Asset-Pfade,
+      bei Bewerbungsweg „email“ der E-Mail-Entwurf application/email.md und offene blockierende Fragen
+      (job.json open_questions: severity blocking + status open).
+  check-duplicate <stellen-ordner>   Stelle gegen alle erfassten Stellenordner prüfen: same_posting (Exit 3),
+      same_role_other_site und same_employer_other_role (Hinweis, Exit 0).
+  ledger sync <profil-ordner>    Ledger aus den Stellenordnern ableiten (idempotent, stellt es auch neu her).
+  status <profil-ordner>         Übersicht: eine Zeile pro Stelle (Status, Frist, Bewerbungsweg, offene
+                                 blockierende Fragen, nächster Schritt). Gleicht vorher das Ledger ab.
+  status <stellen-ordner> <status>   Status in Manifest und Ledger setzen (nicht „sent“: dafür mark-sent;
+                                 nicht „dropped“: dafür drop).
   mark-sent <stellen-ordner> --channel email|post|portal [--date JJJJ-MM-TT]
       Ordner nach applications/sent/<typ>/… verschieben und Ledger aktualisieren.
+  drop <stellen-ordner> --reason "…" [--date JJJJ-MM-TT]
+      Stelle aussortieren: Ordner nach applications/dropped/<typ>/… verschieben, Grund in DROPPED.txt.
+  restore <stellen-ordner>       Aussortierte Stelle zurückholen (Gegenstück zu drop).
   stats <profil-ordner>          Kennzahlen aus dem Ledger (Status, Typ, Monat).
 
 Chromium wird über $CHROME oder chromium/chromium-browser/google-chrome gesucht.
@@ -68,7 +77,14 @@ SECTION_META = {  # section -> (data-section, id prefix, Titel, Navigationslabel
     'zeugnisse': (6, 'reference', 'Zeugnisse', 'Zeugnisse'),
 }
 TYPES = ['apprenticeships', 'jobs', 'internships']
-STATUSES = ['draft', 'html_approved', 'pdf_exported', 'sent', 'interview', 'offer', 'rejected', 'withdrawn']
+# Reihenfolge und Bedeutung: references/applications.md, Abschnitt Status
+STATUSES = ['captured', 'draft', 'html_approved', 'pdf_exported', 'sent', 'interview', 'offer', 'rejected',
+            'withdrawn', 'dropped']
+MANIFEST_STATUSES = STATUSES[1:-1]  # captured und dropped ergeben sich aus dem Ordner, nicht aus dem Manifest
+AREAS = ('sent', 'dropped')         # Ablagen unter applications/<ablage>/<typ>/…
+DROP_FILE = 'DROPPED.txt'           # Zeile 1: Grund; „Datum: JJJJ-MM-TT“
+# Rechtsformen, die beim Firmenvergleich der Duplikatprüfung entfallen (nach slugify)
+LEGAL_FORMS = {'gmbh', 'ggmbh', 'mbh', 'ag', 'se', 'kg', 'kgaa', 'co', 'ohg', 'ug', 'eg', 'ev', 'ek', 'gbr', 'aoer'}
 SUBJECT_KICKER = {
     'apprenticeships': 'Bewerbung um einen Ausbildungsplatz als',
     'jobs': 'Bewerbung als',
@@ -292,15 +308,15 @@ def email_draft_state(posting: Path) -> tuple[str, str]:
 def posting_info(posting: Path) -> dict:
     pdir = profile_dir_of(posting)
     parts = posting.resolve().relative_to(pdir).parts
-    if len(parts) < 5 or parts[0] != 'applications':
+    area = parts[1] if len(parts) > 1 and parts[1] in AREAS else ''
+    if len(parts) < (6 if area else 5) or parts[0] != 'applications':
         raise BuildError(f'{posting} ist kein Stellenordner '
-                         '(applications/<typ>/<beruf>/<suchort>/<NN-ort-firma>/)')
-    sent = parts[1] == 'sent'
-    typ = parts[2] if sent else parts[1]
+                         '(applications/[sent/|dropped/]<typ>/<beruf>/<suchort>/<NN-ort-firma>/)')
+    typ = parts[2] if area else parts[1]
     if typ not in TYPES:
         raise BuildError(f'Unbekannter Typ „{typ}“ im Pfad {posting}')
-    return {'profile_dir': pdir, 'user': pdir.name, 'type': typ, 'sent': sent,
-            'folder': '/'.join(parts)}
+    return {'profile_dir': pdir, 'user': pdir.name, 'type': typ, 'sent': area == 'sent',
+            'dropped': area == 'dropped', 'folder': '/'.join(parts)}
 
 
 def html_name(user: str, ext: str = 'html') -> str:
@@ -1274,26 +1290,86 @@ def find_entry(ledger: dict, folder: str, refnr: str | None) -> dict | None:
     return None
 
 
-def upsert_ledger(info: dict, job: dict, manifest: dict) -> None:
-    with ledger_lock(info['profile_dir']):
-        _upsert_ledger(info, job, manifest)
+def iter_postings(pdir: Path) -> list[Path]:
+    """Alle Stellenordner eines Profils (aktiv, sent/, dropped/): Ordner mit job_information/job.json."""
+    return sorted(p.parent.parent for p in (pdir / 'applications').rglob('job_information/job.json'))
 
 
-def _upsert_ledger(info: dict, job: dict, manifest: dict) -> None:
-    pdir = info['profile_dir']
-    ledger = load_ledger(pdir)
-    refnr = job.get('reference_number')
-    entry = find_entry(ledger, info['folder'], refnr)
-    if entry is None:
-        entry = {'id': refnr or info['folder'].split('/')[-1], 'created_at': manifest.get('created_at', today()),
-                 'history': [{'date': today(), 'status': manifest['status'], 'note': 'angelegt'}]}
-        ledger['entries'].append(entry)
-    c = job.get('contact', {})
+def question_state(job: dict) -> tuple[list[dict], int]:
+    """(offene blockierende Fragen, Anzahl beantworteter, noch nicht eingearbeiteter Fragen) einer Stelle."""
+    questions = job.get('open_questions') or []
+    blocking = [q for q in questions if q.get('severity') == 'blocking' and q.get('status', 'open') == 'open']
+    return blocking, sum(1 for q in questions if q.get('status') == 'answered')
+
+
+def read_drop(posting: Path) -> tuple[str, str] | None:
+    """(Grund, Datum) aus DROPPED.txt: erste Textzeile ist der Grund, „Datum: JJJJ-MM-TT“ das Datum."""
+    path = posting / DROP_FILE
+    if not path.is_file():
+        return None
+    reason = date = ''
+    for line in path.read_text(encoding='utf-8').splitlines():
+        m = re.fullmatch(r'Datum:\s*(\d{4}-\d{2}-\d{2})', line.strip())
+        if m:
+            date = m.group(1)
+        elif line.strip() and not reason:
+            reason = line.strip()
+    return reason, date
+
+
+def add_history(manifest: dict, status: str, stamp: str, note: str | None = None) -> None:
+    manifest.setdefault('history', []).append({'date': stamp[:10], 'status': status, **({'note': note} if note else {})})
+
+
+def ensure_history(manifest: dict, old_entry: dict | None) -> bool:
+    """Manifest ohne history (ältere Mappen): Verlauf aus dem Ledger-Eintrag, sonst aus den Zeitstempeln.
+
+    True, wenn das Manifest ergänzt wurde."""
+    if isinstance(manifest.get('history'), list):
+        return False
+    history = [h for h in (old_entry or {}).get('history', []) if h.get('status') in MANIFEST_STATUSES]
+    if not history:
+        history = [{'date': manifest.get('created_at') or today(), 'status': 'draft', 'note': 'Mappe gebaut'}]
+        for key, status in (('approved_at', 'html_approved'), ('pdf_exported_at', 'pdf_exported'), ('sent_at', 'sent')):
+            if manifest.get(key):
+                history.append({'date': manifest[key][:10], 'status': status})
+        if manifest.get('status') in MANIFEST_STATUSES and manifest['status'] not in [h['status'] for h in history]:
+            history.append({'date': history[-1]['date'], 'status': manifest['status']})
+    manifest['history'] = history
+    return True
+
+
+def ledger_entry(posting: Path, info: dict, job: dict, old: dict | None) -> dict:
+    """Ledger-Eintrag einer Stelle, vollständig aus dem Ordner abgeleitet (nur notes kommt aus dem alten Eintrag).
+
+    Status: dropped (Ordner unter applications/dropped/ mit DROPPED.txt), sonst der Status des Manifests,
+    ohne Manifest captured."""
+    man_path = posting / 'application' / 'application-manifest.json'
+    manifest = read_json(man_path) if man_path.is_file() else None
+    if manifest is not None and ensure_history(manifest, old):
+        write_json(man_path, manifest)
+    drop = read_drop(posting)
+    if info['dropped'] and drop is None:
+        raise BuildError(f'liegt unter applications/dropped/, aber {DROP_FILE} fehlt (Aussortieren nur über '
+                         'build_mappe.py drop)')
+    if drop is not None and not info['dropped']:
+        raise BuildError(f'{DROP_FILE} in einem Ordner außerhalb von applications/dropped/ (build_mappe.py drop '
+                         'verschiebt den Ordner; zum Zurückholen: restore)')
+    man = manifest or {}
+    source, app, search, c = (job.get(k) or {} for k in ('source', 'application', 'search', 'contact'))
+    captured = source.get('retrieved_at') or man.get('created_at') or today()
+    status = man.get('status', 'captured')
+    history = [{'date': captured, 'status': 'captured', 'note': 'Anzeige erfasst'}, *man.get('history', [])]
+    dropped_at = drop_reason = None
+    if drop is not None:
+        status, drop_reason, dropped_at = 'dropped', drop[0] or 'ohne Grund', drop[1] or captured
+        history.append({'date': dropped_at, 'status': 'dropped', 'note': drop_reason})
+    refnr = job.get('reference_number') or ''
     contact = {k: v for k, v in (('name', ' '.join(x for x in (c.get('honorific', ''), c.get('name', '')) if x)),
                                  ('email', c.get('email', '')), ('phone', c.get('phone', ''))) if v}
-    search = job.get('search', {})
-    entry.update({
-        'reference_number': refnr or '',
+    entry = {
+        'id': refnr or posting.name,
+        'reference_number': refnr,
         'company': job['company'],
         'title': job['title'],
         'occupation': job.get('occupation', ''),
@@ -1301,25 +1377,113 @@ def _upsert_ledger(info: dict, job: dict, manifest: dict) -> None:
         'folder': info['folder'],
         'search_city': search.get('city', ''),
         'rank': search.get('rank'),
-        'status': manifest['status'],
-        'channel': entry.get('channel') or job.get('application', {}).get('method', 'unknown'),
+        'status': status,
+        'created_at': man.get('created_at') or captured,
+        'deadline': job.get('deadline') or None,
+        'html_approved_at': (man.get('approved_at') or '')[:10] or None,
+        'pdf_exported_at': (man.get('pdf_exported_at') or '')[:10] or None,
+        'sent_at': (man.get('sent_at') or '')[:10] or None,
+        'dropped_at': dropped_at,
+        'drop_reason': drop_reason,
+        'channel': man.get('channel') or app.get('method') or 'unknown',
+        'open_blocking': None if drop is not None else len(question_state(job)[0]),
         'contact': contact,
-        'application_email': job.get('application', {}).get('email', ''),
-        'source_url': job.get('source', {}).get('url', ''),
-    })
-    order = ['id', 'reference_number', 'company', 'title', 'occupation', 'type', 'folder', 'search_city', 'rank',
-             'status', 'created_at', 'html_approved_at', 'pdf_exported_at', 'sent_at', 'channel', 'contact',
-             'application_email', 'source_url', 'notes', 'history']
-    ordered = {k: entry[k] for k in order if entry.get(k) is not None}
-    ordered.update({k: v for k, v in entry.items() if k not in ordered and v is not None})
-    entry.clear()
-    entry.update(ordered)
-    write_json(ledger_path(pdir), ledger)
+        'application_email': app.get('email', ''),
+        'source_url': source.get('url', ''),
+        'notes': (old or {}).get('notes'),
+        'history': history,
+    }
+    return {k: v for k, v in entry.items() if v is not None}
+
+
+def ledger_sort_key(entry: dict) -> str:
+    return re.sub(r'^applications/(?:sent/|dropped/)?', '', entry.get('folder', ''))
+
+
+def sync_ledger(pdir: Path) -> tuple[dict, list[str]]:
+    """Ledger aus den Stellenordnern ableiten und schreiben (idempotent). Rückgabe: Ledger, Warnungen.
+
+    Jeder Ordner mit job_information/job.json ergibt genau einen Eintrag. Ein gelöschtes Ledger entsteht so
+    vollständig neu; nur das handgepflegte Feld notes ginge dabei verloren."""
+    with ledger_lock(pdir):
+        old = load_ledger(pdir)
+        by_folder = {e.get('folder'): e for e in old['entries']}
+        by_ref = {e['reference_number']: e for e in old['entries'] if e.get('reference_number')}
+        entries, warnings, used = [], [], set()
+        for posting in iter_postings(pdir):
+            prev = None
+            try:
+                info = posting_info(posting)
+                job = read_json(posting / 'job_information' / 'job.json')
+                prev = by_folder.get(info['folder'])
+                if prev is None:  # verschobener Ordner (mark-sent, drop, restore): über die Referenznummer finden
+                    cand = by_ref.get(job.get('reference_number') or '')
+                    if cand is not None and not (pdir / cand.get('folder', '') / 'job_information' / 'job.json').is_file():
+                        prev = cand
+                entry = ledger_entry(posting, info, job, prev)
+            except (BuildError, KeyError, TypeError, AttributeError) as e:
+                warnings.append(f'{rel(posting)}: {e if isinstance(e, BuildError) else repr(e)}')
+                entry = prev
+            if prev is not None:
+                used.add(id(prev))
+            if entry is not None:
+                entries.append(entry)
+        for e in old['entries']:
+            if id(e) not in used:
+                warnings.append(f'Ledger-Eintrag ohne Stellenordner behalten: {e.get("folder")}')
+                entries.append(e)
+        entries.sort(key=ledger_sort_key)
+        ledger = {'schema_version': '1.0', 'profile': pdir.name, 'entries': entries}
+        if ledger != old or (entries and not ledger_path(pdir).is_file()):
+            write_json(ledger_path(pdir), ledger)
+        return ledger, warnings
+
+
+def norm_company(name: str) -> str:
+    """Firmenname für den Vergleich: ohne Klammerzusätze und Rechtsform, als Slug-Wörter."""
+    t = re.sub(r'\([^)]*\)', ' ', name)
+    t = re.sub(r'\b([eEaA])\.\s?([VKGvkg])\.', r'\1\2', t)  # e.V., e.K., a.G.
+    return ' '.join(w for w in slugify(t).split('-') if w and w not in LEGAL_FORMS)
+
+
+def dup_key(job: dict) -> dict:
+    """Schlüssel der Duplikatprüfung: Firma, Beruf, Arbeitsorte, Startjahr (references/applications.md)."""
+    year = ''
+    for field in ('start', 'start_text', 'title'):
+        m = re.search(r'\b(20\d{2})\b', job.get(field) or '')
+        if m:
+            year = m.group(1)
+            break
+    towns = {slugify(re.split(r'[,(]', loc.get('city') or '', maxsplit=1)[0]) for loc in job.get('locations') or []}
+    return {'ref': job.get('reference_number') or '', 'company': norm_company(job.get('company') or ''),
+            'occupation': slugify(job.get('occupation') or ''), 'towns': towns - {''}, 'year': year}
+
+
+def dup_class(a: dict, b: dict) -> str | None:
+    """same_posting, same_role_other_site, same_employer_other_role oder None für zwei dup_key-Schlüssel."""
+    if a['ref'] and a['ref'] == b['ref']:
+        return 'same_posting'
+    if not a['company'] or a['company'] != b['company']:
+        return None
+    if a['occupation'] == b['occupation'] and a['year'] == b['year']:
+        return 'same_posting' if a['towns'] & b['towns'] else 'same_role_other_site'
+    return 'same_employer_other_role'
+
+
+def dup_decision(job: dict, other: dict) -> str:
+    """Text der gespeicherten Nutzerentscheidung (duplicate_decision) für das Paar, sonst ''."""
+    for mine, theirs in ((job, other), (other, job)):
+        d = mine.get('duplicate_decision') or {}
+        if theirs.get('reference_number') and theirs['reference_number'] in (d.get('reference_numbers') or []):
+            return f'{d.get("decision", "")} (Nutzer, {d.get("decided_at", "")})'
+    return ''
 
 
 def cmd_application(args) -> int:
     posting = Path(args.dir).resolve()
     info = posting_info(posting)
+    if info['dropped']:
+        raise BuildError(f'Die Stelle ist aussortiert ({DROP_FILE}). Zurückholen: build_mappe.py restore "{rel(posting)}"')
     pdir, user = info['profile_dir'], info['user']
     profile = load_profile(pdir)
     check_profile_assets(profile, pdir)
@@ -1360,7 +1524,12 @@ def cmd_application(args) -> int:
     pages.insert(0, {'number': 1, 'section': 'deckblatt'})
 
     man_path = app_dir / 'application-manifest.json'
-    manifest = read_json(man_path) if man_path.is_file() else {'status': 'draft', 'created_at': today()}
+    if man_path.is_file():
+        manifest = read_json(man_path)
+        ensure_history(manifest, find_entry(load_ledger(pdir), info['folder'], job.get('reference_number')))
+    else:
+        manifest = {'status': 'draft', 'created_at': today(),
+                    'history': [{'date': today(), 'status': 'draft', 'note': 'Mappe gebaut'}]}
     manifest.update({
         'profile': user,
         'type': info['type'],
@@ -1379,6 +1548,7 @@ def cmd_application(args) -> int:
         print('Hinweis: Die Mappe war freigegeben. Nach Änderungen muss der Nutzer sie erneut freigeben; '
               'Status zurück auf draft.', file=sys.stderr)
         manifest['status'] = 'draft'
+        add_history(manifest, 'draft', today(), 'nach Änderung zurück auf draft')
         for k in ('approved_at', 'pdf', 'pdf_exported_at'):
             manifest.pop(k, None)
     words_letter, words_mot = word_count(letter['paragraphs']), word_count(mot['paragraphs'])
@@ -1421,27 +1591,28 @@ def cmd_application(args) -> int:
     if args.pdf:
         if manifest['status'] not in ('html_approved', 'pdf_exported', 'sent'):
             write_json(man_path, manifest)
-            upsert_ledger(info, job, manifest)
+            sync_ledger(pdir)
             raise BuildError('Kein PDF: Die HTML-Fassung ist nicht freigegeben. Erst nach dem ausdrücklichen Ja des '
                              f'Nutzers: build_mappe.py status "{rel(posting)}" html_approved')
         if email_msg:
             write_json(man_path, manifest)
-            upsert_ledger(info, job, manifest)
+            sync_ledger(pdir)
             raise BuildError(f'Kein PDF: {email_msg}')
         if rc:
             raise BuildError('Kein PDF: Die QA meldet Probleme.')
         pdf = app_dir / html_name(user, 'pdf')
         print_pdf(out, pdf)
         stamp = now_iso()
-        manifest.update({'status': 'pdf_exported', 'pdf': pdf.name, 'pdf_exported_at': stamp})
+        if manifest['status'] == 'html_approved':
+            add_history(manifest, 'pdf_exported', stamp)
+            manifest['status'] = 'pdf_exported'
+        manifest.update({'pdf': pdf.name, 'pdf_exported_at': stamp})
         print(f'PDF: {rel(pdf)} ({pdf_pages(pdf)} Seiten)')
         write_json(man_path, manifest)
-        with ledger_lock(pdir):
-            _upsert_ledger(info, job, manifest)
-            _status_history(info, job, argparse.Namespace(status='pdf_exported', channel=None, note=None), stamp)
+        sync_ledger(pdir)
         return rc
     write_json(man_path, manifest)
-    upsert_ledger(info, job, manifest)
+    sync_ledger(pdir)
     return rc
 
 
@@ -1497,8 +1668,9 @@ def cmd_validate(args) -> int:
         for man in sorted((pdir / 'applications').rglob('application/application-manifest.json')):
             checks.append((man, 'application-manifest.schema.json'))
     else:
-        checks += [(path / 'job_information' / 'job.json', 'job.schema.json'),
-                   (path / 'application' / 'application-manifest.json', 'application-manifest.schema.json')]
+        checks.append((path / 'job_information' / 'job.json', 'job.schema.json'))
+        if (path / 'application' / 'application-manifest.json').is_file():  # fehlt bei Status captured
+            checks.append((path / 'application' / 'application-manifest.json', 'application-manifest.schema.json'))
     bad = 0
     postings = ([job.parent.parent for job in sorted((pdir / 'applications').rglob('job_information/job.json'))]
                 if path == pdir else [path])
@@ -1522,53 +1694,223 @@ def cmd_validate(args) -> int:
             print(f'        {"/".join(str(x) for x in e.path) or "(root)"}: {e.message}')
         bad += bool(errors)
     for posting in postings:
+        if posting_info(posting)['dropped']:
+            continue  # aussortiert: weder E-Mail-Entwurf noch offene Fragen blockieren
         state, msg = email_draft_state(posting)
+        built = (posting / 'application' / 'application-manifest.json').is_file()
         if state == 'ok':
             print(f'ok      {rel(posting / "application" / "email.md")}')
-        elif msg:
+        elif msg and built:  # Status captured (noch keine Mappe): der Entwurf ist noch nicht fällig
             print(f'FEHLER  {msg}')
             bad += 1
+        job_file = posting / 'job_information' / 'job.json'
+        if not job_file.is_file():
+            continue
+        blocking, answered = question_state(read_json(job_file))
+        for q in blocking:
+            print(f'FEHLER  {rel(job_file)}: blockierende Frage offen: {q.get("question", "")}')
+        bad += bool(blocking)
+        if answered:
+            print(f'Hinweis {rel(job_file)}: {answered} beantwortete Frage(n) noch nicht eingearbeitet '
+                  '(open_questions mit status answered)')
     return 1 if bad else 0
 
 
+def profile_dir_arg(path: str) -> Path:
+    pdir = Path(path).resolve()
+    return pdir if pdir.parent == PROFILE_ROOT.resolve() else profile_dir_of(pdir)
+
+
 def cmd_check_duplicate(args) -> int:
+    """Vergleicht eine Stelle mit allen anderen Stellenordnern des Profils (auch sent/ und dropped/).
+
+    Exit 3 nur bei same_posting ohne gespeicherte Entscheidung: gleiche Referenznummer, oder gleicher
+    Schlüssel mit einer Stelle, die nicht aussortiert ist."""
     posting = Path(args.dir).resolve()
     info = posting_info(posting)
+    pdir = info['profile_dir']
     job = read_json(posting / 'job_information' / 'job.json')
-    refnr = job.get('reference_number')
-    key = (job['company'].strip().lower(), job['title'].strip().lower())
-    dups = []
-    for e in load_ledger(info['profile_dir'])['entries']:
-        if e.get('folder') == info['folder']:
+    key, blocking, lines, others = dup_key(job), 0, [], 0
+    for other in iter_postings(pdir):
+        if other == posting:
             continue
-        if (refnr and e.get('reference_number') == refnr) or \
-                (e.get('company', '').strip().lower(), e.get('title', '').strip().lower()) == key:
-            dups.append(e)
-    if not dups:
-        print('Kein Duplikat im Ledger.')
+        try:
+            oinfo, ojob = posting_info(other), read_json(other / 'job_information' / 'job.json')
+        except BuildError as e:
+            print(f'Warnung: {rel(other)} übersprungen ({e})', file=sys.stderr)
+            continue
+        others += 1
+        okey = dup_key(ojob)
+        cls = dup_class(key, okey)
+        if not cls:
+            continue
+        drop = read_drop(other) if oinfo['dropped'] else None
+        line = (f'{cls}: {ojob.get("reference_number") or "-"} · {ojob.get("company", "")} · {ojob.get("title", "")} · '
+                f'{oinfo["folder"]}')
+        if cls == 'same_posting':
+            decision = dup_decision(job, ojob)
+            if key['ref'] and key['ref'] == okey['ref']:
+                line += ' · gleiche Referenznummer'
+                blocking += 1
+            elif decision:
+                line += f' · entschieden: {decision}'
+            elif drop is not None:
+                line += f' · bereits aussortiert: {drop[0]}'
+            else:
+                line += ' · ungeklärt'
+                blocking += 1
+        elif drop is not None:
+            line += f' · aussortiert: {drop[0]}'
+        lines.append(line)
+    if not lines:
+        print(f'Kein Duplikat ({others} andere Stellenordner geprüft).')
         return 0
-    for e in dups:
-        print(f'DUPLIKAT: {e.get("reference_number") or "-"} · {e["company"]} · {e["title"]} · Status {e["status"]} · '
-              f'{e["folder"]}')
-    return 3
+    for line in sorted(lines, key=lambda x: (not x.startswith('same_posting'), x)):
+        print(line)
+    if blocking:
+        print(f'{blocking} ungeklärtes Duplikat (same_posting): Nutzer fragen; Entscheidung in job.json '
+              '(duplicate_decision) festhalten oder eine der Stellen mit drop aussortieren.')
+        return 3
+    print('Kein ungeklärtes Duplikat; die Zeilen oben sind Hinweise.')
+    return 0
+
+
+def next_step(entry: dict, posting: Path, job: dict) -> str:
+    """Nächster Schritt einer Stelle für die Übersicht; <ordner> steht für den Stellenordner der Zeile."""
+    status = entry['status']
+    if status == 'dropped':
+        return f'– ({entry.get("drop_reason", "")})'
+    blocking, answered = question_state(job)
+    if status in ('captured', 'draft', 'html_approved') and blocking:
+        return 'blockierende Frage klären (job.json open_questions), Frage dann auf resolved setzen'
+    if status in ('captured', 'draft') and answered:
+        return 'Antworten in job.json einarbeiten (open_questions: answered → resolved)'
+    if status == 'captured':
+        return 'Texte schreiben (references/fan-out.md), dann: application <ordner> --qa'
+    if status == 'draft':
+        man_path = posting / 'application' / 'application-manifest.json'
+        val = (read_json(man_path).get('validation') or {}) if man_path.is_file() else {}
+        if email_draft_state(posting)[1] or val.get('overflow') or val.get('placeholders_remaining') \
+                or val.get('missing_assets'):
+            return 'QA-Befunde beheben: application <ordner> --qa'
+        return 'Freigabe des Nutzers einholen, dann: status <ordner> html_approved'
+    return {
+        'html_approved': 'application <ordner> --qa --pdf',
+        'pdf_exported': f'Nutzer sendet; nach Bestätigung: mark-sent <ordner> --channel {entry.get("channel", "email")}',
+        'sent': 'Rückmeldung abwarten: status <ordner> interview|offer|rejected|withdrawn',
+        'interview': 'Ergebnis eintragen: status <ordner> offer|rejected|withdrawn',
+    }.get(status, '–')
+
+
+def status_overview(path: Path) -> int:
+    """Eine Zeile pro Stelle aus dem frisch abgeglichenen Ledger, aktive nach Frist, aussortierte am Ende."""
+    pdir = profile_dir_arg(str(path))
+    ledger, warnings = sync_ledger(pdir)
+    only = None if path == pdir else posting_info(path)['folder']
+    rows, jobs = [], {}
+    for e in ledger['entries']:
+        posting = pdir / e['folder']
+        try:
+            job = read_json(posting / 'job_information' / 'job.json')
+        except BuildError:
+            job = {}
+        jobs[e['folder']] = job
+        if only and e['folder'] != only:
+            continue
+        deadline = e.get('deadline', '')
+        iso = re.fullmatch(r'\d{4}-\d{2}-\d{2}', deadline)
+        shown = short_date(deadline) if iso else (deadline[:11] + '…' if len(deadline) > 12 else deadline or '–')
+        if iso and deadline < today() and e['status'] in STATUSES[:4]:
+            shown += ' !'
+        rows.append((e['status'] == 'dropped', deadline if iso else '9999', ledger_sort_key(e),
+                     e, shown, next_step(e, posting, job)))
+    if not rows:
+        print(f'Keine Stellen erfasst unter {rel(pdir)}/applications/.')
+        return 0
+    rows.sort(key=lambda r: r[:3])
+    groups ={'/'.join(ledger_sort_key(r[3]).split('/')[:2]) for r in rows}
+    cut = len(next(iter(groups))) + 1 if len(groups) == 1 else 0
+    names = [ledger_sort_key(r[3])[cut:] for r in rows]
+    width = max((len(n) for n in names), default=6)
+    print(f'Stellen von {pdir.name} (Stand {today()}); <ordner> = {rel(pdir)}/applications/[sent/|dropped/]'
+          f'{next(iter(groups)) + "/" if cut else ""}<ORDNER der Zeile>')
+    print(f'{"STATUS":<13} {"FRIST":<12} {"WEG":<7} {"BLK":>3}  {"ORDNER":<{width}}  NÄCHSTER SCHRITT')
+    for (_, _, _, e, shown, step), name in zip(rows, names):
+        print(f'{e["status"]:<13} {shown:<12} {e.get("channel", "unknown"):<7} {e.get("open_blocking", "–"):>3}  '
+              f'{name:<{width}}  {step}')
+    if only:
+        return 0
+    entries = ledger['entries']
+    active = [e for e in entries if e['status'] != 'dropped']
+    counts = Counter(e['status'] for e in active)
+    blocked = [e for e in active if e.get('open_blocking')]
+    print(f'Summe: {len(active)} aktiv ('
+          + ', '.join(f'{s} {counts[s]}' for s in STATUSES if counts.get(s)) + f') · {len(entries) - len(active)} '
+          f'aussortiert (dropped) · blockierend offen: {sum(e["open_blocking"] for e in blocked)} Fragen in '
+          f'{len(blocked)} Stellen · BLK = offene blockierende Fragen; „!“ = Frist abgelaufen')
+    notes = []
+    for i, a in enumerate(active):
+        for b in active[i + 1:]:
+            ja, jb = jobs.get(a['folder']) or {}, jobs.get(b['folder']) or {}
+            cls = dup_class(dup_key(ja), dup_key(jb)) if ja and jb else None
+            if not cls:
+                continue
+            extra = ''
+            if cls == 'same_posting':
+                extra = dup_decision(ja, jb)
+                extra = f' · entschieden: {extra}' if extra else ' · ungeklärt: check-duplicate <ordner>'
+            notes.append(f'  {cls:<24} {ledger_sort_key(a)[cut:]} ↔ {ledger_sort_key(b)[cut:]}{extra}')
+    if notes:
+        print('Hinweise der Duplikatprüfung (references/applications.md, Duplikate):')
+        print('\n'.join(sorted(notes)))
+    for w in warnings:
+        print(f'Warnung: {w}', file=sys.stderr)
+    return 0
+
+
+def cmd_ledger(args) -> int:
+    pdir = profile_dir_arg(args.dir)
+    before = ledger_path(pdir).read_bytes() if ledger_path(pdir).is_file() else None
+    ledger, warnings = sync_ledger(pdir)
+    after = ledger_path(pdir).read_bytes() if ledger_path(pdir).is_file() else None
+    counts = Counter(e['status'] for e in ledger['entries'])
+    print(f'Ledger {rel(ledger_path(pdir))}: {len(ledger["entries"])} Einträge ('
+          + ', '.join(f'{s} {counts[s]}' for s in STATUSES if counts.get(s)) + ') · '
+          + ('unverändert' if before == after else 'aktualisiert'))
+    for w in warnings:
+        print(f'Warnung: {w}', file=sys.stderr)
+    return 1 if warnings else 0
 
 
 def cmd_status(args) -> int:
+    if args.status is None:
+        return status_overview(Path(args.dir).resolve())
     posting = Path(args.dir).resolve()
     info = posting_info(posting)
+    pdir = info['profile_dir']
     if args.status not in STATUSES:
         raise BuildError(f'Status muss einer von {", ".join(STATUSES)} sein')
     if args.status == 'sent' and not getattr(args, 'from_mark_sent', False):
         raise BuildError('Status „sent“ nur über mark-sent: build_mappe.py mark-sent "<stellenordner>" '
                          '--channel email|post|portal (verschiebt den Ordner nach applications/sent/ und '
                          'aktualisiert das Ledger in einem Schritt).')
+    if args.status == 'dropped':
+        raise BuildError('Status „dropped“ nur über drop: build_mappe.py drop "<stellenordner>" --reason "…" '
+                         '(verschiebt den Ordner nach applications/dropped/ und hält den Grund fest).')
+    if args.status == 'captured':
+        raise BuildError('Status „captured“ wird nicht gesetzt: Er gilt für jede erfasste Stelle ohne gebaute Mappe.')
+    if info['dropped']:
+        raise BuildError(f'Die Stelle ist aussortiert. Zurückholen: build_mappe.py restore "{rel(posting)}"')
     if args.status == 'html_approved':
         _, email_msg = email_draft_state(posting)
         if email_msg:
             print(f'Warnung: {email_msg} Das PDF wird erst mit Entwurf erzeugt.', file=sys.stderr)
     man_path = posting / 'application' / 'application-manifest.json'
+    if not man_path.is_file():
+        raise BuildError(f'Noch keine Mappe gebaut (Status captured): zuerst build_mappe.py application "{rel(posting)}" --qa')
     manifest = read_json(man_path)
     job = read_json(posting / 'job_information' / 'job.json')
+    ensure_history(manifest, find_entry(load_ledger(pdir), info['folder'], job.get('reference_number')))
     stamp = (dt.datetime.fromisoformat(args.date).astimezone().replace(microsecond=0).isoformat()
              if args.date else now_iso())
     manifest['status'] = args.status
@@ -1578,25 +1920,24 @@ def cmd_status(args) -> int:
         manifest['sent_at'] = stamp
     if args.channel:
         manifest['channel'] = args.channel
+    add_history(manifest, args.status, stamp, args.note)
     write_json(man_path, manifest)
-    with ledger_lock(info['profile_dir']):
-        _upsert_ledger(info, job, manifest)
-        _status_history(info, job, args, stamp)
+    sync_ledger(pdir)
     print(f'Status {args.status}: {info["folder"]}')
     return 0
 
 
-def _status_history(info: dict, job: dict, args, stamp: str) -> None:
-    ledger = load_ledger(info['profile_dir'])
-    entry = find_entry(ledger, info['folder'], job.get('reference_number'))
-    date_key = {'html_approved': 'html_approved_at', 'pdf_exported': 'pdf_exported_at', 'sent': 'sent_at'}.get(args.status)
-    if date_key:
-        entry[date_key] = stamp[:10]
-    if args.channel:
-        entry['channel'] = args.channel
-    entry.setdefault('history', []).append({'date': stamp[:10], 'status': args.status,
-                                            **({'note': args.note} if args.note else {})})
-    write_json(ledger_path(info['profile_dir']), ledger)
+def move_posting(posting: Path, target: Path, info: dict) -> None:
+    """Stellenordner verschieben und leer gewordene Elternordner bis zum Typordner entfernen."""
+    if target.exists():
+        raise BuildError(f'Ziel existiert bereits: {rel(target)}')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(posting), str(target))
+    stop = info['profile_dir'] / 'applications'
+    for parent in posting.parents:
+        if parent == stop or stop not in parent.parents or parent.name in (*TYPES, *AREAS) or any(parent.iterdir()):
+            break
+        parent.rmdir()
 
 
 def cmd_mark_sent(args) -> int:
@@ -1604,6 +1945,8 @@ def cmd_mark_sent(args) -> int:
     info = posting_info(posting)
     if info['sent']:
         raise BuildError('Diese Bewerbung liegt bereits unter applications/sent/.')
+    if info['dropped']:
+        raise BuildError(f'Die Stelle ist aussortiert. Zurückholen: build_mappe.py restore "{rel(posting)}"')
     manifest = read_json(posting / 'application' / 'application-manifest.json')
     if manifest['status'] not in ('pdf_exported', 'html_approved'):
         raise BuildError(f'Status ist {manifest["status"]}: erst freigeben und PDF exportieren.')
@@ -1611,35 +1954,55 @@ def cmd_mark_sent(args) -> int:
         print('Warnung: Kein PDF im Bewerbungsordner gefunden.', file=sys.stderr)
     parts = info['folder'].split('/')
     target = info['profile_dir'] / 'applications' / 'sent' / Path(*parts[1:])
-    if target.exists():
-        raise BuildError(f'Ziel existiert bereits: {rel(target)}')
-    job = read_json(posting / 'job_information' / 'job.json')
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(posting), str(target))
-    stop = info['profile_dir'] / 'applications' / info['type']
-    for parent in posting.parents:
-        if parent == stop or stop not in parent.parents or any(parent.iterdir()):
-            break
-        parent.rmdir()
-    new_folder = '/'.join(['applications', 'sent', *parts[1:]])
-    with ledger_lock(info['profile_dir']):
-        ledger = load_ledger(info['profile_dir'])
-        entry = find_entry(ledger, info['folder'], job.get('reference_number'))
-        if entry:
-            entry['folder'] = new_folder
-            write_json(ledger_path(info['profile_dir']), ledger)
+    move_posting(posting, target, info)
     args.dir, args.status, args.from_mark_sent = str(target), 'sent', True
     cmd_status(args)
     print(f'Verschoben nach {rel(target)}')
     return 0
 
 
+def cmd_drop(args) -> int:
+    """Stelle aussortieren: einziger Weg zum Status dropped (Ordner, DROPPED.txt und Ledger in einem Schritt)."""
+    posting = Path(args.dir).resolve()
+    info = posting_info(posting)
+    if info['dropped']:
+        raise BuildError('Diese Stelle liegt bereits unter applications/dropped/.')
+    if info['sent']:
+        raise BuildError('Diese Bewerbung ist gesendet. Rückzug: build_mappe.py status "<stellenordner>" withdrawn')
+    if not (posting / 'job_information' / 'job.json').is_file():
+        raise BuildError(f'Datei fehlt: {rel(posting / "job_information" / "job.json")}')
+    reason = ' '.join(args.reason.split())
+    if not reason:
+        raise BuildError('Grund fehlt: --reason "…"')
+    date = dt.date.fromisoformat(args.date).isoformat() if args.date else today()
+    parts = info['folder'].split('/')
+    target = info['profile_dir'] / 'applications' / 'dropped' / Path(*parts[1:])
+    move_posting(posting, target, info)
+    (target / DROP_FILE).write_text(f'{reason}\nDatum: {date}\n', encoding='utf-8')
+    sync_ledger(info['profile_dir'])
+    print(f'Aussortiert: {rel(target)} ({reason})')
+    return 0
+
+
+def cmd_restore(args) -> int:
+    posting = Path(args.dir).resolve()
+    info = posting_info(posting)
+    if not info['dropped']:
+        raise BuildError('Nur Ordner unter applications/dropped/ lassen sich zurückholen.')
+    parts = info['folder'].split('/')
+    target = info['profile_dir'] / 'applications' / Path(*parts[2:])
+    move_posting(posting, target, info)
+    (target / DROP_FILE).unlink(missing_ok=True)
+    sync_ledger(info['profile_dir'])
+    print(f'Zurückgeholt: {rel(target)}')
+    return 0
+
+
 def cmd_stats(args) -> int:
-    pdir = Path(args.dir).resolve()
-    if pdir.parent != PROFILE_ROOT.resolve():
-        pdir = profile_dir_of(pdir)
-    entries = load_ledger(pdir)['entries']
-    print(f'Bewerbungen von {pdir.name}: {len(entries)}')
+    pdir = profile_dir_arg(args.dir)
+    entries = sync_ledger(pdir)[0]['entries']
+    dropped = sum(1 for e in entries if e['status'] == 'dropped')
+    print(f'Stellen von {pdir.name}: {len(entries)} ({len(entries) - dropped} aktiv, {dropped} aussortiert)')
     for title, counter in (('Status', Counter(e['status'] for e in entries)),
                            ('Typ', Counter(e['type'] for e in entries)),
                            ('Angelegt pro Monat', Counter(e.get('created_at', '')[:7] for e in entries)),
@@ -1662,12 +2025,17 @@ def main(argv=None) -> int:
     s.add_argument('--dpi', type=int, default=70); s.set_defaults(fn=cmd_preview)
     s = sub.add_parser('validate'); s.add_argument('dir'); s.set_defaults(fn=cmd_validate)
     s = sub.add_parser('check-duplicate'); s.add_argument('dir'); s.set_defaults(fn=cmd_check_duplicate)
-    s = sub.add_parser('status'); s.add_argument('dir'); s.add_argument('status')
+    s = sub.add_parser('ledger'); s.add_argument('action', choices=['sync']); s.add_argument('dir')
+    s.set_defaults(fn=cmd_ledger)
+    s = sub.add_parser('status'); s.add_argument('dir'); s.add_argument('status', nargs='?')
     s.add_argument('--channel', choices=['email', 'post', 'portal']); s.add_argument('--date')
     s.add_argument('--note'); s.set_defaults(fn=cmd_status)
     s = sub.add_parser('mark-sent'); s.add_argument('dir')
     s.add_argument('--channel', choices=['email', 'post', 'portal'], required=True); s.add_argument('--date')
     s.add_argument('--note'); s.set_defaults(fn=cmd_mark_sent)
+    s = sub.add_parser('drop'); s.add_argument('dir'); s.add_argument('--reason', required=True)
+    s.add_argument('--date'); s.set_defaults(fn=cmd_drop)
+    s = sub.add_parser('restore'); s.add_argument('dir'); s.set_defaults(fn=cmd_restore)
     s = sub.add_parser('stats'); s.add_argument('dir'); s.set_defaults(fn=cmd_stats)
     args = ap.parse_args(argv)
     try:

@@ -27,7 +27,10 @@ Deckblatt, Lebenslauf, Zertifikate und Zeugnisse kommen aus deiner persönlichen
 ```bash
 git clone https://github.com/ownback/bewerbungs-helfer
 cd bewerbungs-helfer
+git config core.hooksPath tools/hooks
 ```
+
+Die letzte Zeile schaltet einmal pro Klon den Git-Hook `tools/hooks/pre-commit` ein. Er ruft vor jedem Commit `python3 tools/check_repo.py all` auf und bricht ab, wenn persönliche Daten aus deinem Profil, verirrte Dateien oder kaputte Schemas im Commit lägen. Claude Code führt dieselbe Prüfung nach jedem Schreiben einer Datei aus (Hook in `.claude/settings.json`).
 
 Dann im Ordner den Agenten starten und den Skill aufrufen:
 
@@ -46,6 +49,8 @@ Beim ersten Mal legst du deine vorhandenen Unterlagen (alter Lebenslauf, Zeugnis
 6. Du prüfst jede Mappe. Erst nach deinem ausdrücklichen Ja entsteht das PDF.
 7. Du schickst die Bewerbung selbst ab und sagst dem Agenten Bescheid. Er verschiebt sie nach `sent/` und führt Buch.
 
+Den Stand aller Stellen mit dem jeweils nächsten Schritt zeigt `python3 tools/build_mappe.py status profile/<vorname.nachname>`.
+
 ## Deine Daten
 
 Alles Persönliche bleibt auf deinem Rechner: `profile/` und `.tmp/` sind gitignoriert und landen nie im Repository. Der Agent erfindet keine Angaben, sendet nichts und füllt keine Portale aus.
@@ -56,7 +61,10 @@ Alles Persönliche bleibt auf deinem Rechner: `profile/` und `.tmp/` sind gitign
 CLAUDE.md                          Anweisungen für Agenten (AGENTS.md verweist darauf)
 .agents/skills/bewerbungshelfer/   Skill: Ablauf, Referenzen, HTML-Vorlage, Schemas, Textvorlagen
 .claude/agents/                    Subagenten für Claude Code (Texte + Mappe, QA)
-tools/build_mappe.py               Baut, prüft und exportiert die Mappen
+.claude/settings.json              Claude-Code-Hook: Repository-Prüfung nach jedem Edit/Write
+tools/build_mappe.py               Baut, prüft und exportiert die Mappen; führt Ledger und Status
+tools/check_repo.py                Prüft vor Commits auf persönliche Daten, verirrte Dateien, Schemas
+tools/hooks/pre-commit             Git-Hook für tools/check_repo.py
 tools/devicon_symbols.py           Wandelt Logo-SVGs in Vorlagen-Symbole (nur für neue Logos)
 profile/                           deine Profile und Bewerbungen (lokal, nicht versioniert)
 ```

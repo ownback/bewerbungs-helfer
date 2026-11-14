@@ -31,7 +31,7 @@
     "reference_number": {
       "type": "string",
       "minLength": 1,
-      "description": "Referenz-Nr. aus dem Fuß der BA-Anzeige (#detail-footer-referenznummer). Schlüssel für die Duplikatprüfung im Ledger."
+      "description": "Referenz-Nr. aus dem Fuß der BA-Anzeige (#detail-footer-referenznummer). Schlüssel im Ledger; gleiche Nummer = same_posting (references/applications.md, Duplikate)."
     },
     "source": {
       "type": "object",
@@ -226,15 +226,52 @@
     },
     "open_questions": {
       "type": "array",
+      "description": "Offene Punkte der Stelle mit Status. Regeln: references/job-search.md, Abschnitt „Offene Punkte“. validate schlägt nur bei severity blocking mit status open fehl.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["question", "severity"],
+        "required": ["question", "severity", "status"],
         "properties": {
           "question": { "type": "string", "minLength": 1 },
           "severity": { "enum": ["blocking", "non_blocking", "research_needed"] },
-          "impact": { "type": "string" }
-        }
+          "impact": { "type": "string" },
+          "status": {
+            "enum": ["open", "answered", "resolved", "obsolete"],
+            "description": "open = ungeklärt; answered = Antwort liegt vor, ist aber noch nicht in job.json oder die Texte eingearbeitet; resolved = erledigt und eingearbeitet; obsolete = Frage hat sich erübrigt."
+          },
+          "answer": {
+            "type": "string",
+            "description": "Kurze Antwort mit Fundstelle (z. B. „ba_scrape.md, Informationen zur Bewerbung“, „portal_page.md“, „Nutzer am JJJJ-MM-TT“); bei obsolete der Grund."
+          },
+          "resolved_at": {
+            "type": "string",
+            "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Datum der Antwort bzw. Erledigung (JJJJ-MM-TT); leer, solange status open ist."
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": {"status": {"enum": ["answered", "resolved", "obsolete"]}}, "required": ["status"] },
+            "then": {
+              "required": ["answer", "resolved_at"],
+              "properties": {
+                "answer": { "type": "string", "minLength": 1 },
+                "resolved_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "duplicate_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference_numbers", "decision", "decided_at"],
+      "description": "Entscheidung des Nutzers zu einem same_posting-Treffer der Duplikatprüfung (references/applications.md, Duplikate). check-duplicate meldet die genannten Stellen dann als entschieden und ohne Exit-Code 3.",
+      "properties": {
+        "reference_numbers": { "type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "description": "Referenznummern der anderen Stellen, für die die Entscheidung gilt." },
+        "decision": { "type": "string", "minLength": 1 },
+        "decided_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
       }
     }
   }

@@ -97,5 +97,14 @@
       "used_in": []
     }
   ],
-  "open_questions": []
+  "open_questions": [
+    {
+      "question": "",
+      "severity": "non_blocking",
+      "impact": "",
+      "status": "open",
+      "answer": "",
+      "resolved_at": ""
+    }
+  ]
 }

@@ -28,18 +28,20 @@ Nur lesen, was der aktuelle Schritt braucht:
 | Vorlage, Seiten, Design, Datenvertrag | `references/template.md` |
 | Vorlage visuell prüfen und ändern (Tencil) | `references/tencil.md` |
 | BA-Suche und Erfassung im Browser | `references/job-search.md` |
-| Ordner, Namen, Ledger, Status, Statistik | `references/applications.md` |
+| Ordner, Namen, Ledger, Status, Übersicht, Duplikate, Aussortieren, Statistik | `references/applications.md` |
 | Paralleles Schreiben mit Subagenten | `references/fan-out.md` |
 | Anschreiben, Motivation, E-Mail, Kontaktdaten | `references/writing.md` |
 | Build, QA, Freigabe, PDF, Datenschutz | `references/qa-and-export.md` |
 
-Vorlagen und Schemas: `assets/bewerbungsmappe.html`, `assets/templates/`, `assets/schemas/`. Das Werkzeug für Bau und Prüfung ist `tools/build_mappe.py` im Repository (nur Python-Standardbibliothek, Chromium für A4).
+Vorlagen und Schemas: `assets/bewerbungsmappe.html`, `assets/templates/`, `assets/schemas/`. Das Werkzeug für Bau, Prüfung und Stand ist `tools/build_mappe.py` im Repository (nur Python-Standardbibliothek, Chromium für A4). `tools/check_repo.py` prüft das Repository vor jedem Commit (`references/qa-and-export.md`, Datenschutzprüfung).
 
 ## Ablauf
 
 ### 1. Profil wählen oder anlegen
 
 Liste die Ordner unter `profile/` (ohne `import/` und `assets/`). Frage, welches Profil dieser Durchlauf nutzt; pro Durchlauf genau eines.
+
+Bestehendes Profil mit Stellen: zuerst den Stand lesen. `python3 tools/build_mappe.py status profile/<name>` zeigt pro Stelle Status, Frist, Bewerbungsweg, offene blockierende Fragen und den nächsten Schritt (`references/applications.md`, Übersicht).
 
 Neues Profil: Der Nutzer legt seine Unterlagen in `profile/import/`. Lege `profile/<vorname.nachname>/` nach `references/applications.md` an und verschiebe die Dateien in die passenden Unterordner (`assets/documents/old/` für den alten Lebenslauf, `assets/documents/` für Zeugnisse und Zertifikate, `assets/photos/cv/`, `assets/signature/`). Dateinamen: `<vorname.nachname>_<inhalt>.<endung>`.
 
@@ -74,10 +76,11 @@ Nach `references/job-search.md` im Browser des Harness (kein Skript). Ablauf und
 
 1. Suche mit Beruf, Zielort und Umkreis (Vorgabe des Nutzers, sonst „ganzer Ort“; ohne Treffer erst fragen, dann vorsichtig erweitern).
 2. Treffer kurz zeigen (Titel, Firma, Ort, Entfernung, Beginn, Veröffentlichung). Der Nutzer wählt eine oder mehrere Stellen.
-3. Duplikate prüfen: gleiche Referenznummer oder gleiche Firma + Titel im Ledger → Nutzer warnen (`references/applications.md`).
+3. Duplikate prüfen: vor dem Erfassen im Ledger, danach mit `check-duplicate`. Bei `same_posting` den Nutzer fragen (`references/applications.md`, Duplikate).
 4. Ränge nach Entfernung vom Suchort vergeben (`NN`), Ordner anlegen.
 5. Jede Anzeige **nacheinander im selben Tab** vollständig erfassen (Kopf, Text und Kontakt in einem Besuch): `ba_scrape.md` wörtlich, `job.json` strukturiert. Für die Kontaktdaten zum Captcha scrollen und den **Nutzer** bitten, es zu lösen. Kurze Websuche zur Firma ist erlaubt (Fakten mit Quelle).
-6. `job.json` gegen das Schema prüfen.
+6. `job.json` gegen das Schema prüfen, offene Punkte mit `status` führen (`references/job-search.md`, Abschnitt 8), dann `ledger sync`: Die Stellen stehen mit Status `captured` im Ledger.
+7. Stellen, die der Filter oder der Nutzer ausschließt, mit `drop --reason` aussortieren, nie löschen.
 
 Browserarbeit bleibt beim Hauptagenten; Subagenten haben oft keinen Browser.
 
@@ -85,7 +88,7 @@ Browserarbeit bleibt beim Hauptagenten; Subagenten haben oft keinen Browser.
 
 Nach `references/fan-out.md`: pro Stelle ein Subagent (Claude Code: `bewerbung-writer`, danach `bewerbung-qa`). Jeder Subagent arbeitet nur in seinem Stellenordner:
 
-1. Passung prüfen (`requirements[].status` in `job.json`).
+1. Passung prüfen (`requirements[].status` in `job.json`). Stellen mit offener blockierender Frage oder nicht eingearbeiteter Antwort gehen erst nach der Klärung an den Subagenten.
 2. `anschreiben.md`, `motivationsschreiben.md`, `email.md` nach `references/writing.md` schreiben, `kontaktdaten.md` aus `job.json` erstellen.
 3. Skill `humanizer` auf Anschreiben, Motivationsschreiben und E-Mail anwenden (nicht auf `kontaktdaten.md`). Fehlt der Skill, das sagen und seine Grundsätze von Hand anwenden.
 4. Bauen und prüfen: `python3 tools/build_mappe.py application <stellenordner> --qa`. Bei Überlauf Text kürzen oder `dichte: dicht` setzen, nie das HTML ändern. Bei Bewerbungsweg `email` meldet die QA einen fehlenden oder unvollständigen `email.md`-Entwurf als Fehler; der Entwurf gehört vor die Freigabe.
@@ -116,7 +119,7 @@ Der Nutzer sendet selbst (E-Mail-Entwurf in `email.md`, Kontaktdaten in `kontakt
 python3 tools/build_mappe.py mark-sent <stellenordner> --channel email|post|portal
 ```
 
-Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status, Datum und Kanal. `status … sent` gibt es nicht: nur `mark-sent` setzt „gesendet“, weil es Ordner und Ledger zusammen aktualisiert. Spätere Rückmeldungen: `status <ordner> interview|offer|rejected|withdrawn`. Statistik: `stats profile/<name>` (`references/applications.md`).
+Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status, Datum und Kanal. `status … sent` gibt es nicht: nur `mark-sent` setzt „gesendet“, weil es Ordner und Ledger zusammen aktualisiert. Spätere Rückmeldungen: `status <ordner> interview|offer|rejected|withdrawn`. Übersicht: `status profile/<name>`, Statistik: `stats profile/<name>` (`references/applications.md`).
 
 ## Harte Regeln
 

@@ -19,7 +19,7 @@ Browserarbeit nie an Subagenten geben: Sie haben je nach Harness keinen Browser,
 ## Voraussetzungen vor dem Start der Subagenten
 
 - Profilvorlage gebaut und vom Nutzer freigegeben.
-- Pro Stelle: Ordner angelegt, `ba_scrape.md` und `job.json` vollständig und schemagültig, Kontakt erfasst, kein ungeklärtes Duplikat.
+- Pro Stelle: Ordner angelegt, `ba_scrape.md` und `job.json` vollständig und schemagültig, Kontakt erfasst, kein ungeklärtes Duplikat, keine blockierende Frage `open` und keine Antwort nur `answered` (`references/job-search.md`, Abschnitt 8). `status profile/<name>` zeigt das je Stelle.
 
 ## Auftrag an den Schreib-Subagenten
 
@@ -42,7 +42,7 @@ Regeln für den Subagenten:
 - Erfindet nichts; fehlt ein Fakt, meldet er eine Frage statt eines Satzes.
 - Setzt keinen Status und erzeugt kein PDF.
 
-Gleichzeitige Builds sind sicher: Jeder schreibt nur in seinen Ordner; das Ledger wird pro Aufruf atomar geschrieben. Bei sehr vielen Stellen (mehr als etwa fünf) in Wellen starten.
+Gleichzeitige Builds sind sicher: Jeder schreibt nur in seinen Ordner; das Ledger wird pro Aufruf unter einer Sperre aus den Ordnern abgeleitet und atomar geschrieben. Bei sehr vielen Stellen (mehr als etwa fünf) in Wellen starten.
 
 ## Auftrag an den Prüf-Subagenten
 

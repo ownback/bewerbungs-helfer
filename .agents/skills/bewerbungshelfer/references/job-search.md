@@ -41,17 +41,17 @@ Beispiel-URL: `/jobsuche/suche?suchbereich=ausbildung&was=…&wo=…&umkreis=25`
 
 Dem Nutzer eine kurze Liste zeigen: Titel, Firma, Ort, Entfernung (falls angezeigt), Beginn, Veröffentlichung, Link. Höchstens etwa zehn Treffer auf einmal. Der Nutzer wählt eine oder mehrere Stellen.
 
-Vor dem Erfassen jede gewählte Stelle gegen das Ledger prüfen (`references/applications.md`, Duplikate). Bei einem Treffer den Nutzer warnen und fragen, ob trotzdem weiter.
+Vor dem Erfassen jede gewählte Stelle gegen das Ledger prüfen, nach dem Erfassen mit `check-duplicate` (`references/applications.md`, Duplikate). Bei `same_posting` den Nutzer warnen und fragen, ob trotzdem weiter.
 
 Bei vielen Treffern (mehrere Suchorte, Auswahl „alle“) vor dem Erfassen filtern und die Ausschlüsse dem Nutzer mit Grund zeigen:
 
 - anderer Beruf oder andere Fachrichtung im Titel; Titel ohne Fachrichtung nur nach Rückfrage
 - Beginn nicht im Zieljahr (`goal.start`), auch „ab sofort“
 - geforderter Schulabschluss über dem Profil (z. B. Abitur/Fachhochschulreife bei Mittlerer Reife): nach Rückfrage ausschließen; Anzeigen, die im Text auch den eigenen Abschluss akzeptieren, bleiben
-- Duplikat = gleiche Firma und gleicher Titel (auch mit anderer Referenznummer oder als Partner-Listing): die Fassung mit vollständigem BA-Text bzw. die beim Arbeitgeber noch offene behalten; unterschiedliche Schwerpunkte im Text sind keine Duplikate
+- Duplikat der Klasse `same_posting` (Definition und Vorgehen: `references/applications.md`, Duplikate), auch mit anderer Referenznummer oder als Partner-Listing
 - abgelaufene Bewerbungsfrist
 
-Ausgeschlossene Stellen werden nicht gelöscht, sondern mit Grund festgehalten (z. B. `DROPPED.txt` im verschobenen Ordner unter `.tmp/`). Anzeigen ohne BA-Kontaktblock (nur Link zu Partnerseiten wie Studyflix, ausbildung.de, finest-jobs oder zur Karriereseite) bleiben in der Auswahl: Bewerbung dann über das Portal.
+Ausgeschlossene Stellen werden nicht gelöscht. Schon erfasste Stellen sortiert `build_mappe.py drop <stellenordner> --reason "<Grund>"` aus (`references/applications.md`, Aussortieren); der Ordner bleibt im Profil unter `applications/dropped/`, der Grund steht im Ledger. Anzeigen ohne BA-Kontaktblock (nur Link zu Partnerseiten wie Studyflix, ausbildung.de, finest-jobs oder zur Karriereseite) bleiben in der Auswahl: Bewerbung dann über das Portal.
 
 ## 5. Rang und Ordner
 
@@ -121,4 +121,21 @@ Erlaubt ist eine kurze Websuche zur Firma (Branche, Größe, Produkte, Ausbildun
 - `job_information/ba_scrape.md` nach `assets/templates/ba_scrape.md`: alles von der Seite, menschenlesbar, wörtlich.
 - `job_information/job.json` nach `assets/templates/job.json`, gültig gegen `assets/schemas/job.schema.json`.
 - Was nicht auf der Seite steht, bleibt leer und wird nicht abgeleitet. Fristen nur übernehmen, wenn ein Datum ausdrücklich genannt ist.
-- Offene Punkte mit Auswirkung (`blocking`, `non_blocking`, `research_needed`) in `open_questions`.
+- Offene Punkte nach Abschnitt 8 in `open_questions`.
+- Danach `python3 tools/build_mappe.py ledger sync profile/<name>`: Die Stelle steht dann mit Status `captured` im Ledger (`references/applications.md`).
+
+## 8. Offene Punkte
+
+Jeder Eintrag in `open_questions` hat `question`, `severity` (`blocking`, `non_blocking`, `research_needed`), optional `impact` und einen `status`:
+
+| `status` | Bedeutung | Pflichtfelder |
+|---|---|---|
+| `open` | ungeklärt | – |
+| `answered` | Antwort liegt vor, ist aber noch nicht in `job.json` oder die Texte eingearbeitet | `answer`, `resolved_at` |
+| `resolved` | erledigt und eingearbeitet | `answer`, `resolved_at` |
+| `obsolete` | Frage hat sich erübrigt | `answer` (Grund), `resolved_at` |
+
+- `answer` ist kurz und nennt die Fundstelle: „`ba_scrape.md`, Informationen zur Bewerbung“, „`portal_page.md`, Abschnitt Bewerbung“ oder „Nutzer am JJJJ-MM-TT“. `resolved_at` ist das Datum der Antwort (JJJJ-MM-TT).
+- Fragen werden nie gelöscht. Klärt eine spätere Erfassung (Kontaktblock nach dem Captcha, Portalseite) eine Frage, bekommt sie im selben Schritt `resolved` oder `answered`.
+- `validate` schlägt nur bei `severity: blocking` mit `status: open` fehl; `answered` meldet es als Hinweis. Die Übersicht `status profile/<name>` zählt die offenen blockierenden Fragen je Stelle und nennt bei `answered` das Einarbeiten als nächsten Schritt.
+- Vor dem Schreiben der Texte ist keine blockierende Frage `open`, und jede Antwort ist eingearbeitet (`resolved`).

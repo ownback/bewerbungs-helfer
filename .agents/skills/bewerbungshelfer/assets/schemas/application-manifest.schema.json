@@ -295,6 +295,39 @@
       "items": {
         "type": "string"
       }
+    },
+    "history": {
+      "type": "array",
+      "description": "Statusverlauf der Mappe, vom Build-Skript bei jedem Statuswechsel ergänzt. Quelle für history im Ledger (ledger sync).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "status"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "html_approved",
+              "pdf_exported",
+              "sent",
+              "interview",
+              "offer",
+              "rejected",
+              "withdrawn"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "allOf": [

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Git-Hook: Datenschutz-, Ablage- und Schemaprüfung vor jedem Commit.
+# Einmal pro Klon einschalten: git config core.hooksPath tools/hooks
+exec python3 "$(git rev-parse --show-toplevel)/tools/check_repo.py" all --quiet

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ownback.local/schemas/ledger.schema.json",
   "title": "Bewerbungs-Ledger",
-  "description": "Eine Datei pro Profil: profile/<vorname.nachname>/applications/ledger.json. Ein Eintrag pro Bewerbung. Vor jeder Generierung auf Duplikate prüfen (gleiche Referenznummer oder gleiche Firma + Titel).",
+  "description": "Eine Datei pro Profil: profile/<vorname.nachname>/applications/ledger.json. Ein Eintrag pro erfasster Stelle, auch aussortierte. Das Ledger wird von tools/build_mappe.py aus den Stellenordnern abgeleitet (ledger sync); von Hand nur notes. Status, Ablage und Duplikatregel: references/applications.md.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "profile", "entries"],
@@ -24,17 +24,21 @@
           "type": { "enum": ["apprenticeships", "jobs", "internships"] },
           "folder": {
             "type": "string",
-            "pattern": "^applications/(sent/)?(apprenticeships|jobs|internships)/[^/]+/[^/]+/\\d{2}-[a-z0-9-]+$",
+            "pattern": "^applications/((sent|dropped)/)?(apprenticeships|jobs|internships)/[^/]+/[^/]+/\\d{2}-[a-z0-9-]+$",
             "description": "Pfad relativ zum Profilordner."
           },
           "search_city": { "type": "string" },
           "rank": { "type": "integer", "minimum": 1 },
-          "status": { "enum": ["draft", "html_approved", "pdf_exported", "sent", "interview", "offer", "rejected", "withdrawn"] },
-          "created_at": { "type": "string", "format": "date" },
+          "status": { "enum": ["captured", "draft", "html_approved", "pdf_exported", "sent", "interview", "offer", "rejected", "withdrawn", "dropped"] },
+          "created_at": { "type": "string", "format": "date", "description": "Datum des ersten Mappenbaus (Manifest), sonst der Erfassung (job.json source.retrieved_at)." },
+          "deadline": { "type": "string", "description": "Bewerbungsfrist aus job.json, nur wenn dort ein Datum steht." },
           "html_approved_at": { "type": "string", "format": "date" },
           "pdf_exported_at": { "type": "string", "format": "date" },
           "sent_at": { "type": "string", "format": "date" },
-          "channel": { "enum": ["email", "post", "portal", "unknown"] },
+          "dropped_at": { "type": "string", "format": "date" },
+          "drop_reason": { "type": "string", "description": "Grund aus DROPPED.txt im Stellenordner." },
+          "channel": { "enum": ["email", "post", "portal", "unknown"], "description": "Bewerbungsweg laut job.json; nach mark-sent der tatsächlich genutzte Kanal." },
+          "open_blocking": { "type": "integer", "minimum": 0, "description": "Anzahl der Fragen in job.json mit severity blocking und status open." },
           "contact": {
             "type": "object",
             "additionalProperties": false,
@@ -46,7 +50,7 @@
           },
           "application_email": { "type": "string" },
           "source_url": { "type": "string" },
-          "notes": { "type": "string" },
+          "notes": { "type": "string", "description": "Einziges von Hand gepflegtes Feld; ledger sync übernimmt es aus dem vorhandenen Eintrag." },
           "history": {
             "type": "array",
             "items": {
@@ -55,14 +59,15 @@
               "required": ["date", "status"],
               "properties": {
                 "date": { "type": "string", "format": "date" },
-                "status": { "enum": ["draft", "html_approved", "pdf_exported", "sent", "interview", "offer", "rejected", "withdrawn"] },
+                "status": { "enum": ["captured", "draft", "html_approved", "pdf_exported", "sent", "interview", "offer", "rejected", "withdrawn", "dropped"] },
                 "note": { "type": "string" }
               }
             }
           }
         },
         "allOf": [
-          { "if": { "properties": {"status": {"const": "sent"}} }, "then": { "required": ["sent_at", "channel"] } }
+          { "if": { "properties": {"status": {"const": "sent"}} }, "then": { "required": ["sent_at", "channel"] } },
+          { "if": { "properties": {"status": {"const": "dropped"}} }, "then": { "required": ["dropped_at", "drop_reason"] } }
         ]
       }
     }
