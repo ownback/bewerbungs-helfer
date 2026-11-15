@@ -11,9 +11,9 @@ Ein Durchlauf hat genau ein Profil und eine oder mehrere Stellen. Was den Nutzer
 | BA-Suche, Auswahl | Hauptagent | Browser, mit dem Nutzer |
 | Anzeigen erfassen (`ba_scrape.md`, `job.json`), Captcha | Hauptagent | Browser, nacheinander (Regel `capture.one-tab` in `references/job-search.md`) |
 | Duplikatprüfung, Ordner, Ränge | Hauptagent | `check-duplicate`, `references/applications.md` |
-| Firmenrecherche (`firma.md`) | Hauptagent, oder ein Recherche-Subagent pro Stelle, wenn das Harness ihm einen Browser gibt | Anzeige, Portalseite, Website der Firma (Regel `company.research` in `references/job-search.md`) |
-| Texte, Mappe, technische QA | ein Schreib-Subagent **pro Stelle**, parallel | nur Dateien und Shell, kein Web |
-| inhaltliche QA | ein Prüf-Subagent pro Stelle, parallel | nur lesen, Bericht in `.tmp/qa/` |
+| Firmenrecherche (`firma.md`) | ein Recherche-Subagent auf **Claude Haiku** für bis zu sechs Stellen, ohne Nacharbeit durch ein stärkeres Modell (Entscheidung des Nutzers vom 2026-11-15, Kosten) | Seiten mit `curl` holen, Fakten mit wörtlichem Zitat nach Regel `company.research` in `references/job-search.md` |
+| Texte, Mappe, technische QA | ein Schreib-Subagent **pro Stelle** auf Claude Sonnet (`model: sonnet` in `.claude/agents/bewerbung-writer.md`), parallel | nur Dateien und Shell, kein Web |
+| inhaltliche QA | ein Prüf-Subagent pro Stelle auf Claude Sonnet, parallel | nur lesen, Bericht in `.tmp/qa/` |
 | Freigabe, PDF, Versandablage | Hauptagent | mit dem Nutzer, einzeln pro Mappe |
 | Änderungen an der Vorlage | der Editor der Warteschlange | Regel `pins.one-writer` in `references/tencil.md` |
 

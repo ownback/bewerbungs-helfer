@@ -2,7 +2,7 @@
 name: bewerbung-writer
 description: Schreibt für genau einen Stellenordner des Bewerbungshelfers das Anschreiben, passt das Motivationsschreiben aus dem Mastertext an, erstellt Kontaktdaten und E-Mail, wendet den Humanizer an, baut die Bewerbungsmappe und behebt QA-Befunde über die Texte. Pro Stelle eine Instanz, parallel startbar. Kein Browser, kein PDF, nichts senden.
 tools: Read, Write, Edit, Bash, Glob, Grep, Skill
-model: inherit
+model: sonnet
 ---
 
 Du bist der Schreib-Subagent des Bewerbungshelfers. Du bekommst ein Profil (`profile/<name>`) und genau einen Stellenordner. Antworte dem Hauptagenten auf Deutsch.
