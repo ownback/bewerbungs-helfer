@@ -613,7 +613,6 @@ def check_docs(files: list[str] | None = None, only: str | None = None) -> list[
                 for v in re.findall(r'(--[a-z][a-z0-9-]*)\s*:', path.read_text(encoding='utf-8'))}
     all_flags = {f for table in commands.values() for flags in table.values() for f in flags} \
         | {f for flags in tool_flags.values() for f in flags} | EXTERNAL_FLAGS | css_vars
-    words = {n for key in ('letter.words', 'motivation.words') for n in (limits.get(key) or {}).values()}
     viewports = {tuple(v) for v in (limits.get('qa.viewports') or {}).values()}
     # Zahl neben einem bekannten Stichwort -> erlaubte Werte (aus limits.json oder berechnet)
     keywords = (
@@ -623,7 +622,6 @@ def check_docs(files: list[str] | None = None, only: str | None = None) -> list[
         (r'\b(\d+) Simple Icons\b', {counts['si']}, 'Simple-Icons-Symbole in icons.svg'),
         (r'\b(\d+) Linien-Icons\b', {counts['i']}, 'Linien-Icons in icons.svg'),
         (r'\b(\d+) Symbole\b', {len(symbols), logos, counts['i']}, 'Symbole in icons.svg'),
-        (r'\b(\d+) Wörter\b', words, 'limits:letter.words, limits:motivation.words'),
         (r'(?:älter als|höchstens) (\d+) Tage\b', {limits.get('letter.max_age_days')}, 'limits:letter.max_age_days'),
         (r'\b(\d+|' + '|'.join(NUMBER_WORDS) + r') Abschnitte\b', {sections}, 'SECTIONS in build_mappe.py'),
     )

@@ -42,3 +42,19 @@
 # Logos stehen in Markenfarbe (assets/icons/README.md, Regel icons.sources)
 \beinfarbige[sn]? Logo\b => Logos stehen in Markenfarbe; einfarbig sind nur die Linien-Icons
 \bals einfarbige `?<symbol> => Logos stehen in Markenfarbe; einfarbig sind nur die Linien-Icons
+
+# Anschreiben: fünf feste Absätze, kein Wortziel (references/writing.md, Regeln letter.structure und letter.length)
+\bErst kürzen, dann verdichten\b => Anschreiben: erst normal bauen, bei Überlauf dicht, dann kürzen
+\bFähigkeiten, nicht Leidenschaft\b => der Aufbau des Anschreibens steht in Regel letter.structure
+\blimits:letter\.words\b => das Anschreiben hat kein Wortziel
+
+# Firmenfakten für die Briefe stehen in firma.md (references/job-search.md, Regel company.research)
+\bkommt nach `company_facts\[\]` => Aussagen über die Firma für die Briefe stehen in job_information/firma.md
+\bFirma \(?aus `?company_facts\b => Aussagen über die Firma für die Briefe stehen in job_information/firma.md
+
+# E-Mail: fester Wortlaut (references/writing.md, Regeln email.text und email.relocation)
+\banbei sende ich Ihnen\b => die E-Mail hat einen festen Wortlaut
+\bEin Umzug nach [^\n]{0,40} ist für\b => Umzugssatz: „Derzeit wohne ich in …, plane aber, … umzuziehen.“
+
+# Motivationsschreiben: ein Mastertext pro Profil (references/writing.md, Regel motivation.master)
+\bMotivationsschreiben und E-Mail werden pro Stelle neu geschrieben\b => das Motivationsschreiben ist ein Mastertext, die E-Mail hat einen festen Wortlaut

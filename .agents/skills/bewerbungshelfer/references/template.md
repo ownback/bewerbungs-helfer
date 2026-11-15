@@ -84,7 +84,7 @@ Sechs Abschnitte, jeder beginnt auf einer eigenen A4-Seite:
 | 1 | Deckblatt | Profil (`portfolio`, `person`, `goal`) | nein |
 | 2 | Anschreiben | `anschreiben.md`, `job.json`, Absender aus dem Profil | ja |
 | 3 | Lebenslauf | Profil | nein |
-| 4 | Motivationsschreiben | `motivationsschreiben.md` | ja |
+| 4 | Motivationsschreiben | `motivationsschreiben.md`, Kopie des Mastertexts im Profil | nur der erste und der letzte Satz |
 | 5 | Zertifikate | Profil `evidence` (`certificate`) | nein |
 | 6 | Zeugnisse | Profil `evidence` (`school_report`, `work_reference`) | nein |
 

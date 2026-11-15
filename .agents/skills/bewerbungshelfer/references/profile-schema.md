@@ -4,6 +4,7 @@ Ein Profil liegt unter `profile/<vorname.nachname>/assets/profile/`:
 
 - `<name>_profile.json`: primäre, strukturierte Quelle. Schema `assets/schemas/profile.schema.json` (Version `1.1`).
 - `<name>_profile.md`: lesbare Fassung für die gemeinsame Prüfung.
+- `<name>_motivation.md`: Mastertext des Motivationsschreibens, vom Nutzer freigegeben (Regel `motivation.master` in `references/writing.md`).
 
 Startpunkte: `assets/templates/profile.json` und `profile.md`. Alles bleibt gitignoriert.
 
@@ -31,7 +32,7 @@ Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckbl
 
 ## Ziel
 
-`type` (`apprenticeships`, `jobs`, `internships`), `apprenticeship` (Zielberuf), Alternativen, Beginn (`JJJJ-MM-TT`), Orte, Umkreis, Umzug und Pendeln, `relocation_timing` (Zeitpunkt eines geplanten Umzugs, z. B. „Sommer 2027“). Der Umkreis ist die Vorgabe für die BA-Suche.
+`type` (`apprenticeships`, `jobs`, `internships`), `apprenticeship` (Zielberuf), Alternativen, Beginn (`JJJJ-MM-TT`), Orte, Umkreis, Umzug und Pendeln, `relocation_timing` (Zeitpunkt eines geplanten Umzugs, z. B. „Sommer 2027“), `offer_internship` (`true`: Das Anschreiben bietet am Schluss ein Praktikum vorab an; fehlt das Feld oder ist es `false`, steht der Satz nicht). Der Umkreis ist die Vorgabe für die BA-Suche.
 
 ## Zeiträume
 
@@ -60,7 +61,14 @@ Aufgaben: zwei bis drei kurze Satzglieder ohne Punkt (Infinitiv oder Nominalstil
 
 ## Projekte
 
-Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, optional Link, nur echte Bilder mit `consent` und `valid`. Projekte liefern Stoff für die Briefe und die Belege-Spalte im Motivationsschreiben.
+Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, optional Link, nur echte Bilder mit `consent` und `valid`. Projekte sind der Stoff des Motivationsschreibens und seiner Belege-Spalte (Regel `motivation.master` in `references/writing.md`).
+
+Für die Erzählung hat jedes Projekt vier weitere Felder, alle optional:
+
+- `learned`, `worked`, `did_not_work`: Listen kurzer Aussagen in den Worten des Nutzers: was er gelernt hat, was funktioniert hat, was nicht funktioniert hat oder schiefging.
+- `connection`: ein Satz dazu, woraus das Projekt entstand und was darauf aufbaute.
+
+Die Felder füllt nur das Interview (Regel `interview.projects` in `references/interview.md`). Eine leere Liste heißt „noch nicht erfragt“, nicht „nichts“; der Agent leitet aus `result` oder `tools` nichts ab.
 
 <!-- rule: project.photo -->
 **Projektfotos:**
@@ -112,6 +120,17 @@ Die Mappe zeigt die Skala mit der Legende 1 Lernwunsch · 2 Grundkenntnisse · 3
 
 `id`, Titel, Aussteller, Datum, Datei (Bild), `kind` (`certificate` → Seite Zertifikate; `school_report`, `work_reference` → Seite Zeugnisse; `other` nur nach Absprache), `show_in_portfolio`, `original` (`scan`, `copy`, `digital_original`), `valid`, `source_status`, optional `pair` (zwei aufeinanderfolgende kurze Nachweise teilen sich eine Seite). Die Reihenfolge in der Mappe folgt der Reihenfolge im Profil (je Abschnitt). Fehlende Nachweise bleiben offen; es werden keine Ersatzdokumente erzeugt.
 
+## Motivation und Stimme
+
+`motivation` (Ausgangspunkt, prägende Erfahrung, Lieblingsprojekt, Lernziele, Grenzen) und `voice` (Stärken mit Beispiel, gelöstes Problem, persönliche Verbote in `avoid`) kommen aus Block 8 des Interviews.
+
+<!-- rule: profile.self-statements -->
+`voice.self_statements` hält Selbstauskünfte fest: Aussagen des Nutzers über sich, für die es kein Dokument gibt, z. B. „Ich bin gut in Mathematik.“ Je Eintrag `text` (die Aussage in seinen Worten), `confirmed_at` (Datum der Bestätigung), optional `limits` (was daraus nicht werden darf) und `source_ids`.
+
+- Ein Brief gibt eine Selbstauskunft nur sinngemäß und so allgemein wieder, wie sie dasteht. Er macht daraus keine Note, kein Niveau, keinen Vergleich mit anderen und kein Beispiel, das nicht im Profil steht.
+- Was `limits` nennt, steht in keinem Text.
+- Eine Note oder ein Niveau gehört erst ins Profil, wenn ein Nachweis sie belegt; dann steht sie bei `evidence` oder `skills`, nicht hier.
+
 ## Portfolio-Texte
 
 `portfolio` enthält freigegebene Texte der stabilen Seiten:
@@ -151,6 +170,10 @@ Alle Werte, die die Mappe zeigt, stehen im Profil. Ein neuer Durchlauf leitet si
 | `presentation.show_birth_data` | Geburtsdaten im Lebenslauf | Antwort des Nutzers, Standard `false` |
 | `presentation.cv_layout` | Blöcke je Lebenslauf-Seite, Verdichtung | Regel in `references/template.md` (Lebenslauf); das Build-Skript meldet den Füllgrad |
 | `presentation.cv_projects` | Titel des Projektblocks | nur mit Projekten im Lebenslauf; Antwort des Nutzers |
+| `goal.offer_internship` | Praktikumssatz am Schluss des Anschreibens | Antwort des Nutzers, Standard `false` |
+| `goal.relocation_timing` | Umzugssatz der E-Mail | Antwort des Nutzers |
+| `voice.self_statements` | Begründung im dritten Absatz des Anschreibens | Antwort des Nutzers, wörtlich |
+| `projects[].learned`, `worked`, `did_not_work`, `connection` | Mastertext des Motivationsschreibens | Antworten des Nutzers auf die Projektfragen |
 
 ## Offene Punkte
 

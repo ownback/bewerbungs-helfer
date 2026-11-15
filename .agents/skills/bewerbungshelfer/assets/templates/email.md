@@ -8,7 +8,13 @@
 
 [Anrede wie im Anschreiben],
 
-[Zwei bis vier kurze Sätze: was beiliegt, ein konkreter Grund für diese Stelle, „anbei sende ich Ihnen meine Bewerbungsmappe für die Ausbildungsstelle als …“, bei Suchort ≠ Wohnort „Ein Umzug nach <Suchort> ist für <Zeitpunkt> geplant.“, Bitte um Rückmeldung.]
+hiermit bewerbe ich mich um Ihre Ausbildungsstelle als [Beruf mit Fachrichtung] bei [Firma, mit Artikel: „bei der Muster GmbH“] für das Ausbildungsjahr [Jahr des Beginns].
+
+[Nur wenn der Suchort nicht der Wohnort ist, sonst den Absatz streichen:] Derzeit wohne ich in [Wohnort], plane aber, [Zeitpunkt, z. B. „nach meinem Abschluss im Sommer 2027“] nach [Suchort] umzuziehen.
+
+Im Anhang finden Sie meine Bewerbungsmappe mit allen Unterlagen.
+
+Über eine Eingangsbestätigung würde ich mich freuen.
 
 Mit freundlichen Grüßen
 [Vorname Nachname]

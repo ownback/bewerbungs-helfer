@@ -7,9 +7,9 @@ Du sprichst mit dem Agenten. Er gleicht deine vorhandenen Unterlagen ab, fragt n
 ## Was eine Mappe enthält
 
 1. Deckblatt
-2. Anschreiben (pro Stelle neu: warum das Unternehmen dich nehmen sollte)
+2. Anschreiben (pro Stelle neu: warum diese Firma, warum dieser Beruf)
 3. Lebenslauf
-4. Motivationsschreiben (pro Stelle neu: warum dich das Fach begeistert)
+4. Motivationsschreiben (ein Text für alle Bewerbungen: deine eigenen Projekte, was geklappt hat und was nicht; pro Stelle ändern sich nur der erste und der letzte Satz)
 5. Zertifikate
 6. Zeugnisse
 
@@ -42,10 +42,10 @@ Beim ersten Mal legst du deine vorhandenen Unterlagen (alter Lebenslauf, Zeugnis
 ## So läuft ein Durchlauf
 
 1. Profil wählen oder neu anlegen.
-2. Kurzes Interview, nur zu fehlenden oder unklaren Angaben.
+2. Kurzes Interview, nur zu fehlenden oder unklaren Angaben, dazu ein paar Fragen zu jedem deiner Projekte. Daraus entsteht dein Motivationsschreiben, das du einmal freigibst.
 3. Der Agent baut deine Profilvorlage (Deckblatt, Lebenslauf, Nachweise). Du prüfst sie, bis sie passt.
-4. Gemeinsame Suche bei der Bundesagentur für Arbeit. Du wählst eine oder mehrere Stellen. Für die Kontaktdaten löst du jeweils das Captcha im Browser.
-5. Der Agent schreibt pro Stelle Anschreiben, Motivationsschreiben und E-Mail und baut die Mappe.
+4. Gemeinsame Suche bei der Bundesagentur für Arbeit. Du wählst eine oder mehrere Stellen. Für die Kontaktdaten löst du jeweils das Captcha im Browser. Zu jeder Firma sammelt der Agent belegte Fakten von ihrer Website.
+5. Der Agent schreibt pro Stelle das Anschreiben, passt Motivationsschreiben und E-Mail an und baut die Mappe.
 6. Du prüfst jede Mappe. Erst nach deinem ausdrücklichen Ja entsteht das PDF.
 7. Du schickst die Bewerbung selbst ab und sagst dem Agenten Bescheid. Er verschiebt sie nach `sent/` und führt Buch.
 

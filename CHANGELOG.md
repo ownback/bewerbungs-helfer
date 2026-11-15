@@ -2,6 +2,18 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-15: Leitfäden des Nutzers für Anschreiben, E-Mail und Motivationsschreiben
+
+Der Nutzer hat festgelegt, wie seine Texte aufgebaut sind. Das Aussehen der Mappe ist unverändert.
+
+- **Anschreiben:** fester Aufbau aus Anrede, fünf Absätzen und Grußformel (Einleitung, warum diese Firma, warum dieser Beruf, warum gerade diese Firma, Schluss) mit festen Sätzen und einer Tabelle von Formulierungen, die ersetzt werden (Regeln `letter.structure` und `letter.phrases` in `references/writing.md`). Vorher: Einstieg, zwei oder drei Fähigkeiten, Arbeitserfahrung, Bildungsstand, Lücke, Schluss. „hiermit bewerbe ich mich“ ist jetzt der vorgegebene erste Satz und steht nicht mehr auf der Verbotsliste.
+- **Kein Wortziel für das Anschreiben:** Es zählt nur, dass der Brief auf eine Seite passt: zuerst `dichte: normal`, bei Überlauf `dicht`, dann kürzen (vorher Richtwert ca. 230 Wörter, „erst kürzen, dann verdichten“). `limits.json` hat `letter.words` nicht mehr; der Bau nennt die Wortzahl des Anschreibens nur noch zur Information.
+- **Firmenrecherche:** Neu ist `job_information/firma.md` (Vorlage `assets/templates/firma.md`): Fakten zur Firma aus Anzeige, Portalseite und ihrer eigenen Website, jeder mit wörtlichem Beleg, Quelle und Abrufdatum. Die Briefe stützen sich nur darauf (Regel `company.research` in `references/job-search.md`, Abschnitt 9; vorher direkt auf `company_facts[]` in `job.json`). Der Schritt steht im Ablauf vor dem Schreiben; `status` nennt ihn als nächsten Schritt, `application` warnt, solange die Datei fehlt.
+- **E-Mail:** fester Wortlaut des Nutzers (Regel `email.text` in `references/writing.md`): Bewerbungssatz, bei Suchort ungleich Wohnort der Umzugssatz „Derzeit wohne ich in …, plane aber, … nach … umzuziehen.“, Hinweis auf den Anhang, Bitte um Eingangsbestätigung, Name ohne Telefon. Vorher zwei bis vier freie Sätze mit „anbei sende ich Ihnen …“ und einem Grund für die Stelle. Der Humanizer läuft nicht mehr über die E-Mail.
+- **Motivationsschreiben:** ein Mastertext pro Profil in `assets/profile/<name>_motivation.md` (Vorlage `assets/templates/motivation_master.md`), der die eigenen Projekte der Reihe nach erzählt und den der Nutzer einmal freigibt. Pro Stelle wird er kopiert, und nur der erste und der letzte Satz von `## Text` ändern sich (Regel `motivation.master` in `references/writing.md`). Vorher entstand der Text pro Stelle neu. `application` warnt, wenn der Mastertext fehlt oder die Kopie an anderer Stelle abweicht.
+- **Profil:** neue optionale Felder `projects[].learned`, `worked`, `did_not_work`, `connection` (mit sechs Interviewfragen je Projekt, Regel `interview.projects` in `references/interview.md`), `goal.offer_internship` (Praktikumssatz am Schluss des Anschreibens) und `voice.self_statements` (Selbstauskünfte wie „Ich bin gut in Mathematik.“, die Briefe nur allgemein wiedergeben; Regel `profile.self-statements` in `references/profile-schema.md`).
+- **Subagenten:** Der Schreib-Subagent liest zusätzlich `firma.md` und den Mastertext und schreibt keinen der beiden selbst; die Firmenrecherche darf an einen Recherche-Subagenten mit Browser gehen.
+
 ## 2026-11-15: Ausgewählte Gestaltung aus dem Entwurf (Reiter, Lebenslauf, Chips, Brief)
 
 Der Nutzer hat aus einem Gegenentwurf einzelne Teile übernommen. Unverändert bleiben das dunkle Deckblatt samt Inhaltsangabe, der symmetrische Briefkopf, die Sprachen, die Belege-Spalte und die Regel „kein Firmenname auf dem Deckblatt“.

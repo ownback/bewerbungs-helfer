@@ -1,11 +1,7 @@
 {
   "description": "Zahlen und Grenzen der Mappe. Einzige Quelle: tools/build_mappe.py liest sie, die Doku nennt den Schlüssel als limits:<pfad>, tools/check_repo.py docs vergleicht Zahlen, die daneben stehen.",
   "letter": {
-    "words": { "normal": 230, "dicht": 350 },
     "max_age_days": 7
-  },
-  "motivation": {
-    "words": { "normal": 300, "dicht": 370 }
   },
   "cover": {
     "name_long_from_chars": 11,

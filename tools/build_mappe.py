@@ -16,7 +16,9 @@ Befehle:
   application <stellen-ordner> [--qa[=fast]] [--pdf]
       Baut application/bewerbungsmappe - <name>.html aus den Quellen: Profil, job_information/job.json,
       text_generation/anschreiben.md (Kopf mit „datum: JJJJ-MM-TT“ ist Pflicht) und motivationsschreiben.md.
-      Aktualisiert application-manifest.json und ledger.json.
+      Aktualisiert application-manifest.json und ledger.json. Warnt, wenn job_information/firma.md oder der
+      Mastertext assets/profile/<name>_motivation.md fehlt oder das Motivationsschreiben außerhalb des ersten
+      und letzten Satzes vom Mastertext abweicht.
       --pdf exportiert das finale A4-PDF: nur mit voller QA, bei Status html_approved oder später, wenn die
       Mappe der Prüfsumme der Freigabe entspricht und das Briefdatum höchstens 7 Tage alt ist.
   qa <html> [--fast]             Überlauf-, Platzhalter-, Seiten- und Breitenprüfung (1440/390/375 px,
@@ -133,7 +135,7 @@ _LIMITS: dict = {}
 
 
 def limit(key: str):
-    """Wert aus assets/mappe/limits.json, z. B. limit('letter.words') oder limit('letter.max_age_days')."""
+    """Wert aus assets/mappe/limits.json, z. B. limit('cv.fill_target_percent') oder limit('letter.max_age_days')."""
     if not _LIMITS:
         try:
             _LIMITS.update(json.loads(LIMITS_FILE.read_text(encoding='utf-8')))
@@ -259,6 +261,11 @@ def profile_json_path(pdir: Path) -> Path:
 
 def profile_template_path(pdir: Path) -> Path:
     return pdir / 'assets' / 'profile' / f'{pdir.name}_template.html'
+
+
+def motivation_master_path(pdir: Path) -> Path:
+    """Mastertext des Motivationsschreibens, einmal pro Profil (references/writing.md, Regel motivation.master)."""
+    return pdir / 'assets' / 'profile' / f'{pdir.name}_motivation.md'
 
 
 def ledger_path(pdir: Path) -> Path:
@@ -1079,11 +1086,84 @@ def word_count(paras: list[str]) -> int:
     return sum(len(re.findall(r'\S+', p)) for p in paras)
 
 
-def words_note(label: str, count: int, limits: dict, meta: dict) -> str:
-    """Wortzahl neben den Richtwerten; liegt sie über dem Richtwert der gewählten Dichte, steht das dabei."""
+def words_note(label: str, count: int, limits: dict | None, meta: dict) -> str:
+    """Wortzahl als Hinweis. Mit Richtwerten (Motivationsschreiben) steht dabei, wenn die Zahl über dem Richtwert
+    der gewählten Dichte liegt; ohne (Anschreiben) ist sie reine Information."""
+    if limits is None:
+        return f'Wörter {label}: {count} (nur Information; es zählt, dass der Brief auf eine Seite passt)'
     mode = 'dicht' if meta.get('dichte', 'normal') in ('dicht', 'dense') else 'normal'
     over = f'; über dem Richtwert für „{mode}“' if count > limits[mode] else ''
     return f'Wörter {label}: {count} (Richtwert normal ≤ {limits["normal"]}, dicht ≤ {limits["dicht"]}{over})'
+
+
+GREETING = 'Mit freundlichen'
+# Ein Punkt nach diesen Wörtern, nach einem einzelnen Buchstaben („z. B.“) oder nach einer Zahl beendet keinen Satz.
+ABBREVIATIONS = {'bzw', 'ca', 'ggf', 'inkl', 'usw', 'evtl', 'vgl', 'nr', 'dr', 'prof', 'st', 'etc', 'sog'}
+
+
+def sentence_ends(text: str) -> list[int]:
+    """Positionen direkt hinter jedem Satzende innerhalb eines Absatzes (ohne das Absatzende)."""
+    ends = []
+    for m in re.finditer(r'[.!?][“"»]?(?=\s+[A-ZÄÖÜ„"«])', text):
+        word = re.search(r'(\w+)$', text[:m.start()])
+        if text[m.start()] == '.' and word and (len(word.group(1)) == 1 or word.group(1).isdigit()
+                                                or word.group(1).lower() in ABBREVIATIONS):
+            continue
+        ends.append(m.end())
+    return ends
+
+
+def master_deviations(master: dict, mot: dict) -> list[str]:
+    """Wo das Motivationsschreiben einer Stelle vom Mastertext abweicht, obwohl es das nicht darf. Angepasst werden
+    nur der erste und der letzte Satz von „## Text“ (references/writing.md, Regel motivation.master)."""
+    out = []
+    if master['lead'] != mot['lead']:
+        out.append('Einstieg')
+    if master['proofs'] != mot['proofs']:
+        out.append('Belege')
+
+    def body(paras: list[str]) -> list[str]:
+        return paras[:-1] if len(paras) > 1 and paras[-1].startswith(GREETING) else paras
+
+    want, have = body(master['paragraphs']), body(mot['paragraphs'])
+    if len(want) != len(have):
+        return out + [f'Zahl der Absätze ({len(have)} statt {len(want)})']
+    last = len(want) - 1
+    for i, (w, h) in enumerate(zip(want, have)):
+        ends = sentence_ends(w)
+        after_first = ends[0] if ends else len(w)  # hinter dem ersten Satz des Absatzes
+        before_last = ends[-1] if ends else 0      # vor dem letzten Satz des Absatzes
+        if i == 0 and i == last:
+            ok = w[after_first:before_last].strip() in h
+        elif i == 0:
+            ok = h.endswith(w[after_first:])
+        elif i == last:
+            ok = h.startswith(w[:before_last])
+        else:
+            ok = w == h
+        if not ok:
+            out.append(f'Absatz {i + 1}')
+    return out
+
+
+def source_notes(posting: Path, pdir: Path, mot: dict) -> list[str]:
+    """Hinweise zu den Grundlagen der Texte: Firmenrecherche und Mastertext des Motivationsschreibens."""
+    notes = []
+    firma = posting / 'job_information' / 'firma.md'
+    if not firma.is_file():
+        notes.append(f'Warnung: Firmenrecherche fehlt: {rel(firma)}. Aussagen über die Firma brauchen dort einen '
+                     'Beleg (references/job-search.md, Regel company.research).')
+    master = motivation_master_path(pdir)
+    if not master.is_file():
+        notes.append(f'Warnung: Mastertext des Motivationsschreibens fehlt: {rel(master)} '
+                     '(references/writing.md, Regel motivation.master).')
+    else:
+        where = master_deviations(read_motivation(master), mot)
+        if where:
+            notes.append('Warnung: Das Motivationsschreiben weicht außerhalb des ersten und letzten Satzes vom '
+                         f'Mastertext ab ({", ".join(where)}): {rel(master)} (references/writing.md, Regel '
+                         'motivation.master).')
+    return notes
 
 
 # --------------------------------------------------------------------------- Chromium und QA
@@ -1695,8 +1775,9 @@ def cmd_application(args) -> int:
             manifest.pop(k, None)
     words_letter, words_mot = word_count(letter['paragraphs']), word_count(mot['paragraphs'])
     print(f'Mappe: {rel(out)} ({len(pages)} Seiten)')
-    notes = [words_note('Anschreiben', words_letter, limit('letter.words'), letter['meta']),
-             words_note('Motivationsschreiben', words_mot, limit('motivation.words'), mot['meta'])]
+    notes = [words_note('Anschreiben', words_letter, None, letter['meta']),
+             words_note('Motivationsschreiben', words_mot, None, mot['meta'])]
+    notes += source_notes(posting, pdir, mot)
     notes += address_warnings(profile, job)
     email_state, email_msg = email_draft_state(posting)
     if email_msg:
@@ -2074,6 +2155,8 @@ def next_step(entry: dict, posting: Path, job: dict) -> str:
     if status in ('captured', 'draft') and answered:
         return 'Antworten in job.json einarbeiten (open_questions: answered → resolved)'
     if status == 'captured':
+        if not (posting / 'job_information' / 'firma.md').is_file():
+            return 'Firma recherchieren: job_information/firma.md (references/job-search.md, Abschnitt 9), dann Texte'
         return 'Texte schreiben (references/fan-out.md), dann: application <ordner> --qa'
     if status == 'draft':
         man_path = posting / 'application' / 'application-manifest.json'

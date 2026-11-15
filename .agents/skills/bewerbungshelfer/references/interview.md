@@ -47,6 +47,7 @@ Nur zu den Punkten der Abweichungsliste und zu Feldern, die das Profil braucht u
 - Beruf, Alternativen, frühester Beginn
 - Zielorte und Umkreis (Vorgabe für die BA-Suche)
 - Umzug oder Pendeln? Wenn Umzug: in welche Zielorte (`goal.locations`) und wann (`goal.relocation_timing`, z. B. „Sommer 2027“)? Das steuert den Umzugssatz in der E-Mail (Regel `email.relocation` in `references/writing.md`).
+- „Soll das Anschreiben am Schluss anbieten, vorab ein Praktikum bei der Firma zu machen?“ (`goal.offer_internship`; Regel `letter.structure` in `references/writing.md`)
 
 ### Block 2: Person und Kontakt
 
@@ -70,6 +71,21 @@ Je Station: Art (Praktikum, Anstellung mit Vollzeit/Teilzeit, Ehrenamt, Sonstige
 ### Block 5: Projekte
 
 Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, Link, echtes Bild mit Freigabe. Nach Entscheidungen und Problemen fragen, nicht nach Werbesätzen.
+
+<!-- rule: interview.projects -->
+Die Projekte tragen das Motivationsschreiben (Regel `motivation.master` in `references/writing.md`). Deshalb je Projekt diese sechs Fragen stellen und die Antworten in den Worten des Nutzers speichern:
+
+| Frage | Feld in `projects[]` |
+|---|---|
+| „Wann ungefähr hast du damit angefangen, und was war der Auslöser?“ | `date_range`, `goal` |
+| „Was genau hast du selbst gemacht, und womit?“ | `own_role`, `tools` |
+| „Was hat funktioniert?“ | `worked` |
+| „Was hat nicht funktioniert oder ist schiefgegangen, und wie bist du damit umgegangen?“ | `did_not_work` |
+| „Was hast du dabei gelernt?“ | `learned` |
+| „Woraus ist das Projekt entstanden, und was hast du danach darauf aufgebaut?“ | `connection` |
+
+- Projekte hinter den Fähigkeiten: Steht unter `skills` eine Technik, zu der kein Eintrag in `projects[]` gehört (ein Betriebssystem, ein Werkzeug, Verkabelung, Reparaturen), fragen: „Wobei hast du <Technik> eingesetzt? Gehört das zu einem deiner Projekte, oder war es ein eigenes?“ Ein eigenes Projekt bekommt einen Eintrag in `projects[]` und dieselben sechs Fragen; sonst kommt die Technik zu `tools` des passenden Projekts.
+- Jede Frage ohne Antwort wird ein offener Punkt im Profil (`open_questions`, `non_blocking`), und das Feld bleibt leer. Nichts aus dem Zusammenhang ergänzen (Regel `hard.no-invention` in `CLAUDE.md`).
 
 Pro Projekt fragen: „Gibt es ein eigenes Foto zu diesem Projekt (z. B. Aufbau, eigene Oberfläche)? Dürfen wir es in der Bewerbungsmappe zeigen?“ Wenn ja: Datei nach `assets/photos/project/` legen und nach Sichtprüfung eintragen. Wenn nein oder unklar: kein Foto. Was eingetragen wird und wann das Foto erscheint: Regel `project.photo` in `references/profile-schema.md`.
 
@@ -97,7 +113,10 @@ Je Nachweis: Titel, Aussteller, Datum, Datei, Art (Zertifikat, Schulzeugnis, Arb
 - Welche Erfahrung hat es verstärkt? Welches Projekt beschäftigt den Nutzer?
 - Was will er lernen?
 - Drei Stärken mit je einem Beispiel; ein selbst gelöstes Problem
+- Selbstauskünfte für das Anschreiben: „Was liegt dir, ohne dass ein Zeugnis es zeigt, zum Beispiel Mathematik, logisches Denken oder Arbeit mit den Händen? Gibt es dazu eine Note oder einen Nachweis, oder soll es eine allgemeine Aussage bleiben?“ (`voice.self_statements`; Regel `profile.self-statements` in `references/profile-schema.md`)
 - Was darf nicht in der Bewerbung stehen?
+
+Sind die Projektfragen aus Block 5 beantwortet, schreibt der Agent den Mastertext des Motivationsschreibens, zeigt ihn dem Nutzer und holt die Freigabe ein (Regel `motivation.master` in `references/writing.md`).
 
 ### Block 9: Darstellung
 
@@ -123,5 +142,6 @@ Die Aufteilung des Lebenslaufs auf Seiten (`presentation.cv_layout`) wählt der 
 
 - `assets/profile/<name>_profile.json`, gültig gegen `assets/schemas/profile.schema.json`
 - `assets/profile/<name>_profile.md` als lesbare Zusammenfassung
+- `assets/profile/<name>_motivation.md`, der freigegebene Mastertext des Motivationsschreibens
 - `assets/documents/old/extracted_information.md`
 - `profile_status: confirmed` erst, wenn der Nutzer die Zusammenfassung bestätigt hat und nichts Blockierendes oder Widersprüchliches offen ist.

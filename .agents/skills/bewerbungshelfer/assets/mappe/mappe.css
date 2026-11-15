@@ -319,9 +319,9 @@ a { color: inherit; text-decoration: none; }
 .letter-copy { font-size: var(--fs-letter); line-height: 1.5; hyphens: auto; text-wrap: pretty; }
 .letter-copy p + p { margin-top: 2.4mm; }
 /* Kompaktmodi gelten nur für A4 und Desktop; auf dem Smartphone fließt der Text normal. */
-/* Der Brieftext steht in 10 pt (--fs-letter) und fasst so ca. 230 Wörter.
-   Kompaktmodus für längere Anschreiben (bis ca. 350 Wörter Brieftext): .letter-copy.is-dense.
-   Über ca. 350 Wörtern kürzen statt weiter verkleinern (Schrift bleibt ≥ 9 pt). */
+/* Der Brieftext steht in 10 pt (--fs-letter). Passt er so nicht auf die Seite, setzt „dichte: dicht“
+   den Kompaktmodus .letter-copy.is-dense. Läuft der Brief auch dann über, kürzen statt weiter
+   verkleinern (Schrift bleibt ≥ 9 pt). Ein Wortziel gibt es nicht; es zählt die Überlaufprüfung. */
 @media print, screen and (min-width: 861px) {
   .letter-copy.is-dense { font-size: 9pt; line-height: 1.36; }
   .letter-copy.is-dense p + p { margin-top: 1.5mm; }

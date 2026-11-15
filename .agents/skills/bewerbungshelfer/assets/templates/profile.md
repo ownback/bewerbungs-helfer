@@ -26,8 +26,9 @@
 - Frühester Beginn:
 - Orte:
 - Umkreis:
-- Umzugsbereitschaft:
+- Umzugsbereitschaft (mit Zeitpunkt des Umzugs):
 - Pendelbereitschaft:
+- Praktikum vorab im Anschreiben anbieten: ja|nein
 
 ## Schulbildung
 ### Abschluss oder Abschlussziel
@@ -59,6 +60,10 @@
 - Eigene Rolle:
 - Werkzeuge:
 - Ergebnis:
+- Gelernt:
+- Hat funktioniert:
+- Hat nicht funktioniert:
+- Zusammenhang mit anderen Projekten:
 - Link:
 - Bild:
 - Bildfreigabe:
@@ -85,10 +90,12 @@ Die Skala von 1 bis 5 ist eine visuelle Einordnung, kein Prozentwert.
 - Prägende Erfahrung:
 - Lieblingsprojekt:
 - Lernziele:
+- Mastertext des Motivationsschreibens: Datei | vom Nutzer freigegeben am
 
 ## Stimme
 - Stärken mit Beispiel:
 - Gelöstes Problem:
+- Selbstauskünfte (Aussage | Grenze | bestätigt am):
 - Nicht verwenden:
 
 ## Deckblatt

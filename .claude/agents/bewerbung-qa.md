@@ -16,8 +16,8 @@ Die Mappe technisch, am Bild jeder Seite und inhaltlich prüfen: nach der Prüfl
 1. `.agents/skills/bewerbungshelfer/references/qa-and-export.md`, Abschnitte „Was `--qa` prüft“ und „Prüfliste vor der HTML-Freigabe“
 2. `.agents/skills/bewerbungshelfer/references/writing.md`, vollständig
 3. `.agents/skills/bewerbungshelfer/references/template.md`, Abschnitt Designsystem (für den Blick auf die Seiten)
-4. `profile/<name>/assets/profile/<name>_profile.json`
-5. im Stellenordner: `job_information/job.json`, `job_information/ba_scrape.md`, falls vorhanden `job_information/portal_page.md`, `text_generation/*.md`, `application/email.md`, `application/application-manifest.json`
+4. `profile/<name>/assets/profile/<name>_profile.json` und der Mastertext `profile/<name>/assets/profile/<name>_motivation.md`
+5. im Stellenordner: `job_information/firma.md`, `job_information/job.json`, `job_information/ba_scrape.md`, falls vorhanden `job_information/portal_page.md`, `text_generation/*.md`, `application/email.md`, `application/application-manifest.json`
 
 ## Befehle
 

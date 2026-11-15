@@ -11,11 +11,11 @@ metadata:
 
 Für **ein Profil** und **eine oder mehrere Stellen** der Bundesagentur für Arbeit (BA) entsteht pro Stelle ein eigener Ordner mit:
 
-- `job_information/ba_scrape.md` (wörtliche Anzeige) und `job.json` (strukturiert),
+- `job_information/ba_scrape.md` (wörtliche Anzeige), `job.json` (strukturiert) und `firma.md` (Fakten zur Firma mit Beleg),
 - `text_generation/anschreiben.md`, `motivationsschreiben.md`, `kontaktdaten.md`,
 - `application/bewerbungsmappe - <vorname.nachname>.html`, nach Freigabe `.pdf`, dazu `email.md` und `application-manifest.json`.
 
-Die Mappe hat sechs Abschnitte: Deckblatt, Anschreiben, Lebenslauf, Motivationsschreiben, Zertifikate, Zeugnisse. Deckblatt, Lebenslauf und Nachweise kommen aus der freigegebenen **Profilvorlage** und sind für alle Bewerbungen gleich. Anschreiben, Motivationsschreiben und E-Mail werden pro Stelle neu geschrieben. Nichts wird gesendet.
+Die Mappe hat sechs Abschnitte: Deckblatt, Anschreiben, Lebenslauf, Motivationsschreiben, Zertifikate, Zeugnisse. Deckblatt, Lebenslauf und Nachweise kommen aus der freigegebenen **Profilvorlage** und sind für alle Bewerbungen gleich. Das Anschreiben wird pro Stelle neu geschrieben. Das Motivationsschreiben ist ein freigegebener **Mastertext** des Profils, in dem sich pro Stelle nur der erste und der letzte Satz ändern. Die E-Mail hat einen festen Wortlaut. Nichts wird gesendet.
 
 ## Referenzen
 
@@ -62,7 +62,9 @@ Nach `references/interview.md`:
 - Unterlagen aus `assets/documents/old/` vollständig und visuell lesen und in `assets/documents/old/extracted_information.md` festhalten.
 - Nur nach Lücken, Widersprüchen und defekten Dateien fragen. Nichts erfinden, nichts raten.
 - Pro Projekt nach einem eigenen Foto und der Einwilligung fragen (`references/interview.md`, Block 5).
+- Pro Projekt die sechs Fragen zum Motivationsschreiben stellen (Regel `interview.projects` in `references/interview.md`): was gelernt, was funktioniert hat, was nicht.
 - Bestätigte Angaben in `assets/profile/<name>_profile.json` speichern, `<name>_profile.md` als lesbare Fassung pflegen.
+- Aus den Projekten den Mastertext des Motivationsschreibens schreiben (`assets/profile/<name>_motivation.md`) und vom Nutzer freigeben lassen (Regel `motivation.master` in `references/writing.md`).
 - Prüfen: `python3 tools/build_mappe.py validate profile/<name>` (läuft ohne Installation, siehe `references/qa-and-export.md`).
 
 ### 3. Profilvorlage bauen und freigeben
@@ -95,15 +97,16 @@ Nach `references/job-search.md` im Browser des Harness (kein Skript). Ablauf und
 5. Jede Anzeige vollständig erfassen: `ba_scrape.md` wörtlich, `job.json` strukturiert. Ein Tab, eine Anzeige nach der anderen (Regel `capture.one-tab` in `references/job-search.md`); das Captcha löst der Nutzer (Regel `capture.captcha` in `references/job-search.md`).
 6. `python3 tools/build_mappe.py validate <stellenordner>`, offene Punkte mit `status` führen (Regel `jobs.open-questions` in `references/job-search.md`), dann `python3 tools/build_mappe.py ledger sync profile/<name>`: Die Stellen stehen mit Status `captured` im Ledger.
 7. Stellen, die der Filter oder der Nutzer ausschließt, mit `drop --reason` aussortieren (Regel `jobs.drop` in `references/applications.md`).
+8. Für jede Stelle, die bleibt, die Firma recherchieren und `job_information/firma.md` schreiben: Anzeige, Portalseite, eigene Website der Firma, jeder Fakt mit Beleg, Quelle und Datum (Regel `company.research` in `references/job-search.md`).
 
-Browserarbeit bleibt beim Hauptagenten (Regel `agents.lanes` in `references/fan-out.md`).
+Die Arbeit auf der Website der BA bleibt beim Hauptagenten (Regel `agents.lanes` in `references/fan-out.md`).
 
 ### 5. Pro Stelle schreiben, bauen, prüfen (parallel)
 
 Nach `references/fan-out.md`: pro Stelle ein Subagent (Claude Code: `bewerbung-writer`, danach `bewerbung-qa`). Jeder Subagent arbeitet nur in seinem Stellenordner:
 
-1. Passung prüfen (`requirements[].status` in `job.json`). Stellen mit offener blockierender Frage oder nicht eingearbeiteter Antwort gehen erst nach der Klärung an den Subagenten.
-2. `anschreiben.md`, `motivationsschreiben.md`, `email.md` nach `references/writing.md` schreiben, `kontaktdaten.md` aus `job.json` erstellen.
+1. Passung prüfen (`requirements[].status` in `job.json`). Stellen mit offener blockierender Frage, nicht eingearbeiteter Antwort oder ohne `firma.md` gehen erst nach der Klärung an den Subagenten; ohne freigegebenen Mastertext startet keiner.
+2. Nach `references/writing.md`: `anschreiben.md` in fünf Absätzen schreiben, `motivationsschreiben.md` aus dem Mastertext kopieren und nur den ersten und letzten Satz anpassen, `email.md` im festen Wortlaut, `kontaktdaten.md` aus `job.json`.
 3. Humanizer anwenden (Regel `letters.humanizer` in `references/writing.md`).
 4. Bauen und prüfen: `python3 tools/build_mappe.py application <stellenordner> --qa`. Befunde über die Texte beheben (`references/qa-and-export.md`, Bei Problemen).
 5. QA-Durchgang nach der Prüfliste in `references/qa-and-export.md`.

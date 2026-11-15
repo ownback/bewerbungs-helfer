@@ -281,6 +281,10 @@
         "relocation_timing": {
           "type": "string",
           "description": "Geplanter Umzugszeitpunkt in einen Zielort (z. B. „Sommer 2027“); erscheint im Umzugssatz der E-Mail, wenn der Suchort nicht der Wohnort ist."
+        },
+        "offer_internship": {
+          "type": "boolean",
+          "description": "true: Der Schluss des Anschreibens bietet ein Praktikum vorab an (references/writing.md, Regel letter.structure). Antwort des Nutzers im Interview; fehlt das Feld, steht der Satz nicht."
         }
       }
     },
@@ -493,6 +497,39 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "self_statements": {
+          "type": "array",
+          "description": "Selbstauskünfte: Aussagen des Nutzers über sich ohne Dokument als Beleg (z. B. „Ich bin gut in Mathematik.“). Briefe geben sie nur sinngemäß und allgemein wieder (references/profile-schema.md, Regel profile.self-statements).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "text",
+              "confirmed_at"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Die Aussage in den Worten des Nutzers."
+              },
+              "limits": {
+                "type": "string",
+                "description": "Was daraus nicht gemacht werden darf (z. B. „keine Note, kein Niveau“)."
+              },
+              "confirmed_at": {
+                "type": "string",
+                "format": "date"
+              },
+              "source_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "field_status": {
@@ -1162,6 +1199,31 @@
           "items": {
             "$ref": "#/$defs/chip"
           }
+        },
+        "learned": {
+          "type": "array",
+          "description": "Was der Nutzer an diesem Projekt gelernt hat, je Eintrag eine Aussage in seinen Worten. Stoff für den Mastertext des Motivationsschreibens; leer = noch nicht erfragt.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "worked": {
+          "type": "array",
+          "description": "Was funktioniert hat, je Eintrag eine Aussage.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "did_not_work": {
+          "type": "array",
+          "description": "Was nicht funktioniert hat oder schiefging, je Eintrag eine Aussage.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "connection": {
+          "type": "string",
+          "description": "Wie das Projekt mit den anderen zusammenhängt: woraus es entstand und was darauf aufbaute."
         }
       },
       "allOf": [

@@ -3,7 +3,7 @@
 Die BA-Jobsuche ist die einzige Jobquelle (Regel `hard.source` in `CLAUDE.md`). Der **Hauptagent** arbeitet im Browser des Harness auf der öffentlichen Website: klicken, lesen, Text übernehmen. Keine internen Endpunkte, keine Umgehung von Anmeldung oder Captcha, keine Massenabfragen. Name, Kontaktdaten, Geburtsdaten, Lebenslauf und Nachweise werden nie in die Suche eingegeben.
 
 <!-- rule: capture.verbatim -->
-Werkzeuge, die Seiten nur zusammenfassen (z. B. WebFetch), liefern keinen wörtlichen Text. `ba_scrape.md`, `requirements[].evidence` und `company_facts[].evidence` müssen wörtlich sein, also aus dem Seiteninhalt im Browser kopiert.
+Werkzeuge, die Seiten nur zusammenfassen (z. B. WebFetch), liefern keinen wörtlichen Text. `ba_scrape.md`, `requirements[].evidence`, `company_facts[].evidence` und jeder Beleg in `firma.md` müssen wörtlich sein, also aus dem Seiteninhalt im Browser kopiert.
 
 Die Selektoren unten stammen von der Website im November 2026. Wenn sich die Seite ändert, passt der Agent seinen Weg an und meldet die Abweichung.
 
@@ -111,10 +111,10 @@ Regeln für den Kontakt:
 - Fehlt ein Ansprechpartner, zuerst die Karriereseite der Firma prüfen (`company_website`). Eine allgemeine Websuche nach Kontaktdaten nur als letzter Ausweg (`web_search`), mit Quelle, und dem Nutzer sagen.
 - Keine Kontaktdaten von ähnlichen Firmen übernehmen.
 
-### Kurzrecherche zur Firma
+### Aussagen der Anzeige über die Firma
 
 <!-- rule: capture.company-facts -->
-Erlaubt ist eine kurze Websuche zur Firma (Branche, Größe, Produkte, Ausbildung). Jede Aussage, die in einen Brief soll, kommt nach `company_facts[]` mit wörtlichem Beleg, Quell-URL, Abrufdatum und `source_kind`. Die BA bleibt die einzige Quelle für Stellen.
+`company_facts[]` hält bei der Erfassung fest, was die Anzeige und die dabei gelesenen Seiten über die Firma sagen: je Aussage wörtlicher Beleg, Quell-URL, Abrufdatum und `source_kind`. Die Briefe stützen sich nicht direkt darauf, sondern auf `firma.md` (Abschnitt 9); die Einträge hier sind dafür der erste Stoff.
 
 ### Entfernung zum Wohnort
 
@@ -144,3 +144,23 @@ Jeder Eintrag in `open_questions` hat `question`, `severity` (`blocking`, `non_b
 - Fragen werden nie gelöscht. Klärt eine spätere Erfassung (Kontaktblock nach dem Captcha, Portalseite) eine Frage, bekommt sie im selben Schritt `resolved` oder `answered`.
 - `validate` schlägt nur bei `severity: blocking` mit `status: open` fehl; `answered` meldet es als Hinweis. Die Übersicht `status profile/<name>` zählt die offenen blockierenden Fragen je Stelle und nennt bei `answered` das Einarbeiten als nächsten Schritt.
 - Vor dem Schreiben der Texte ist keine blockierende Frage `open`, und jede Antwort ist eingearbeitet (`resolved`).
+
+## 9. Firmenrecherche vor dem Schreiben
+
+<!-- rule: company.research -->
+Bevor für eine Stelle Texte entstehen, gibt es `job_information/firma.md` nach `assets/templates/firma.md`. Die Datei ist die einzige Grundlage für Aussagen über die Firma im Anschreiben und im Motivationsschreiben (Regel `letters.evidence` in `references/writing.md`). Sie entsteht beim Hauptagenten oder bei einem Recherche-Subagenten mit Browser; der Schreib-Subagent hat kein Web-Werkzeug und liest sie nur.
+
+Quellen, in dieser Reihenfolge:
+
+1. die Anzeige: `ba_scrape.md` und die Einträge in `company_facts[]`
+2. die Portal- oder Partnerseite, falls erfasst: `portal_page.md`
+3. die eigene Website der Firma: Startseite, „Über uns“, Produkte oder Leistungen, Karriere und Ausbildung. Adresse aus `employer.homepage` oder `employer.career_page`, sonst eine Websuche nach Firmenname und Ort. Wenige Seiten genügen.
+
+Gesucht wird, was das Anschreiben braucht (Regel `letter.structure` in `references/writing.md`): was die Firma herstellt, entwickelt oder betreut; welche Technologien sie einsetzt; für welche Branchen und Kunden sie arbeitet; einzelne Produkte, Leistungen oder Projekte; womit sie im Alltag und in der Ausbildung zu tun hat; die Begriffe, mit denen die Anzeige sucht.
+
+- Jeder Fakt steht mit wörtlichem Beleg, Quelle (URL oder Datei) und Abrufdatum da. Eine Zusammenfassung durch ein Werkzeug ist kein Beleg (Regel `capture.verbatim`).
+- Nichts erfinden und nichts aus der Branche schließen. Was sich nicht belegen lässt, kommt in keinen Brief; in der Datei steht es höchstens unter „Nicht belegt“.
+- Nur Anzeige, Portalseite und die eigene Website der Firma. Keine Bewertungsportale, keine Angaben von Firmen mit ähnlichem Namen.
+- An die Websuche gehen nur Firmenname und Ort, nie Angaben über den Bewerber.
+- Findet sich keine Website, steht das in der Datei, und das Anschreiben stützt sich auf Anzeige und Portalseite.
+- Solange `firma.md` fehlt, nennt `status profile/<name>` die Recherche als nächsten Schritt, und `application` warnt.

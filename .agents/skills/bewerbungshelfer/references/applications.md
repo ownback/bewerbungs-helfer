@@ -11,6 +11,7 @@ profile/<vorname.nachname>/
     photos/project/                      Projektfotos
     signature/<name>_unterschrift.png
     profile/<name>_profile.json|.md      Profil
+    profile/<name>_motivation.md         Mastertext des Motivationsschreibens (references/writing.md)
     profile/<name>_template.html|.pdf    Profilvorlage und Vorschau (gebaut)
   applications/
     ledger.json
@@ -27,9 +28,10 @@ applications/<typ>/<beruf-slug>/<suchort-slug>/<NN>-<ort-slug>-<firma-slug>/
     ba_scrape.md
     job.json
     portal_page.md                      nur bei Portal- oder Partnerseiten (references/job-search.md)
+    firma.md                            Fakten zur Firma mit Beleg, vor dem Schreiben (references/job-search.md)
   text_generation/
     anschreiben.md
-    motivationsschreiben.md
+    motivationsschreiben.md             Kopie des Mastertexts, erster und letzter Satz angepasst
     kontaktdaten.md
   application/
     bewerbungsmappe - <name>.html

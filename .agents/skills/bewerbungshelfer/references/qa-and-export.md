@@ -35,7 +35,8 @@ Die Schemaprüfung braucht keine Installation: `validate` nutzt `tools/schema_li
 - **Platzhalter:** keine `[GROSSBUCHSTABEN …]` außerhalb von Kommentaren. In der Profilvorlage sind genau die Platzhalter aus `assets/mappe/master.json` (`slots`: Anschreiben, Motivationsschreiben, Datum unter dem Lebenslauf) gewollt; jeder andere zählt als Befund.
 - **Bilder:** alle lokalen Bilder vorhanden.
 - **Klassen:** Hinweis auf Klassen in der Mappe, die weder eine CSS-Regel noch ein Partial kennt (`references/template.md`, Vertrag prüfen).
-- **Wörter:** Wortzahl von Anschreiben (Regel `letter.length` in `references/writing.md`) und Motivationsschreiben (Regel `motivation.length` in `references/writing.md`), als Hinweis neben den Richtwerten; liegt die Zahl über dem Richtwert der gewählten Dichte, steht das dabei.
+- **Wörter:** nur Hinweise, nie ein Befund. Beim Anschreiben steht die Wortzahl ohne Richtwert; es zählt allein, dass der Brief auf eine Seite passt (Regel `letter.length` in `references/writing.md`). Beim Motivationsschreiben steht sie neben den Richtwerten (Regel `motivation.length` in `references/writing.md`); liegt sie über dem Richtwert der gewählten Dichte, steht das dabei.
+- **Grundlagen der Texte:** `application` warnt, ohne die Prüfung scheitern zu lassen, wenn `job_information/firma.md` fehlt (Regel `company.research` in `references/job-search.md`), wenn der Mastertext `<name>_motivation.md` fehlt, oder wenn `motivationsschreiben.md` außerhalb des ersten und letzten Satzes von `## Text` vom Mastertext abweicht (Regel `motivation.master` in `references/writing.md`). Verglichen werden Einstieg, Belege, die Zahl der Absätze und jeder Absatz; die Warnung nennt die Stelle („Einstieg“, „Belege“, „Absatz 2“).
 
 Das Ergebnis steht im Manifest unter `validation`. Die automatische Prüfung ersetzt nicht den Blick auf die Seiten: Elemente, die innerhalb der Seite aus ihrem Block ragen (z. B. ein langer Name in die Glasleiste), erkennt sie nicht. Deshalb immer:
 
@@ -47,7 +48,9 @@ und jede PNG-Seite ansehen.
 
 ## Bei Problemen
 
-- Überlauf im Anschreiben oder Motivationsschreiben: Text in der `.md` kürzen oder `dichte: dicht` setzen, neu bauen.
+- Überlauf im Anschreiben: `dichte: dicht` setzen und neu bauen; läuft es weiter über, den Text in `anschreiben.md` kürzen (Regel `letter.length` in `references/writing.md`).
+- Überlauf im Motivationsschreiben: Der Text ist der Mastertext des Profils. `dichte: dicht` setzen oder den Mastertext kürzen und neu freigeben lassen, nicht die Kopie der Stelle umschreiben (Regel `motivation.master` in `references/writing.md`).
+- Warnung zu den Grundlagen der Texte: `firma.md` recherchieren, den Mastertext schreiben und freigeben lassen oder die Kopie der Stelle neu aus dem Mastertext erzeugen.
 - Überlauf im Lebenslauf: `presentation.cv_layout` im Profil anpassen (`references/template.md`, Lebenslauf), Profilvorlage neu bauen und vom Nutzer prüfen lassen.
 - Darstellungsfehler, die jede Mappe betreffen: Quellen unter `assets/mappe/` ändern, über die Warteschlange (`references/tencil.md`), dann Master-Vorlage, Profilvorlage und Mappen neu bauen.
 - Das generierte HTML bleibt unberührt (Regel `hard.generated` in `CLAUDE.md`).
@@ -102,12 +105,14 @@ Er klont das Repository nach `.tmp/fresh-clone/`, kopiert den Profilordner hinei
 
 - [ ] Firma, Titel, Referenznummer stimmen mit der Anzeige überein
 - [ ] Ansprechpartner belegt oder bewusst neutrale Anrede; Briefkopf-Zeilen nicht erfunden
-- [ ] jede Aussage belegt (Regel `letters.evidence` in `references/writing.md`)
+- [ ] jede Aussage belegt: über den Bewerber im Profil, über die Firma in `firma.md` (Regel `letters.evidence` in `references/writing.md`)
+- [ ] Anschreiben in fünf Absätzen mit den festen Sätzen (Regel `letter.structure` in `references/writing.md`), keine Formulierung aus der linken Spalte von Regel `letter.phrases` in `references/writing.md`
+- [ ] Motivationsschreiben ist der freigegebene Mastertext; nur der erste und der letzte Satz sind angepasst, der Bau warnt nicht (Regel `motivation.master` in `references/writing.md`)
 - [ ] Trennung der beiden Briefe eingehalten (Regel `letters.separation` in `references/writing.md`)
 - [ ] Stimme und persönliche Verbote beachtet (Regel `letters.voice` in `references/writing.md`)
 - [ ] Humanizer angewendet oder sein Fehlen gemeldet (Regel `letters.humanizer` in `references/writing.md`)
-- [ ] Umfang im Richtwert bzw. passende Dichte gewählt
-- [ ] E-Mail bei Bewerbungsweg `email`: Entwurf gültig (Regel `email.required` in `references/writing.md`), richtige Adresse, Betreff mit Referenznummer, Umzugssatz nach Regel `email.relocation` in `references/writing.md`
+- [ ] Anschreiben und Motivationsschreiben passen je auf eine Seite; `dichte: dicht` nur, wo `normal` überläuft
+- [ ] E-Mail bei Bewerbungsweg `email`: Entwurf gültig (Regel `email.required` in `references/writing.md`), richtige Adresse, Betreff mit Referenznummer, Wortlaut nach Regel `email.text` in `references/writing.md`, Umzugssatz nach Regel `email.relocation` in `references/writing.md`
 - [ ] Bewerbungsweg und Frist stimmen; Kontaktdaten überall identisch
 
 ### Seiten

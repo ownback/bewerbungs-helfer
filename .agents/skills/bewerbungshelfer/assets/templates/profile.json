@@ -42,6 +42,7 @@
     "radius_km": 0,
     "relocation": "unknown",
     "commuting": "unknown",
+    "offer_internship": false,
     "field_status": {}
   },
   "education": [],
@@ -64,6 +65,7 @@
     "strengths": [],
     "solved_problem": "",
     "avoid": [],
+    "self_statements": [],
     "field_status": {}
   },
   "portfolio": {

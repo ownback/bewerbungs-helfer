@@ -7,20 +7,23 @@ Ein Durchlauf hat genau ein Profil und eine oder mehrere Stellen. Was den Nutzer
 <!-- rule: agents.lanes -->
 | Schritt | wer | wie |
 |---|---|---|
-| Profil, Interview, Profilvorlage | Hauptagent | mit dem Nutzer |
+| Profil, Interview, Profilvorlage, Mastertext des Motivationsschreibens | Hauptagent | mit dem Nutzer (Regel `motivation.master` in `references/writing.md`) |
 | BA-Suche, Auswahl | Hauptagent | Browser, mit dem Nutzer |
 | Anzeigen erfassen (`ba_scrape.md`, `job.json`), Captcha | Hauptagent | Browser, nacheinander (Regel `capture.one-tab` in `references/job-search.md`) |
 | Duplikatprüfung, Ordner, Ränge | Hauptagent | `check-duplicate`, `references/applications.md` |
-| Texte, Mappe, technische QA | ein Schreib-Subagent **pro Stelle**, parallel | nur Dateien und Shell |
+| Firmenrecherche (`firma.md`) | Hauptagent, oder ein Recherche-Subagent pro Stelle, wenn das Harness ihm einen Browser gibt | Anzeige, Portalseite, Website der Firma (Regel `company.research` in `references/job-search.md`) |
+| Texte, Mappe, technische QA | ein Schreib-Subagent **pro Stelle**, parallel | nur Dateien und Shell, kein Web |
 | inhaltliche QA | ein Prüf-Subagent pro Stelle, parallel | nur lesen, Bericht in `.tmp/qa/` |
 | Freigabe, PDF, Versandablage | Hauptagent | mit dem Nutzer, einzeln pro Mappe |
 | Änderungen an der Vorlage | der Editor der Warteschlange | Regel `pins.one-writer` in `references/tencil.md` |
 
-Browserarbeit nie an Subagenten geben: Sie haben je nach Harness keinen Browser, und das Captcha braucht den Nutzer.
+Die Arbeit auf der Website der BA nie an Subagenten geben: Sie haben je nach Harness keinen Browser, und das Captcha braucht den Nutzer. Die Firmenrecherche braucht kein Captcha und darf deshalb an einen Subagenten gehen, der Seiten wörtlich lesen kann.
 
 ## Voraussetzungen vor dem Start der Subagenten
 
 - Profilvorlage gebaut und vom Nutzer freigegeben.
+- Mastertext des Motivationsschreibens geschrieben und vom Nutzer freigegeben (`profile/<name>/assets/profile/<name>_motivation.md`).
+- Pro Stelle: `job_information/firma.md` liegt vor.
 - Pro Stelle: Ordner angelegt, `ba_scrape.md` und `job.json` vollständig und schemagültig, Kontakt erfasst, kein ungeklärtes Duplikat, keine blockierende Frage offen und jede Antwort eingearbeitet (Regel `jobs.open-questions` in `references/job-search.md`). `status profile/<name>` zeigt das je Stelle.
 
 ## Auftrag an den Schreib-Subagenten
@@ -31,7 +34,7 @@ Rolle, Leseliste und Grenzen stehen in `.claude/agents/bewerbung-writer.md`; die
 Profil: profile/<name>
 Stelle: profile/<name>/applications/<typ>/<beruf>/<suchort>/<NN-ort-firma>
 Rolle, Leseliste und Grenzen: .claude/agents/bewerbung-writer.md
-Melde: Pfade, Wortzahlen, QA-Ergebnis, offene Punkte, unbelegte Anforderungen.
+Melde: Pfade, QA-Ergebnis, Dichte des Anschreibens, offene Punkte, unbelegte Anforderungen.
 ```
 
 Gleichzeitige Builds sind sicher: Jeder Subagent schreibt nur in seinen Ordner (Regel `agents.writer-scope` in `.claude/agents/bewerbung-writer.md`); das Ledger wird pro Aufruf unter einer Sperre aus den Ordnern abgeleitet und atomar geschrieben. Höchstens drei Subagenten gleichzeitig (Ratenlimits); mehr Stellen in Wellen zu je drei, im Abstand von 30–60 Sekunden starten. Meldet ein Agent ein Ratenlimit, warten und die Welle halbieren.

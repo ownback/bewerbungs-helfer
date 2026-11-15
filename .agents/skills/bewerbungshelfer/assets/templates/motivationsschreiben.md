@@ -2,26 +2,23 @@
 dichte: normal
 ---
 
+<!-- Kopie des Mastertexts profile/<name>/assets/profile/<name>_motivation.md (Regel motivation.master in
+     references/writing.md). Pro Stelle ändern sich nur der erste und der letzte Satz von „## Text“. -->
+
 ## Einstieg
 
-[Ein persönlicher Satz: woher das Interesse am Fach kommt.]
+[Einstieg aus dem Mastertext, wörtlich.]
 
 ## Text
 
-[Ausgangspunkt und persönlicher Weg.]
+[Erster Satz: nennt die Firma oder ihr Arbeitsgebiet mit einem Fakt aus firma.md.] [Rest des ersten Absatzes aus dem Mastertext, wörtlich.]
 
-[Prägende Erfahrung oder Problem mit eigener Rolle und Ergebnis.]
+[Alle weiteren Absätze aus dem Mastertext, wörtlich.]
 
-[Warum das Thema auch außerhalb der Pflicht beschäftigt.]
-
-[Belegter Bezug zu Stelle und Firma.]
-
-[Ausblick, ruhiger Schluss.]
+[Letzter Absatz aus dem Mastertext, wörtlich bis vor den letzten Satz.] [Letzter Satz: nennt die Firma oder ihr Arbeitsgebiet.]
 
 Mit freundlichen Grüßen
 
 ## Belege
 
-- i-branch | [Projekt] | [eigene Rolle und Ergebnis]
-- i-terminal | [Werkzeug oder System] | [Einsatz]
-- i-layers | [Lernthema] | [aktueller Lernstand]
+- [Die drei Belege aus dem Mastertext, wörtlich.]
