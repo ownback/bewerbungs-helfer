@@ -172,3 +172,8 @@ Gibt die Anzahl der Stellen nach Status, Typ, Anlagemonat, Versandmonat und Kana
 > Du hast 6 Bewerbungen: 2 Entwürfe, 1 freigegeben, 3 gesendet (alle per E-Mail, im November). Eine Einladung zum Gespräch, noch keine Absage.
 
 Für Fragen, die das Skript nicht abdeckt (z. B. „Welche Firmen haben noch nicht geantwortet?“), liest der Agent `ledger.json` direkt und filtert nach `status` und `sent_at`.
+
+## Bewerbungsweg
+
+<!-- rule: apply.channel -->
+E-Mail geht vor (Entscheidung des Nutzers vom 2026-11-15): Ist für eine Stelle eine Bewerbungsadresse bekannt (`application.email`, belegte E-Mail des Ansprechpartners oder eine Bewerbungsadresse aus Anzeige, `portal_page.md` oder `firma.md`), wird per E-Mail beworben, auch wenn die Anzeige Post oder ein Portal nennt. Dann `application.method: email` setzen und den ursprünglichen Weg mit Quelle in `application.notes` vermerken. Ohne belegte E-Mail-Adresse bleibt es beim Portal (füllt der Nutzer aus) oder bei der Post.

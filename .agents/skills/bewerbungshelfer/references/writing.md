@@ -190,7 +190,7 @@ Aus `job.json` nach `assets/templates/kontaktdaten.md`: Stelle, Ansprechpartner,
 In `application/`, nach `assets/templates/email.md`:
 
 - **Pflicht** bei Bewerbungsweg `email` (`job.json` → `application.method`): Der Entwurf liegt vor der Abschlussmeldung vor, ist nicht leer und enthält keine offenen `[Platzhalter]`. Fehlen belegte Angaben (z. B. Anrede, Ansprechpartner), fragen statt raten. Die QA prüft das, und ohne gültigen Entwurf gibt es kein PDF (`references/qa-and-export.md`, Was `--qa` prüft). <!-- rule: email.required -->
-- **An:** Bewerbungsadresse aus `application.email`, sonst die belegte Adresse des Ansprechpartners. Bei Portal oder Post: kein E-Mail-Entwurf, stattdessen kurzer Hinweis auf den Weg.
+- **An:** Bewerbungsadresse aus `application.email`, sonst die belegte Adresse des Ansprechpartners. Welcher Weg gilt, regelt Regel `apply.channel` in `references/applications.md` (E-Mail geht vor). Nur bei Portal oder Post ohne belegte E-Mail-Adresse: kein E-Mail-Entwurf, stattdessen kurzer Hinweis auf den Weg.
 - **Betreff:** z. B. „Bewerbung um einen Ausbildungsplatz als Fachinformatiker für Systemintegration (Ref.-Nr. …)“
 - **Text:** fester Wortlaut nach der Vorgabe des Nutzers, ohne weitere Sätze: <!-- rule: email.text -->
 
