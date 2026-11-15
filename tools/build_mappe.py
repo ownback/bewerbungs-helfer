@@ -120,17 +120,36 @@ SUBJECT_KICKER = {
     'jobs': 'Bewerbung als',
     'internships': 'Bewerbung um einen Praktikumsplatz als',
 }
-LETTER_WORDS = {'normal': 250, 'dicht': 350}
-MOTIVATION_WORDS = {'normal': 300, 'dicht': 370}
-LETTER_MAX_AGE_DAYS = 7  # --pdf verweigert ein älteres Briefdatum (datum in anschreiben.md)
+LIMITS_FILE = MAPPE / 'limits.json'         # Zahlen und Grenzen; das Skript enthält keine davon (limit())
 IMAGE_EXT = {'.png', '.jpg', '.jpeg', '.webp'}
-# Bildschirmbreiten der QA: Desktop (Überlauf, Füllgrad) und zwei Mobilbreiten; Schlüssel -> Fenstergröße
-QA_VIEWPORTS = (('desktop', '1440,900'), ('mobile', '390,844'), ('mobile_375', '375,812'))
 QA_MODES = ('full', 'fast')  # --qa = full; --qa=fast ohne A4-PDF (Schleife beim Ändern der Vorlage)
 
 
 class BuildError(Exception):
     pass
+
+
+_LIMITS: dict = {}
+
+
+def limit(key: str):
+    """Wert aus assets/mappe/limits.json, z. B. limit('letter.words') oder limit('letter.max_age_days')."""
+    if not _LIMITS:
+        try:
+            _LIMITS.update(json.loads(LIMITS_FILE.read_text(encoding='utf-8')))
+        except (OSError, ValueError) as e:
+            raise BuildError(f'Grenzwerte nicht lesbar: {LIMITS_FILE.relative_to(ROOT)} ({e})')
+    node = _LIMITS
+    for part_ in key.split('.'):
+        if not isinstance(node, dict) or part_ not in node:
+            raise BuildError(f'Grenzwert „{key}“ fehlt in {LIMITS_FILE.relative_to(ROOT)}')
+        node = node[part_]
+    return node
+
+
+def qa_viewports() -> list[tuple[str, str]]:
+    """Bildschirmbreiten der QA als (Schlüssel, „Breite,Höhe“): zuerst Desktop (Überlauf, Füllgrad), dann mobil."""
+    return [(key, f'{w},{h}') for key, (w, h) in limit('qa.viewports').items()]
 
 
 # --------------------------------------------------------------------------- Hilfen
@@ -419,7 +438,7 @@ def lines(*texts: str) -> list[dict]:
 
 def email_parts(addr: str) -> list[dict]:
     """Lange Adressen bekommen eine Umbruchstelle nach @ und vor jedem Punkt der Domain."""
-    if len(addr) <= 24:
+    if len(addr) <= limit('contact.email_wrap_above_chars'):
         return [part(addr)]
     local, _, domain = addr.partition('@')
     first, *rest = domain.split('.')
@@ -459,9 +478,9 @@ def name_class(first: str, last: str) -> str:
         segs = word.split('-')
         pieces += [s + '-' for s in segs[:-1]] + [segs[-1]]
     longest = max((len(p) for p in pieces), default=0)
-    if longest >= 14:
+    if longest >= limit('cover.name_xlong_from_chars'):
         return 'is-xlong'
-    if longest >= 11:
+    if longest >= limit('cover.name_long_from_chars'):
         return 'is-long'
     return ''
 
@@ -1077,14 +1096,15 @@ def probe_views(html_path: Path) -> dict:
     iframe exakter Größe (Media-Queries gelten für den iframe) und führt die Sonde qa.js aus. Es entsteht
     keine Hilfsdatei. Headless-Chromium erzwingt mindestens ca. 500 px Fensterbreite, deshalb der iframe.
     Stimmt die gemessene Breite nicht mit der angeforderten überein, gilt die Messung als fehlgeschlagen."""
-    views = ','.join(f'{key}:{size.replace(",", "x")}' for key, size in QA_VIEWPORTS)
+    viewports = qa_viewports()
+    views = ','.join(f'{key}:{size.replace(",", "x")}' for key, size in viewports)
     url = f'{QA_PAGE.as_uri()}?doc={quote(html_path.as_uri(), safe="")}&views={views}'
-    dom = subprocess.run(chrome_cmd('--allow-file-access-from-files', f'--window-size={QA_VIEWPORTS[0][1]}',
+    dom = subprocess.run(chrome_cmd('--allow-file-access-from-files', f'--window-size={viewports[0][1]}',
                                     '--dump-dom', url), capture_output=True, text=True).stdout
     m = re.search(r'data-qa="([^"]*)"', dom)
     data = json.loads(html.unescape(m.group(1))) if m else {}
     return {key: view if (view := data.get(key)) and view.get('width') == int(size.split(',')[0]) else None
-            for key, size in QA_VIEWPORTS}
+            for key, size in viewports}
 
 
 PLACEHOLDER = re.compile(r'\[[A-ZÄÖÜ][^\]\n<>]{1,80}\]')
@@ -1169,7 +1189,8 @@ def print_qa(name: str, qa: dict, extra: list[str] | None = None) -> None:
     print(f'  Überlauf: {qa["overflow"] or "keiner"}')
     cv = cv_fill(qa)
     if cv:
-        print(f'  Füllgrad Lebenslauf: {cv} (Richtwert 90–98 %, Rest in mm bis zum unteren Rand)')
+        low, high = limit('cv.fill_target_percent')
+        print(f'  Füllgrad Lebenslauf: {cv} (Richtwert {low}–{high} %, Rest in mm bis zum unteren Rand)')
     print('  Horizontaler Überlauf (px): ' + ' · '.join(
         f'{w}: {v if v is not None else "nicht messbar"}' for w, v in qa['hscroll'].items()))
     if qa['placeholders']:
@@ -1185,7 +1206,6 @@ def print_qa(name: str, qa: dict, extra: list[str] | None = None) -> None:
 # --------------------------------------------------------------------------- Seitenbilder (Vorher/Nachher)
 
 SNAPSHOT_DIR = ROOT / '.tmp' / 'snapshots'
-SNAPSHOT_DPI = 50
 
 
 def read_pgm(path: Path) -> tuple[int, int, bytes]:
@@ -1211,7 +1231,7 @@ def render_pages(html_path: Path, out_dir: Path) -> list[Path]:
     with tempfile.TemporaryDirectory() as tmp:
         pdf = Path(tmp) / 'snapshot.pdf'
         print_pdf(html_path, pdf)
-        subprocess.run(['pdftoppm', '-gray', '-r', str(SNAPSHOT_DPI), str(pdf), str(Path(tmp) / 'p')],
+        subprocess.run(['pdftoppm', '-gray', '-r', str(limit('snapshot.dpi')), str(pdf), str(Path(tmp) / 'p')],
                        check=True, capture_output=True)
         pages = sorted(Path(tmp).glob('p-*.pgm'), key=lambda p: int(p.stem.rsplit('-', 1)[1]))
         return [Path(shutil.copyfile(p, out_dir / f'page-{i:02d}.pgm')) for i, p in enumerate(pages, 1)]
@@ -1238,7 +1258,7 @@ def diff_pages(old: tuple[int, int, bytes], new: tuple[int, int, bytes], toleran
             x0, y0, x1, y1 = min(x0, x), min(y0, y), max(x1, x), max(y1, y)
     if not count:
         return None
-    mm = 25.4 / SNAPSHOT_DPI
+    mm = 25.4 / limit('snapshot.dpi')
     return {'share': count / (w * h), 'peak': peak,
             'box': tuple(round(v * mm) for v in (x0, y0, x1 + 1, y1 + 1))}
 
@@ -1256,7 +1276,7 @@ def cmd_snapshot(args) -> int:
         if args.save:
             pages = render_pages(html_path, base)
             (base / 'source.txt').write_text(rel(html_path) + '\n', encoding='utf-8')
-            print(f'Seitenbilder gesichert: {rel(base)} ({len(pages)} Seiten, {SNAPSHOT_DPI} dpi)')
+            print(f'Seitenbilder gesichert: {rel(base)} ({len(pages)} Seiten, {limit("snapshot.dpi")} dpi)')
             continue
         saved = sorted(base.glob('page-*.pgm'))
         if not saved:
@@ -1644,10 +1664,11 @@ def cmd_application(args) -> int:
             manifest.pop(k, None)
     words_letter, words_mot = word_count(letter['paragraphs']), word_count(mot['paragraphs'])
     print(f'Mappe: {rel(out)} ({len(pages)} Seiten)')
-    notes = [f'Wörter Anschreiben: {words_letter} (Richtwert normal ≤ {LETTER_WORDS["normal"]}, '
-             f'dicht ≤ {LETTER_WORDS["dicht"]})',
-             f'Wörter Motivationsschreiben: {words_mot} (Richtwert normal ≤ {MOTIVATION_WORDS["normal"]}, '
-             f'dicht ≤ {MOTIVATION_WORDS["dicht"]})']
+    letter_words, motivation_words = limit('letter.words'), limit('motivation.words')
+    notes = [f'Wörter Anschreiben: {words_letter} (Richtwert normal ≤ {letter_words["normal"]}, '
+             f'dicht ≤ {letter_words["dicht"]})',
+             f'Wörter Motivationsschreiben: {words_mot} (Richtwert normal ≤ {motivation_words["normal"]}, '
+             f'dicht ≤ {motivation_words["dicht"]})']
     notes += address_warnings(profile, job)
     email_state, email_msg = email_draft_state(posting)
     if email_msg:
@@ -1697,9 +1718,9 @@ def cmd_application(args) -> int:
         if rc:
             raise BuildError('Kein PDF: Die QA meldet Probleme.')
         age = (dt.date.today() - dated).days
-        if age > LETTER_MAX_AGE_DAYS:
+        if age > limit('letter.max_age_days'):
             raise BuildError(f'Kein PDF: Das Briefdatum {short_date(dated.isoformat())} ist {age} Tage alt (höchstens '
-                             f'{LETTER_MAX_AGE_DAYS}). „datum“ in text_generation/anschreiben.md auf den Versandtag '
+                             f'{limit("letter.max_age_days")}). „datum“ in text_generation/anschreiben.md auf den Versandtag '
                              'setzen, neu bauen und die HTML-Fassung erneut freigeben lassen.')
         pdf = app_dir / html_name(user, 'pdf')
         print_pdf(out, pdf)
@@ -2262,7 +2283,8 @@ def cmd_stats(args) -> int:
     return 0
 
 
-def main(argv=None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """Alle Befehle und Schalter. tools/check_repo.py docs liest sie hier ab und prüft damit die Doku."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='cmd', required=True)
     s = sub.add_parser('profile-template'); s.add_argument('dir'); s.add_argument('--qa', choices=QA_MODES)
@@ -2295,6 +2317,11 @@ def main(argv=None) -> int:
     s.add_argument('--date'); s.set_defaults(fn=cmd_drop)
     s = sub.add_parser('restore'); s.add_argument('dir'); s.set_defaults(fn=cmd_restore)
     s = sub.add_parser('stats'); s.add_argument('dir'); s.set_defaults(fn=cmd_stats)
+    return ap
+
+
+def main(argv=None) -> int:
+    ap = build_parser()
     # „--qa“ ohne Wert heißt volle Prüfung; so bleibt die Reihenfolge von Schalter und Ordner frei.
     argv = ['--qa=full' if a == '--qa' else a for a in (sys.argv[1:] if argv is None else argv)]
     args = ap.parse_args(argv)

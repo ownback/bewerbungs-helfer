@@ -540,7 +540,7 @@
       "properties": {
         "footer": {
           "const": "none",
-          "description": "Seit Runde 4 keine Fußzeile; Seitenzahl im Registerreiter."
+          "description": "Keine Fußzeile; die Seitenzahl steht im Registerreiter."
         },
         "cover_company_name": {
           "const": false

@@ -55,11 +55,12 @@ Generierte Dateinamen enthalten den Profilnamen, z. B. `bewerbungsmappe - max.mu
 
 ## Status
 
+<!-- rule: status.flow -->
 | Status | Bedeutung | gesetzt durch |
 |---|---|---|
 | `captured` | Anzeige erfasst (`job.json` liegt vor), noch keine Mappe | ergibt sich aus dem Ordner |
 | `draft` | Mappe gebaut, nicht freigegeben | `application` |
-| `html_approved` | Nutzer hat die HTML-Fassung ausdrücklich freigegeben; das Manifest hält die Prüfsumme dieses Stands fest (`references/qa-and-export.md`, Freigabe) | `status … html_approved` |
+| `html_approved` | Nutzer hat die HTML-Fassung ausdrücklich freigegeben (Regel `approval.checksum` in `references/qa-and-export.md`) | `status … html_approved` |
 | `pdf_exported` | finales PDF erzeugt und geprüft | `application --pdf` |
 | `sent` | Nutzer hat bestätigt, dass er gesendet hat | nur `mark-sent --channel …` |
 | `interview`, `offer`, `rejected`, `withdrawn` | Rückmeldung nach dem Versand | `status …` |
@@ -67,12 +68,13 @@ Generierte Dateinamen enthalten den Profilnamen, z. B. `bewerbungsmappe - max.mu
 
 Der normale Weg ist `captured → draft → html_approved → pdf_exported → sent`, danach eine Rückmeldung. `dropped` ist aus jedem Status vor `sent` möglich.
 
-`status <ordner> sent`, `status <ordner> dropped` und `status <ordner> captured` werden abgelehnt (Fehlermeldung mit dem richtigen Befehl): Bei `sent` und `dropped` gehören Ordner und Status zusammen, `captured` gilt von selbst. `status <ordner> html_approved` warnt, wenn bei Bewerbungsweg `email` der Entwurf `application/email.md` noch fehlt; das PDF gibt es erst mit Entwurf (`references/qa-and-export.md`).
+`status <ordner> sent`, `status <ordner> dropped` und `status <ordner> captured` werden abgelehnt (Fehlermeldung mit dem richtigen Befehl): Bei `sent` und `dropped` gehören Ordner und Status zusammen, `captured` gilt von selbst. `status <ordner> html_approved` warnt, wenn bei Bewerbungsweg `email` der Entwurf `application/email.md` noch fehlt (Regel `pdf.refuse` in `references/qa-and-export.md`).
 
 Ändert sich eine freigegebene Mappe beim Neubau, fällt sie auf `draft` zurück.
 
 ## Ledger
 
+<!-- rule: ledger.derived -->
 `applications/ledger.json` nach `assets/schemas/ledger.schema.json`, Startpunkt `assets/templates/ledger.json`. Ein Eintrag pro erfasster Stelle, auch für aussortierte.
 
 Der Stand jeder Stelle liegt im Stellenordner: `job.json` (Fakten, offene Fragen), `application-manifest.json` (Status, Zeitpunkte, `history`), `DROPPED.txt` (Grund und Datum) und die Lage des Ordners. Das Ledger wird daraus abgeleitet:
@@ -108,6 +110,7 @@ Mit dieser Übersicht beginnt jede Sitzung, die an Bewerbungen weiterarbeitet. S
 
 ## Duplikate
 
+<!-- rule: jobs.duplicate -->
 Die Regel steht nur hier; `tools/build_mappe.py check-duplicate` setzt sie um.
 
 Verglichen werden vier Merkmale aus `job.json`:
@@ -135,6 +138,7 @@ python3 tools/build_mappe.py check-duplicate <stellenordner>
 
 ## Aussortieren
 
+<!-- rule: jobs.drop -->
 Stellen, die nicht weiterverfolgt werden (Filter in `references/job-search.md`, Duplikat, Entscheidung des Nutzers), werden nie gelöscht:
 
 ```bash
@@ -146,6 +150,7 @@ python3 tools/build_mappe.py restore <stellenordner unter dropped/>
 
 ## Versandablage
 
+<!-- rule: status.sent -->
 Der einzige Weg zum Status `sent`, nur auf Bestätigung des Nutzers („ist raus“, „habe ich abgeschickt“):
 
 ```bash

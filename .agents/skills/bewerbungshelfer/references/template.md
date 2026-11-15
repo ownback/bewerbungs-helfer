@@ -20,20 +20,23 @@ assets/mappe/
   fonts.css      @font-face für Inter; die Dateien aus assets/fonts/ setzt der Bau als Base64 ein
   icons.svg      alle Symbole, eines pro Zeile; der Bau bettet nur die verwendeten ein
   master.json    Platzhalter-Modell: pages = Master-Vorlage, slots = Platzhalter der Profilvorlage
+  limits.json    Zahlen und Grenzen, die das Skript liest (Wortzahlen, Fenstergrößen, Schwellen)
   qa.js, qa.html Überlauf- und Füllgradprüfung (references/qa-and-export.md)
   partials/      Markup, ein Partial pro Datei
 ```
 
+<!-- rule: template.sources -->
 | Was soll sich ändern? | Wo |
 |---|---|
 | Farbe, Schriftgröße, Abstand, Maß | `tokens.css`; fehlt ein Token, der Block des Partials in `mappe.css` |
+| Zahl, nach der das Skript entscheidet oder die es meldet (Wortzahl, Schwelle, Fenstergröße) | `limits.json`; die Doku nennt den Schlüssel als `limits:<pfad>` |
 | Aufbau einer Seite oder eines Elements | das Partial in `partials/` und sein Block in `mappe.css` |
 | Verhalten auf dem Bildschirm (mobil, Leiste) | `screen.css` |
 | Neues Symbol | `icons.svg` (Ablauf in `assets/icons/README.md`) |
 | Platzhaltertext der Master- oder Profilvorlage | `master.json` |
 | Was auf einer Seite steht (Daten, Reihenfolge, Sichtbarkeit) | Profil, `job.json`, Texte; neue Regel: View-Model in `tools/build_mappe.py` |
 
-Nach jeder Änderung an den Quellen: `python3 tools/build_mappe.py master`, dann Profilvorlage und betroffene Mappen neu bauen. `tools/check_repo.py` (Prüfung `template`) schlägt fehl, solange die Master-Vorlage nicht dem Bau aus den Quellen entspricht; das fängt auch eine direkte Änderung an `assets/bewerbungsmappe.html` ab.
+Jede Änderung an den Quellen läuft über die Warteschlange (Regel `pins.one-writer` in `references/tencil.md`). Danach: `python3 tools/build_mappe.py master`, dann Profilvorlage und betroffene Mappen neu bauen. `tools/check_repo.py` (Prüfung `template`) schlägt fehl, solange die Master-Vorlage nicht dem Bau aus den Quellen entspricht; das fängt auch eine direkte Änderung an `assets/bewerbungsmappe.html` ab.
 
 ### Partials und View-Model
 
@@ -120,6 +123,7 @@ Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 
 ### Seiten
 
+<!-- rule: design.fixed -->
 - A4 210 × 297 mm, `@page { size: A4; margin: 0 }`, Satzspiegel 20 mm seitlich, 24 mm oben, 20 mm unten.
 - **Keine Fußzeile.** Die Seitenzahl steht im Registerreiter (`.folio`), schlicht `1`, `2`, … ohne führende Null und ohne Gesamtzahl. Der Name steht auf Deckblatt, im Briefkopf und im Lebenslauf.
 - Registratur: sechs Spalten über die Seitenbreite; `data-section="1…6"` setzt den Reiter in die Spalte seines Abschnitts. Folgeseiten bekommen automatisch einen hellen Reiter.
@@ -129,36 +133,41 @@ Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 
 Zwei Zonen:
 
-- **Farbraum** `.cover-stage` oben (ca. drei Viertel der Seite, so hoch wie die Seite minus Papierzone): Kennung „Bewerbungsmappe“ oben links, Name unten links (Klasse nach dem längsten Namensteil: bis 10 Zeichen keine, 11–13 `is-long`, 14–17 `is-xlong`; bei Doppelnamen zählt der Teil mit Bindestrich), darunter der Beruf. Rechts unten die Glasleiste mit optionalem Foto (4:5), Kontakt und Inhaltsangabe; sie ist so hoch wie ihr Inhalt. Die Glasleiste ist leicht gehalten (wenig Füllung, feine Kante, kurzer Schatten).
+- **Farbraum** `.cover-stage` oben (ca. drei Viertel der Seite, so hoch wie die Seite minus Papierzone): Kennung „Bewerbungsmappe“ oben links, Name unten links, darunter der Beruf. Rechts unten die Glasleiste mit optionalem Foto (4:5), Kontakt und Inhaltsangabe; sie ist so hoch wie ihr Inhalt. Die Glasleiste ist leicht gehalten (wenig Füllung, feine Kante, kurzer Schatten).
 - **Papierzone** `.cover-intro` unten, ohne feste Mindesthöhe (Höhe = Inhalt, oben 8 mm, unten 9 mm): links das Kurzprofil in dunkler Schrift, rechts der Beginn „Ausbildung ab …“ als Kapsel. Die Kapsel steht mittig in ihrer Spalte und mittig im Papierstreifen (`.cover-start { justify-self: center; align-self: center; }`), nicht bündig unter der Glasleiste. Fließtext steht damit nie auf dunklem Grund.
 
-Kontakt in der Leiste: Telefon, E-Mail, Anschrift (zweizeilig). Lange E-Mail-Adressen (über 24 Zeichen) bricht das Skript mit `<wbr>` nach „@“ und vor Punkten um, auch im Briefkopf und im Lebenslauf.
+<!-- rule: cover.name-size -->
+Namensgröße: Die Klasse am Namen richtet sich nach dem längsten Namensteil. Ab 11 Zeichen (`limits:cover.name_long_from_chars`) setzt das Skript `is-long`, ab 14 Zeichen (`limits:cover.name_xlong_from_chars`) `is-xlong`, darunter keine Klasse. Bei Doppelnamen zählt jeder Teil für sich, der vordere mit seinem Bindestrich.
 
-Foto nur mit `person.photo.valid` und `consent`; sonst entfällt der Block ersatzlos (kein Platzhalterrahmen). Ausschnitt über `--photo-x`, `--photo-y`, `--photo-zoom` (Profil `photo.focus`): Augen bei ca. 35–40 % der Rahmenhöhe, Zoom höchstens ca. 1,2, mindestens 600 × 750 px.
+<!-- rule: contact.email-wrap -->
+Kontakt in der Leiste: Telefon, E-Mail, Anschrift (zweizeilig). E-Mail-Adressen mit mehr als 24 Zeichen (`limits:contact.email_wrap_above_chars`) bricht das Skript mit `<wbr>` nach „@“ und vor Punkten um, auch im Briefkopf und im Lebenslauf.
+
+<!-- rule: cover.photo-crop -->
+Foto nur, wenn es gültig und freigegeben ist (Regel `person.photo` in `references/profile-schema.md`); sonst entfällt der Block ersatzlos (kein Platzhalterrahmen). Rahmen 4:5, Ausschnitt über `--photo-x`, `--photo-y`, `--photo-zoom` (Profil `photo.focus`): Augen bei ca. 35–40 % der Rahmenhöhe, Zoom höchstens ca. 1,2, Bild mindestens 600 × 750 px.
 
 ### Anschreiben
 
 Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Falzmarken, keine Rücksendezeile):
 
 - Symmetrischer Briefkopf: links Empfänger, rechts Absender, je sechs Zeilen mit Icon auf einem gemeinsamen Raster: Firma (fett) · Anrede + Name · Straße · PLZ Ort · Telefon · E-Mail. Die Firmenzeile des Absenders bleibt leer. Die Anrede vor dem eigenen Namen kommt aus `person.salutation` (leer = nur Name); sie ist eine Entscheidung des Nutzers. Fehlt beim Empfänger eine belegte Angabe, bleibt eine leere Zeile (`is-empty`) stehen; nichts erfinden. Ohne Ansprechpartner steht die Abteilung in der Namenszeile.
-- Straße ausgeschrieben („Straße“, nicht „Str.“), Straße und PLZ/Ort zweizeilig ohne Punkt und Komma, für Absender und Empfänger. Das Build-Skript warnt bei „Str.“ oder Satzzeichen am Ende.
+- Straße ausgeschrieben („Straße“, nicht „Str.“), Straße und PLZ/Ort zweizeilig ohne Punkt und Komma, für Absender und Empfänger, in Profil und `job.json` schon so gespeichert. Das Build-Skript warnt bei „Str.“ oder Satzzeichen am Ende. <!-- rule: address.format -->
 - Ort (Wohnort) und Datum („11. November 2026“) rechtsbündig mit Kalender-Icon zwischen Briefkopf und Betreff.
 - Betreff zweistufig in gemischter Schreibung (Entscheidung des Nutzers, Versalien wirken bei langen Berufsbezeichnungen laut): Einleitung klein in Akzentfarbe, darunter groß der Beruf, darunter optional die BA-Referenznummer. Die Variante `.letter-subject.is-caps` (Einleitung in Versalien) existiert im CSS, das View-Model setzt sie aber nicht; sie wäre eine Änderung an Partial, Skript und Profil.
-- Brieftext bis ca. 250 Wörter normal, ca. 250–350 Wörter `.letter-copy.is-dense`, darüber kürzen.
+- Brieftext: Umfang nach Regel `letter.length` in `references/writing.md`; mit `dichte: dicht` setzt das Skript `.letter-copy.is-dense`.
 - Unterschrift als Bild (12 mm hoch, höchstens 45 mm breit) nur mit gültiger, freigegebener Datei; darunter Name und Ort.
 
 ### Lebenslauf
 
 - Reihenfolge der Blöcke: Praktische Erfahrung, Schulbildung, Fähigkeiten, Sprachen (Sprachen immer zuletzt, auch beim Umbrechen auf die Fortsetzung). Optionaler Block „Eigene Projekte“ irgendwo nach der Erfahrung, wo er auf die Seite passt.
-- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Spalten nach Inhalt breit, `repeat(2, auto)`), der Block horizontal und vertikal mittig in der grauen Box, Symbol und Text je Zeile mittig. Linke Spalte: Anschrift (zweizeilig), E-Mail, Telefon. Rechte Spalte: Herkunft mit `i-map` als Ort und Land untereinander ohne Komma (aus `person.birth_place`, „Krakau, Polen“ → „Krakau“ / „Polen“) in der ersten Zeile neben dem Wohnort, darunter Geburtsdatum mit `i-cake`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`; mit allen Angaben sind es 3 + 3 Zeilen. Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt).
+- Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Spalten nach Inhalt breit, `repeat(2, auto)`), der Block horizontal und vertikal mittig in der grauen Box, Symbol und Text je Zeile mittig. Linke Spalte: Anschrift (zweizeilig), E-Mail, Telefon. Rechte Spalte: Herkunft mit `i-map` (aus `person.birth_place`, Ort und Land untereinander nach Regel `person.birth-place` in `references/profile-schema.md`) in der ersten Zeile neben dem Wohnort, darunter Geburtsdatum mit `i-cake`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`; mit allen Angaben sind es 3 + 3 Zeilen. Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt). <!-- rule: cv.personal-data -->
 - Praktische Erfahrung: neueste zuerst; Datum links in eigener Spalte, rechts Organisation, Ort, Rolle · Art, Aufgaben. Näherungen mit „ca.“.
-- Schulbildung: Einrichtung, Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Grundschulen entfallen standardmäßig, sobald ein weiterführender Abschluss vorliegt (`education[].show_in_cv: false`, Nutzer bestätigt; der Eintrag bleibt im Profil, das Skript meldet die ausgeblendeten Einträge).
+- Schulbildung: Einrichtung, Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Einträge mit `education[].show_in_cv: false` entfallen (Grundschulen: Regel `education.primary-school` in `references/profile-schema.md`); das Skript meldet die ausgeblendeten Einträge.
 - Sprachen: Balken mit Niveauwort darunter, keine Belegzeile.
 - Fähigkeiten: Gruppen untereinander, Gruppentitel mit Linien-Icon; jede Zeile = Kategorie (optional kleiner Zusatz), Technik-Chips, Skala. Bis ca. 6 Chips je Zeile passen bei üblichen Namen in eine Zeile; längere Reihen brechen ruhig in eine zweite Zeile um (kostet ca. 4–5 mm Höhe). Keine Prozentwerte.
-- Skala oben im Block Fähigkeiten, direkt unter der Überschrift: Die Skalen-Legende beginnt links mit dem Titel „Skala 1–5“. Der Titel ist vertikal mittig zu den Skalenleisten ausgerichtet (`.skill-legend-title { align-self: center; margin: 0; }`), weil das Grid `align-items: start` hat und der Titel sonst oben hängt. Daneben fünf gleich breite Spalten mit Musterleiste in Originalgröße und Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher.
-- Eigene Projekte / Homelab (optional, Block `projects`): nur Projekte mit `show_in_cv: true`, Reihenfolge wie im Profil. Zeile wie bei der Erfahrung: Zeitraum links (leer, wenn unbekannt; „laufend“ bei `is_current` ohne Datum), Projektname, ein Satz aus `cv_summary` (sonst `own_role`), darunter die Werkzeuge als Chips (`chips`, sonst Text-Chips aus `tools`). Titel und Icon aus `presentation.cv_projects` (Standard „Eigene Projekte“, `i-layers`). Platzbedarf: ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag mit einer Zeile Text und einer Chipzeile; höchstens zwei bis drei Einträge.
-- Aufteilung auf Seiten (`presentation.cv_layout`, Blocknamen `experience`, `education`, `projects`, `skills`, `languages`): Die QA meldet den Füllgrad jeder Lebenslauf-Seite („Füllgrad Lebenslauf: S3 95 % (+13.9 mm) · …“, Anteil des Satzspiegels, Rest in mm; negativ = Überlauf). Vorgehen:
-  1. Standard ist eine Seite mit allen Blöcken. Läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben (Reihenfolge beibehalten, Sprachen zuletzt) und die Seiten etwa gleich füllen (Richtwert 90–98 %).
+- Skala oben im Block Fähigkeiten, direkt unter der Überschrift: Die Skalen-Legende beginnt links mit dem Titel „Skala 1–5“. Der Titel ist vertikal mittig zu den Skalenleisten ausgerichtet (`.skill-legend-title { align-self: center; margin: 0; }`), weil das Grid `align-items: start` hat und der Titel sonst oben hängt. Daneben fünf gleich breite Spalten mit Musterleiste in Originalgröße und Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher. <!-- rule: cv.scale-legend -->
+- Eigene Projekte / Homelab (optional, Block `projects`): nur Projekte mit `show_in_cv: true`, Reihenfolge wie im Profil. Zeile wie bei der Erfahrung: Zeitraum links (leer, wenn unbekannt; „laufend“ bei `is_current` ohne Datum), Projektname, ein Satz aus `cv_summary` (sonst `own_role`), darunter die Werkzeuge als Chips (`chips`, sonst Text-Chips aus `tools`). Titel und Icon aus `presentation.cv_projects` (Standard „Eigene Projekte“, `i-layers`). Platzbedarf: ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag mit einer Zeile Text und einer Chipzeile; höchstens zwei bis drei Einträge. <!-- rule: cv.projects-block -->
+- Aufteilung auf Seiten (`presentation.cv_layout`, Blocknamen `experience`, `education`, `projects`, `skills`, `languages`): Die QA meldet den Füllgrad jeder Lebenslauf-Seite („Füllgrad Lebenslauf: S3 95 % (+13.9 mm) · …“, Anteil des Satzspiegels, Rest in mm; negativ = Überlauf). Vorgehen: <!-- rule: cv.layout -->
+  1. Standard ist eine Seite mit allen Blöcken. Läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben (Reihenfolge beibehalten, Sprachen zuletzt) und die Seiten etwa gleich füllen, Richtwert 90–98 % (`limits:cv.fill_target_percent`).
   2. Bei sehr vielen Stationen einen Block teilen.
   3. Verdichten (`cv_layout.compact`) nur auf einer Seite, die sonst überläuft: auf der volleren Seite (`[false, true]`) oder auf allen (`true`). Eine Seite, die ohne Verdichtung passt, bleibt unverdichtet.
   4. Zuletzt Beschreibungen im Profil kürzen.
@@ -166,19 +175,20 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 
 ### Motivationsschreiben
 
-Redaktioneller Einstieg (ein Satz, groß), daneben die Belege-Spalte (66 mm breit) mit drei Einträgen. Jeder Beleg: Icon und Titel, Text, darunter das Projektfoto im Format 4:3 in voller Breite. Reihenfolge je Beleg: Projekt → Details → Projektfoto. Das Foto kommt nur aus dem Profil, wenn Titel und Projektname gleich sind und das Bild `consent` und `valid` hat (`references/profile-schema.md`, Projekte); sonst entfällt es ohne Platzhalter. Kein Zitat-Icon, keine doppelte Projektgeschichte. Bis ca. 300 Wörter normal, bis ca. 370 Wörter `.motivation-copy.is-dense`. Abschluss mit Name und Ort, ohne Unterschriftsbild.
+Redaktioneller Einstieg (ein Satz, groß), daneben die Belege-Spalte (66 mm breit) mit drei Einträgen. Jeder Beleg: Icon und Titel, Text, darunter das Projektfoto im Format 4:3 in voller Breite. Reihenfolge je Beleg: Projekt → Details → Projektfoto. Ob ein Foto erscheint, bestimmt Regel `project.photo` in `references/profile-schema.md`; ohne Foto bleibt der Beleg ohne Bild und ohne Platzhalter. Kein Zitat-Icon. Umfang nach Regel `motivation.length` in `references/writing.md`; mit `dichte: dicht` setzt das Skript `.motivation-copy.is-dense`. Abschluss mit Name und Ort, ohne Unterschriftsbild.
 
 ### Zertifikate und Zeugnisse
 
 Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „Original-Scan“ (bzw. „Kopie“, „Digitales Original“) und „Ausgestellt am TT.MM.JJJJ“. Kein Badge, kein Zähler, keine Wiederholung von Schule oder Klasse.
 
 - Ein Nachweis pro Seite im Regelfall. Reihenfolge wie im Profil.
-- Zwei Nachweise nebeneinander (`.evidence-grid.is-pair`, Profil `pair: true`) nur für kurze, gut lesbare Dokumente (je ca. 80 mm breit), nie für textreiche Zeugnisse.
+- Zwei Nachweise nebeneinander (`.evidence-grid.is-pair`, Profil `pair: true`) nur für kurze, gut lesbare Dokumente (je ca. 80 mm breit), nie für textreiche Zeugnisse. <!-- rule: evidence.pair -->
 - Weitere Nachweise auf Folgeseiten.
 - Fehlt ein Nachweis, steht „Liegt noch nicht vor“.
 
 ### Icons und Logos
 
+<!-- rule: icons.list -->
 - Linien-Icons (`<svg class="icon"><use href="#i-…"/></svg>`): `i-phone`, `i-mail`, `i-pin`, `i-calendar`, `i-user`, `i-folder`, `i-graduation`, `i-briefcase`, `i-terminal`, `i-server`, `i-network`, `i-scan`, `i-list`, `i-badge`, `i-globe`, `i-branch`, `i-layers`, `i-wrench`, `i-building`, `i-home`, `i-cake`, `i-map`, `i-car` (Führerschein), `i-monitor`, `i-code`, `i-cpu`, `i-cable` (LAN/WAN), `i-router` (Cisco IOS CLI), `i-shield` (Firewall), `i-waypoints` (TCP/IP). `i-cable`, `i-router`, `i-shield` und `i-waypoints` stammen aus Lucide (ISC, Version 0.469.0, Lizenz in `assets/icons/LICENSES.md`). Ein Icon trägt nie allein eine Information.
 - Technologie-Logos lokal als einfarbige `<symbol>` eingebettet (`<svg class="logo"><use href="#dv-…"/></svg>`), im Chip immer neben dem Namen. Verfügbar:
 
@@ -200,14 +210,14 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
   | `si-nextcloud` | Nextcloud | Simple Icons |
   | `si-bluetooth` | Bluetooth (z. B. BlueZ) | Simple Icons |
 
-  Zuordnung Begriff → Symbol (welcher Chip welches Symbol bekommt, z. B. VLAN → `i-layers`, Firewall → `i-shield`, Dockform → `dv-docker`): maßgeblich ist die Tabelle in `assets/icons/README.md` (Abschnitt „Zuordnung Begriff → Symbol“). Logo-Ids stehen hier, die Begriffe dort. Ein neuer Chip ohne Eintrag in dieser Tabelle wird nicht gebaut, bis er ergänzt ist. Nennt ein Profil oder ein Beleg ein Symbol, das in `assets/mappe/icons.svg` fehlt, bricht der Bau mit der Id ab. Jede gebaute Datei enthält nur die Symbole, die sie verwendet.
+  Welcher Chip welches Symbol bekommt (z. B. VLAN, Firewall, Dockform): Regel `icons.mapping` in `assets/icons/README.md`. Die Ids stehen hier, die Begriffe dort. Nennt ein Profil oder ein Beleg ein Symbol, das in `assets/mappe/icons.svg` fehlt, bricht der Bau mit der Id ab. Jede gebaute Datei enthält nur die Symbole, die sie verwendet.
 
   Quellen: Devicon 2.17.0 (MIT) und Simple Icons 15.0.0 (CC0 1.0). Lucide 0.469.0 (ISC/Feather, MIT) für die Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`; Lizenz in `assets/icons/LICENSES.md`. Simple Icons nur, wo Devicon kein brauchbares einfarbiges Logo hat (nginx und Proxmox sind bei Devicon Schriftzüge, das Devicon-SSH-Logo zerfällt einfarbig). Für SSH/OpenSSH gibt es kein freies einfarbiges Logo: Linien-Icon `i-terminal`. Quelldatei je Symbol, Lizenztexte und Ablauf: `assets/icons/`.
 - Ein Logo im Vorrat ist keine Aussage über den Bewerber. Welche Technik mit welcher Skala erscheint, steht nur im Profil. Neue Logos sind eine Designänderung an `assets/mappe/icons.svg`: Devicon zuerst, sonst Simple Icons, mit `tools/devicon_symbols.py` einfarbig umwandeln (Ablauf in `assets/icons/README.md`; das Werkzeug prüft XML, `viewBox`, Dateiname/Id, erlaubte Elemente und Attribute und weist Verweise, Skripte, `foreignObject`, `style`-Elemente und Strichfarben mit einer Fehlermeldung je Datei ab), diese Tabelle nachtragen.
 
 ### Bildschirm
 
-Desktop zeigt Papierseiten mit Schatten, Bildschirmleiste und Seitennavigation; mobil fließt der Inhalt ohne feste Seitenhöhe und ohne Verdichtung. Beides ist nur Prüffläche: Desktop 1440 × 900 oder 1280 × 800, mobil 390 × 844 und 375 × 812 ohne horizontalen Überlauf. `--qa` prüft genau 1440 × 900, 390 × 844 und 375 × 812 und nennt alle drei Werte (`references/qa-and-export.md`); weitere Breiten (z. B. 1280) nur von Hand. Bildschirmleiste und Navigation sind im Druck ausgeblendet.
+Desktop zeigt Papierseiten mit Schatten, Bildschirmleiste und Seitennavigation; mobil fließt der Inhalt ohne feste Seitenhöhe und ohne Verdichtung. Beides ist nur Prüffläche und darf nicht horizontal überlaufen. `--qa` prüft die Fenstergrößen aus Regel `qa.viewports` in `references/qa-and-export.md`; weitere Breiten nur von Hand. Bildschirmleiste und Navigation sind im Druck ausgeblendet.
 
 ### Verboten
 

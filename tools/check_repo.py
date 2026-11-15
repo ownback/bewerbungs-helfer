@@ -10,9 +10,15 @@ Befehle:
   schemas   Alle JSON-Dateien lesbar; Schemas in sich stimmig; Vorlagen passen in Feldern und Typen zum Schema.
   template  Die Master-Vorlage assets/bewerbungsmappe.html entspricht Byte für Byte ihren Quellen unter
             assets/mappe/ (build_mappe.py master); jedes Partial hält seinen Vertrag ein (build_mappe.py contract).
-  all       privacy, stray, schemas und template.
+  pins      Jede geänderte Datei unter assets/mappe/ ist von einer Anfrage in der Warteschlange gedeckt
+            (tools/pin_queue.py, references/tencil.md).
+  docs      Die Doku passt zum Repository: jede Regel-Id (<!-- rule: id -->) genau einmal, Verweise treffen ihr
+            Zuhause; Pfade, Dateinamen, Befehle, Schalter, Schemafelder und Symbol-Ids existieren; Zahlen passen
+            zu assets/mappe/limits.json bzw. zu gezählten Werten; keine Formulierung aus tools/stale-terms.txt.
+  all       alle Prüfungen oben. Mehrere Namen hintereinander führen genau diese aus.
+  rules     Liste aller Regeln mit Datei und Zeile ihres Zuhauses.
   hook      Für den Claude-Code-Hook PostToolUse (Edit|Write): liest das Hook-JSON von stdin und prüft nur die
-            geänderte Datei; nach einer Änderung an der Vorlage oder ihren Quellen zusätzlich template.
+            geänderte Datei; je nach Datei zusätzlich template, pins und docs.
             Exit 2 mit Meldung auf stderr bei Befund, sonst still.
 
 Option --quiet: keine Ausgabe ohne Befund. Exit-Codes: 0 ok, 1 Befund (hook: 2).
@@ -47,7 +53,8 @@ ALLOWED = (
     f'{SKILL}/agents/*.yaml',
     f'{SKILL}/assets/bewerbungsmappe.html',
     f'{SKILL}/assets/mappe/*.css', f'{SKILL}/assets/mappe/icons.svg', f'{SKILL}/assets/mappe/qa.js',
-    f'{SKILL}/assets/mappe/qa.html', f'{SKILL}/assets/mappe/master.json', f'{SKILL}/assets/mappe/partials/*.html',
+    f'{SKILL}/assets/mappe/qa.html', f'{SKILL}/assets/mappe/master.json', f'{SKILL}/assets/mappe/limits.json',
+    f'{SKILL}/assets/mappe/partials/*.html',
     f'{SKILL}/assets/fonts/*.woff2', f'{SKILL}/assets/fonts/OFL.txt', f'{SKILL}/assets/fonts/README.md',
     f'{SKILL}/assets/icons/*.md',
     f'{SKILL}/assets/schemas/*.schema.json',
@@ -55,7 +62,7 @@ ALLOWED = (
     f'{SKILL}/references/*.md',
     '.claude/agents/*.md', '.claude/settings.json', '.claude/skills/bewerbungshelfer',
     'profile/README.md', 'profile/import/.gitkeep', 'profile/assets/.gitkeep',
-    'tools/*.py', 'tools/hooks/pre-commit',
+    'tools/*.py', 'tools/hooks/pre-commit', 'tools/stale-terms.txt',
 )
 LEFTOVER = re.compile(r'(\.(orig|rej|bak|tmp|swp|pyc)|~)$|^(EOF|\.DS_Store|nohup\.out)$')
 TEMPLATE_SCHEMA = {'job.json': 'job.schema.json', 'ledger.json': 'ledger.schema.json',
@@ -367,7 +374,390 @@ def check_template(files: list[str] | None = None) -> list[str]:
     return out
 
 
+# --------------------------------------------------------------------------- pins
+
+PIN_SOURCES = f'{SKILL}/assets/mappe/'
+
+
+def check_pins(files: list[str] | None = None) -> list[str]:
+    """Quellen der Vorlage ändert nur, wer eine Anfrage in der Warteschlange hat (tools/pin_queue.py)."""
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import pin_queue
+    return [f'pins: {name}: Quelle der Vorlage geändert ohne Anfrage unter .tmp/pins/. Jede Änderung unter '
+            f'{PIN_SOURCES} läuft über tools/pin_queue.py (enqueue, next, done; references/tencil.md)'
+            for name in pin_queue.uncovered(files)]
+
+
+# --------------------------------------------------------------------------- docs
+
+STALE_TERMS = 'tools/stale-terms.txt'
+DOC_EXEMPT = ('CHANGELOG.md', STALE_TERMS)  # der Verlauf und die Liste selbst dürfen alte Formulierungen nennen
+LIMITS = f'{SKILL}/assets/mappe/limits.json'
+ICONS = f'{SKILL}/assets/mappe/icons.svg'
+ICON_HOME = f'{SKILL}/references/template.md'  # dort steht die Liste aller Symbol-Ids
+RULE_ID = r'[a-z0-9-]+(?:\.[a-z0-9-]+)+'
+RULE_DEF = re.compile(r'<!--\s*rule:\s*(.*?)\s*-->')
+RULE_REF = re.compile(rf'\bRegel `({RULE_ID})`(?: in `([^`\n]+)`)?')
+SPAN = re.compile(r'`([^`\n]+)`')
+PATH_ROOTS = ('references/', 'assets/', 'tools/', '.claude/', '.agents/')
+# Ordner eines Profils (profile/<name>/assets/…), nicht des Skills
+PROFILE_ASSETS = re.compile(r'assets/\{?(documents|photos|signature|profile)(/|$)')
+FILE_NAME = re.compile(r'[A-Za-z0-9_][A-Za-z0-9_.-]*\.(py|css|svg|js|html|json|md|txt|yaml|woff2)')
+# Dateinamen, die erst zur Laufzeit oder außerhalb des Repositorys entstehen
+LOCAL_NAMES = {'portal_page.md', 'DROPPED.txt', 'privacy-needles.txt', 'tencil.js'}
+FIELD = re.compile(r'(?:(profile|job):)?([a-z_][a-z_0-9]*(?:\[[^\]]*\])?(?:\.[a-z_][a-z_0-9]*(?:\[[^\]]*\])?)*)')
+ICON_ID = re.compile(r'(?:i|dv|si)-[a-z0-9]+(?:-[a-z0-9]+)*')
+TOOL_CALL = re.compile(r'\b(build_mappe|check_repo|pin_queue|fresh_clone_test|serve_template|devicon_symbols)\.py'
+                       r'"?([^`\n#]*)')
+FLAG = re.compile(r'(?<![\w-])--[a-z][a-z-]*')
+EXTERNAL_FLAGS = {'--help', '--model', '--user', '--now'}  # Schalter anderer Programme, die die Doku nennt
+NUMBER_WORDS = {'ein': 1, 'eine': 1, 'zwei': 2, 'drei': 3, 'vier': 4, 'fünf': 5, 'sechs': 6, 'sieben': 7,
+                'acht': 8, 'neun': 9, 'zehn': 10}
+
+
+def split_fences(text: str) -> tuple[str, str]:
+    """Fließtext ohne Codeblöcke und Code ohne Fließtext (Codeblöcke und `…`); Zeilennummern bleiben gleich."""
+    prose, code, inside = [], [], False
+    for line in text.split('\n'):
+        fence = line.lstrip().startswith('```')
+        prose.append('' if inside or fence else line)
+        code.append(line if inside and not fence else '' if fence else ' '.join(f'`{s}`' for s in SPAN.findall(line)))
+        inside ^= fence
+    return '\n'.join(prose), '\n'.join(code)
+
+
+def line_of(text: str, pos: int) -> int:
+    return text.count('\n', 0, pos) + 1
+
+
+def rule_index(docs: dict[str, str]) -> tuple[dict[str, tuple[str, int]], list[str]]:
+    """Regel-Id -> (Datei, Zeile) ihres Zuhauses; dazu Befunde zu doppelten und falsch geschriebenen Ids."""
+    index: dict[str, tuple[str, int]] = {}
+    out = []
+    for rel, text in docs.items():
+        for m in RULE_DEF.finditer(text):
+            rid, line = m.group(1), line_of(text, m.start())
+            if rid == '<id>':
+                continue  # Beschreibung der Schreibweise
+            if not re.fullmatch(RULE_ID, rid):
+                out.append(f'docs: {rel}:{line}: Regel-Id „{rid}“ hat nicht die Form bereich.name')
+            elif rid in index:
+                out.append(f'docs: {rel}:{line}: Regel-Id „{rid}“ ist schon in {index[rid][0]}:{index[rid][1]} '
+                           'definiert (ein Zuhause pro Regel; andere Dateien verweisen)')
+            else:
+                index[rid] = (rel, line)
+    return index, out
+
+
+def expand_braces(token: str) -> list[str]:
+    m = re.search(r'\{([^{}]*,[^{}]*)\}', token)
+    if not m:
+        return [token]
+    return [x for alt in m.group(1).split(',') for x in expand_braces(token[:m.start()] + alt + token[m.end():])]
+
+
+def path_target(token: str) -> str | None:
+    """Repo-relativer Pfad, auf den ein Pfad aus der Doku zeigt (vom Repository oder vom Skill-Ordner aus)."""
+    token = re.sub(r'(:\d+)+$', '', token)
+    for base in ('', f'{SKILL}/'):
+        candidates = expand_braces(base + token)
+        if all(any(ROOT.glob(c)) if '*' in c else (ROOT / c).exists() for c in candidates):
+            return candidates[0].rstrip('/')
+    return None
+
+
+def schema_owners() -> tuple[dict[str, dict], dict[str, list[tuple[dict, dict]]]]:
+    """Alle Schemas und, je Feldname, jede Stelle (Schema, Unterschema), an der er definiert ist."""
+    roots, owners = {}, {}
+    for path in sorted((ROOT / SKILL / 'assets' / 'schemas').glob('*.schema.json')):
+        try:
+            roots[path.name.split('.')[0]] = json.loads(path.read_text(encoding='utf-8'))
+        except ValueError:
+            continue
+
+    def walk(node, root):
+        if isinstance(node, list):
+            for item in node:
+                walk(item, root)
+        elif isinstance(node, dict):
+            if isinstance(node.get('properties'), dict):
+                for name, sub in node['properties'].items():
+                    owners.setdefault(name, []).append((root, sub))
+            for value in node.values():
+                walk(value, root)
+
+    for root in roots.values():
+        walk(root, root)
+    return roots, owners
+
+
+def variants(node, root: dict, depth: int = 0):
+    """Ein Unterschema mit allem, was für seine Felder gilt: Verweis, Alternativen, Elemente einer Liste."""
+    try:
+        node = resolve(node, root)
+    except (KeyError, TypeError):
+        return
+    if not isinstance(node, dict) or depth > 8:
+        return
+    yield node
+    for key in ('allOf', 'anyOf', 'oneOf'):
+        for sub in node.get(key) or []:
+            yield from variants(sub, root, depth + 1)
+    for key in ('then', 'else', 'items'):
+        if isinstance(node.get(key), dict):
+            yield from variants(node[key], root, depth + 1)
+
+
+def field_resolves(nodes: list, segments: list[str], root: dict) -> bool:
+    for segment in segments:
+        found = []
+        for node in nodes:
+            for v in variants(node, root):
+                props = v.get('properties') if isinstance(v.get('properties'), dict) else {}
+                extra = v.get('additionalProperties')
+                if segment in props:
+                    found.append(props[segment])
+                elif isinstance(extra, dict):
+                    found.append(extra)
+                elif extra is True or v.get('patternProperties') or (v.get('type') == 'object' and not props
+                                                                     and extra is None):
+                    return True  # freies Objekt: jeder Name ist erlaubt
+        if not found:
+            return False
+        nodes = found
+    return True
+
+
+def tool_tables() -> tuple[dict[str, dict[str, set[str]]], dict[str, set[str]]]:
+    """Befehle mit ihren Schaltern (build_mappe, pin_queue, check_repo) und Schalter der übrigen Werkzeuge."""
+    import argparse
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import build_mappe
+    import pin_queue
+
+    def table(parser) -> dict[str, set[str]]:
+        subs = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction)).choices
+        return {name: {o for a in sub._actions for o in a.option_strings} for name, sub in subs.items()}
+
+    commands = {'build_mappe': table(build_mappe.build_parser()), 'pin_queue': table(pin_queue.build_parser()),
+                'check_repo': {name: {'--quiet'} for name in (*CHECKS, 'all', 'hook', 'rules')}}
+    flags = {tool: set(re.findall(r"'(--[a-z][a-z-]*)'", (ROOT / 'tools' / f'{tool}.py').read_text(encoding='utf-8')))
+             for tool in ('fresh_clone_test', 'serve_template', 'devicon_symbols')}
+    return commands, flags
+
+
+def limit_leaves(node, prefix: str = '') -> dict[str, object]:
+    """limits.json als flache Tabelle: Pfad -> Zahl oder Liste von Zahlen (auch jeder Zwischenknoten)."""
+    out: dict[str, object] = {}
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if prefix or key != 'description':
+                out.update(limit_leaves(value, f'{prefix}.{key}' if prefix else key))
+        if prefix:
+            out[prefix] = node
+    else:
+        out[prefix] = node
+    return out
+
+
+def numbers_of(value) -> list[int] | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return [value]
+    if isinstance(value, list) and all(isinstance(v, (int, float)) for v in value):
+        return list(value)
+    return None
+
+
+def as_number(text: str) -> int:
+    return NUMBER_WORDS[text.lower()] if text.lower() in NUMBER_WORDS else int(text)
+
+
+def check_docs(files: list[str] | None = None, only: str | None = None) -> list[str]:
+    """Doku gegen den Rest des Repositorys: Regel-Ids, Pfade, Befehle, Schemafelder, Symbol-Ids, Zahlen und
+    veraltete Formulierungen. Mit only nur die Befunde dieser einen Datei."""
+    files = git_files() if files is None else files
+    texts = {rel: text for rel in files if rel not in DOC_EXEMPT and (text := read_text(rel)) is not None}
+    docs = {rel: text for rel, text in texts.items() if rel.endswith('.md')}
+    out: list[str] = []
+    names = {rel.rsplit('/', 1)[-1] for rel in files} | LOCAL_NAMES
+
+    # 1. Regeln: jede Id genau einmal definiert, jeder Verweis trifft sein Zuhause
+    index, out = rule_index(docs)
+    for rel, text in docs.items():
+        for m in RULE_REF.finditer(text):
+            rid, where, line = m.group(1), m.group(2), line_of(text, m.start())
+            if rid not in index:
+                out.append(f'docs: {rel}:{line}: Verweis auf Regel „{rid}“, die nirgends definiert ist '
+                           '(Liste: check_repo.py rules)')
+            elif where and path_target(where) != index[rid][0]:
+                out.append(f'docs: {rel}:{line}: Regel „{rid}“ steht in {index[rid][0]}, nicht in {where}')
+
+    # 2. Grundlagen für die übrigen Prüfungen
+    try:
+        limits = limit_leaves(json.loads((ROOT / LIMITS).read_text(encoding='utf-8')))
+    except (OSError, ValueError) as e:
+        return out + [f'docs: {LIMITS}: nicht lesbar ({e})']
+    icons_text = read_text(ICONS) or ''
+    symbols = re.findall(r'<symbol id="([^"]+)"', icons_text)
+    counts = {prefix: sum(1 for s in symbols if s.startswith(prefix + '-')) for prefix in ('i', 'dv', 'si')}
+    logos = counts['dv'] + counts['si']
+    roots, owners = schema_owners()
+    try:
+        commands, tool_flags = tool_tables()
+        import build_mappe
+        sections = len(build_mappe.SECTIONS)
+    except Exception as e:  # ein Werkzeug lässt sich nicht laden: das ist selbst ein Befund
+        return out + [f'docs: Werkzeuge nicht lesbar ({type(e).__name__}: {e})']
+    css_vars = {v for path in sorted((ROOT / SKILL / 'assets' / 'mappe').glob('*.css'))
+                for v in re.findall(r'(--[a-z][a-z0-9-]*)\s*:', path.read_text(encoding='utf-8'))}
+    all_flags = {f for table in commands.values() for flags in table.values() for f in flags} \
+        | {f for flags in tool_flags.values() for f in flags} | EXTERNAL_FLAGS | css_vars
+    words = {n for key in ('letter.words', 'motivation.words') for n in (limits.get(key) or {}).values()}
+    viewports = {tuple(v) for v in (limits.get('qa.viewports') or {}).values()}
+    # Zahl neben einem bekannten Stichwort -> erlaubte Werte (aus limits.json oder berechnet)
+    keywords = (
+        (r'\b(\d+) Logo-Symbole\b', {logos}, 'Logo-Symbole in icons.svg'),
+        (r'\b(\d+) Quelldateien\b', {logos}, 'Logo-Symbole in icons.svg'),
+        (r'\b(\d+) Devicon\b', {counts['dv']}, 'Devicon-Symbole in icons.svg'),
+        (r'\b(\d+) Simple Icons\b', {counts['si']}, 'Simple-Icons-Symbole in icons.svg'),
+        (r'\b(\d+) Linien-Icons\b', {counts['i']}, 'Linien-Icons in icons.svg'),
+        (r'\b(\d+) Symbole\b', {len(symbols), logos, counts['i']}, 'Symbole in icons.svg'),
+        (r'\b(\d+) Wörter\b', words, 'limits:letter.words, limits:motivation.words'),
+        (r'(?:älter als|höchstens) (\d+) Tage\b', {limits.get('letter.max_age_days')}, 'limits:letter.max_age_days'),
+        (r'\b(\d+|' + '|'.join(NUMBER_WORDS) + r') Abschnitte\b', {sections}, 'SECTIONS in build_mappe.py'),
+    )
+
+    for rel, text in docs.items():
+        prose, code = split_fences(text)
+
+        def finding(pos: int, message: str, source: str = prose) -> None:
+            out.append(f'docs: {rel}:{line_of(source, pos)}: {message}')
+
+        # 3. Pfade, Dateinamen, Schemafelder, Symbol-Ids, Schlüssel aus limits.json: nur in `…` im Fließtext
+        for span in SPAN.finditer(prose):
+            if prose[max(span.start() - 6, 0):span.start()] == 'Regel ':
+                continue  # Regel-Id, oben geprüft
+            tokens = span.group(1).split()
+            for raw in tokens:
+                token = raw.strip('.,;()"„“')
+                if not token or re.search(r'[<>…$=~]', token) or 'mustermann' in token:
+                    continue
+                if token.startswith('limits:'):
+                    if token[7:] not in limits:
+                        finding(span.start(), f'„{token}“ gibt es in {LIMITS} nicht')
+                elif token.startswith(PATH_ROOTS) and not PROFILE_ASSETS.match(token):
+                    if path_target(token) is None:
+                        finding(span.start(), f'Pfad „{token}“ gibt es nicht')
+                elif '/' not in token and FILE_NAME.fullmatch(token):
+                    if token not in names:
+                        finding(span.start(), f'Datei „{token}“ gibt es nicht')
+                elif ICON_ID.fullmatch(token):
+                    if token not in symbols:
+                        finding(span.start(), f'Symbol „{token}“ fehlt in {ICONS}')
+                elif (m := FIELD.fullmatch(token)) and ('.' in m.group(2) or m.group(1)):
+                    segments = [re.sub(r'\[[^\]]*\]', '', s) for s in m.group(2).split('.')]
+                    if m.group(1):
+                        ok = field_resolves([roots[m.group(1)]], segments, roots[m.group(1)])
+                    elif segments[0] in owners:
+                        ok = any(field_resolves([sub], segments[1:], root) for root, sub in owners[segments[0]])
+                    else:
+                        ok = True  # kein Feld eines Schemas
+                    if not ok:
+                        finding(span.start(), f'Schemafeld „{token}“ gibt es in assets/schemas/ nicht')
+            # Schalter ohne Werkzeugnamen: `application --qa`, `--pdf`
+            flags = FLAG.findall(span.group(1))
+            if flags and not TOOL_CALL.search(span.group(1)):
+                first = tokens[0]
+                known = commands['build_mappe'].get(first) or commands['pin_queue'].get(first)
+                allowed = (known | {'--help'}) if known is not None else all_flags
+                for flag in flags:
+                    if flag not in allowed:
+                        finding(span.start(), f'Schalter „{flag}“ gibt es nicht' + (f' für „{first}“' if known else ''))
+
+        # 4. Befehle der Werkzeuge, in `…` und in Codeblöcken
+        for m in TOOL_CALL.finditer(code):
+            tool, rest = m.group(1), m.group(2)
+            flags = FLAG.findall(rest)
+            first = re.match(r'\s*([a-z][a-z-]*)(?![\w./-])', rest)
+            if tool in commands:
+                table = commands[tool]
+                if first and first.group(1) not in table:
+                    finding(m.start(), f'{tool}.py kennt den Befehl „{first.group(1)}“ nicht', text)
+                    continue
+                allowed = (table[first.group(1)] if first else {f for fl in table.values() for f in fl}) | {'--help'}
+            else:
+                allowed = tool_flags[tool] | {'--help'}
+            for flag in flags:
+                if flag not in allowed:
+                    finding(m.start(), f'{tool}.py' + (f' {first.group(1)}' if first and tool in commands else '')
+                            + f' kennt den Schalter „{flag}“ nicht', text)
+
+        # 5. Zahlen: direkt vor (`limits:…`) und neben bekannten Stichwörtern
+        for m in re.finditer(r'\(`limits:([a-z0-9_.]+)`\)', text):
+            want = numbers_of(limits.get(m.group(1)))
+            before = text[max(text.rfind('\n', 0, m.start()) + 1, m.start() - 45):m.start()]
+            groups = re.findall(r'\d+(?:\s*(?:[–×-]|bis|und)\s*\d+)*', before)
+            if want is None or not groups:
+                continue
+            have = [int(n) for n in re.findall(r'\d+', groups[-1])]
+            if have != want:
+                finding(m.start(), f'Zahl {groups[-1]} passt nicht zu limits:{m.group(1)} = '
+                        f'{" / ".join(str(n) for n in want)}', text)
+        for pattern, allowed, label in keywords:
+            for m in re.finditer(pattern, text):
+                if as_number(m.group(1)) not in allowed:
+                    finding(m.start(), f'„{m.group(0)}“ passt nicht zu {label} '
+                            f'({", ".join(str(n) for n in sorted(allowed))})', text)
+        for m in re.finditer(r'\b(\d{3,4}) × (\d{3,4})\b(?! ?(?:px|mm))', text):
+            if (int(m.group(1)), int(m.group(2))) not in viewports:
+                finding(m.start(), f'Fenstergröße „{m.group(0)}“ steht nicht in limits:qa.viewports', text)
+
+    # 6. Jedes Symbol steht in der Liste; jeder Grenzwert wird vom Build-Skript gelesen
+    home = docs.get(ICON_HOME, '')
+    out += [f'docs: {ICON_HOME}: Symbol „{s}“ aus {ICONS} fehlt in der Liste (Icons und Logos)'
+            for s in symbols if f'`{s}`' not in home]
+    used = set(re.findall(r'''limit\(['"]([a-z0-9_.]+)['"]\)''', read_text('tools/build_mappe.py') or ''))
+    out += [f'docs: {LIMITS}: „{key}“ liest tools/build_mappe.py nicht (limit(…)); streichen oder verwenden'
+            for key, value in limits.items() if not isinstance(value, dict)
+            and not any(key == u or key.startswith(u + '.') for u in used)]
+
+    # 7. Veraltete Formulierungen, in allen Textdateien
+    for number, row in enumerate((read_text(STALE_TERMS) or '').splitlines(), 1):
+        if not row.strip() or row.lstrip().startswith('#'):
+            continue
+        pattern, _, hint = (part.strip() for part in row.partition(' => '))
+        try:
+            rx = re.compile(pattern)
+        except re.error as e:
+            out.append(f'docs: {STALE_TERMS}:{number}: Muster ungültig ({e})')
+            continue
+        for rel, text in texts.items():
+            masked = mask(text)
+            out += [f'docs: {rel}:{line_of(masked, m.start())}: veraltete Formulierung „{m.group(0)}“'
+                    + (f' ({hint})' if hint else '') for m in rx.finditer(masked)]
+    out = list(dict.fromkeys(out))
+    return [f for f in out if f.startswith(f'docs: {only}:')] if only else out
+
+
 # --------------------------------------------------------------------------- Befehle
+
+CHECKS = {'privacy': check_privacy, 'stray': check_stray, 'schemas': check_schemas, 'template': check_template,
+          'pins': check_pins, 'docs': check_docs}
+# Dateien, deren Inhalt die Doku zitiert: Nach einer Änderung dort prüft der Hook die ganze Doku.
+DOC_INPUTS = (LIMITS, ICONS, STALE_TERMS, f'{SKILL}/assets/schemas/', 'tools/')
+
+
+def cmd_rules() -> int:
+    """Liste aller Regeln mit ihrem Zuhause."""
+    files = git_files()
+    index, problems = rule_index({rel: text for rel in files if rel.endswith('.md') and rel not in DOC_EXEMPT
+                                  and (text := read_text(rel)) is not None})
+    width = max((len(rid) for rid in index), default=0)
+    for rid, (rel, line) in sorted(index.items(), key=lambda item: (item[1][0], item[1][1])):
+        print(f'{rid:<{width}}  {rel}:{line}')
+    print('\n'.join(problems) if problems else f'{len(index)} Regeln')
+    return 1 if problems else 0
+
 
 def cmd_hook() -> int:
     try:
@@ -386,10 +776,17 @@ def cmd_hook() -> int:
         findings += check_schemas(git_files() if rel.startswith(schema_dir) else [rel])
     if rel.startswith(TEMPLATE_SOURCES):
         findings += check_template()
+    if rel.startswith(PIN_SOURCES):
+        findings += check_pins([rel])
+    if rel.endswith('.md') and rel not in DOC_EXEMPT:
+        findings += check_docs(only=rel)
+    elif rel.startswith(DOC_INPUTS):
+        findings += check_docs()
     if findings:
         print('tools/check_repo.py (Hook nach Edit/Write):\n' + '\n'.join(findings)
               + '\nBitte beheben: persönliche Daten nur unter profile/<name>/ und .tmp/, Dateien nur an den '
-                'erlaubten Orten, Master-Vorlage nur über ihre Quellen (references/qa-and-export.md, '
+                'erlaubten Orten, Master-Vorlage nur über ihre Quellen und mit Anfrage in der Warteschlange, '
+                'Doku passend zu Dateien, Befehlen, Schemas und limits.json (references/qa-and-export.md, '
                 'Repository-Prüfung).', file=sys.stderr)
         return 2
     return 0
@@ -399,24 +796,26 @@ def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     quiet = '--quiet' in args
     args = [a for a in args if a != '--quiet']
-    checks = {'privacy': [check_privacy], 'stray': [check_stray], 'schemas': [check_schemas],
-              'template': [check_template],
-              'all': [check_privacy, check_stray, check_schemas, check_template]}
     if args == ['hook']:
         return cmd_hook()
-    if len(args) != 1 or args[0] not in checks:
+    if args == ['rules']:
+        return cmd_rules()
+    names = list(CHECKS) if args == ['all'] else args
+    if not names or any(name not in CHECKS for name in names):
         print(__doc__)
         return 1
     files = git_files()
-    findings = [f for check in checks[args[0]] for f in check(files if check is not check_privacy else None)]
+    # privacy und pins sehen selbst nach, was Git aufnehmen würde (Staging-Diff, gelöschte Dateien)
+    findings = [f for name in names for f in CHECKS[name](None if name in ('privacy', 'pins') else files)]
+    label = ' '.join(args)
     if findings:
         print('\n'.join(findings))
-        print(f'check_repo {args[0]}: {len(findings)} Befund(e)')
+        print(f'check_repo {label}: {len(findings)} Befund(e)')
         return 1
     if not quiet:
-        note = '' if args[0] in ('stray', 'schemas', 'template') or load_needles() else \
+        note = '' if 'privacy' not in names or load_needles() else \
             ' (kein Profil unter profile/: keine Suchmuster für persönliche Daten)'
-        print(f'check_repo {args[0]}: ok, {len(files)} Dateien{note}')
+        print(f'check_repo {label}: ok, {len(files)} Dateien{note}')
     return 0
 
 

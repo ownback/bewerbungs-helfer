@@ -1,0 +1,32 @@
+# Formulierungen, die in keiner Datei des Repositorys mehr stehen dürfen (tools/check_repo.py docs).
+# Eine Zeile: <regulärer Ausdruck> => <Hinweis>. Geprüft wird jede Textdatei außer CHANGELOG.md und dieser Liste.
+# Wer eine Aussage ersetzt, die nicht wiederkehren darf, trägt die alte Formulierung hier ein.
+
+# Verlauf gehört in CHANGELOG.md; Doku, Schemas und Kommentare beschreiben nur den heutigen Stand
+\bRunde [0-9]+ => Verlauf steht in CHANGELOG.md, die Doku beschreibt den heutigen Stand
+\b[Ss]tand Runde\b => Verlauf steht in CHANGELOG.md
+
+# Symbolzahl: wird aus assets/mappe/icons.svg gezählt
+\b33 (Logo-)?Symbole\b => die Zahl der Symbole ergibt sich aus assets/mappe/icons.svg
+
+# Erfassung bei der BA: ein Tab, ein Durchgang (references/job-search.md, Regel capture.one-tab)
+\b(in einem |im |einen |jeweils )?neuen Tab\b => alle Anzeigen nacheinander im selben Tab erfassen
+\bneuer Tab (pro|je) (Anzeige|Stelle)\b => alle Anzeigen nacheinander im selben Tab erfassen
+
+# Persönliche Daten im Lebenslauf: zwei Spalten nach Inhalt breit, nicht gleich breit
+(?i)(persönliche[n]? daten|cv-facts|datenbox)[^\n]*\bgleich breit => die Spalten der persönlichen Daten sind nach Inhalt breit (repeat(2, auto))
+(?i)\bgleich breit[^\n]*(persönliche[n]? daten|cv-facts|datenbox) => die Spalten der persönlichen Daten sind nach Inhalt breit (repeat(2, auto))
+
+# Vorlage: Markup und Design stehen in assets/mappe/, die Master-Vorlage ist ein Bauergebnis
+\bDesign nur in der Skill-Vorlage\b => Design nur in den Quellen unter assets/mappe/
+\bStartkapsel bündig unter der Glasleiste\b => die Kapsel steht mittig in ihrer Spalte
+\.page-footer\b => es gibt keine Fußzeile; die Seitenzahl steht im Registerreiter
+\bdata-slot\b => Platzhalter der Profilvorlage stehen in assets/mappe/master.json (slots)
+\bdata-src\b => das Attribut heißt data-origin
+
+# Pins: ein Editor, eine Warteschlange (references/tencil.md, Regel pins.one-writer)
+\bandere Pin-Threads berücksichtigen\b => Pin-Threads reihen ein, es schreibt nur der Editor
+\bParallele Pin-Threads\b => Pin-Threads reihen ein, es schreibt nur der Editor
+
+# Schemaprüfung braucht keine Installation
+\bpip install jsonschema\b => validate nutzt tools/schema_lite.py

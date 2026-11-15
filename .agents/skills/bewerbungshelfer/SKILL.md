@@ -33,7 +33,17 @@ Nur lesen, was der aktuelle Schritt braucht:
 | Anschreiben, Motivation, E-Mail, Kontaktdaten | `references/writing.md` |
 | Build, QA, Freigabe, PDF, Datenschutz | `references/qa-and-export.md` |
 
-Vorlagen und Schemas: `assets/mappe/` (Quellen der Mappe: CSS, Partials, Symbole), `assets/bewerbungsmappe.html` (daraus gebaute Master-Vorlage mit Platzhaltern), `assets/templates/`, `assets/schemas/`. Das Werkzeug für Bau, Prüfung und Stand ist `tools/build_mappe.py` im Repository (nur Python-Standardbibliothek, Chromium für A4). `tools/check_repo.py` prüft das Repository vor jedem Commit (`references/qa-and-export.md`, Datenschutzprüfung).
+Vorlagen und Schemas: `assets/mappe/` (Quellen der Mappe: CSS, Partials, Symbole, Grenzwerte in `limits.json`), `assets/bewerbungsmappe.html` (daraus gebaute Master-Vorlage mit Platzhaltern), `assets/templates/`, `assets/schemas/`.
+
+Werkzeuge im Repository (nur Python-Standardbibliothek, Chromium für A4):
+
+| Werkzeug | Zweck |
+|---|---|
+| `tools/build_mappe.py` | bauen, prüfen, exportieren, Stand und Ledger (`references/qa-and-export.md`, `references/applications.md`) |
+| `tools/pin_queue.py` | Warteschlange für Änderungen an der Vorlage, ein Editor zur Zeit (`references/tencil.md`) |
+| `tools/check_repo.py` | Repository-Prüfung vor jedem Commit und nach jedem Schreiben, auch Doku gegen Code (`references/qa-and-export.md`, Repository-Prüfung) |
+
+Jede Regel hat genau ein Zuhause in einer dieser Dateien oder in `CLAUDE.md`; `python3 tools/check_repo.py rules` listet sie.
 
 ## Ablauf
 
@@ -51,7 +61,7 @@ Nach `references/interview.md`:
 
 - Unterlagen aus `assets/documents/old/` vollständig und visuell lesen und in `assets/documents/old/extracted_information.md` festhalten.
 - Nur nach Lücken, Widersprüchen und defekten Dateien fragen. Nichts erfinden, nichts raten.
-- Pro Projekt nach einem eigenen Foto und der Einwilligung fragen (`references/interview.md`, Block 5). Ohne Foto entfällt es, die Mappe baut trotzdem.
+- Pro Projekt nach einem eigenen Foto und der Einwilligung fragen (`references/interview.md`, Block 5).
 - Bestätigte Angaben in `assets/profile/<name>_profile.json` speichern, `<name>_profile.md` als lesbare Fassung pflegen.
 - Prüfen: `python3 tools/build_mappe.py validate profile/<name>` (läuft ohne Installation, siehe `references/qa-and-export.md`).
 
@@ -63,10 +73,14 @@ python3 tools/build_mappe.py profile-template profile/<name> --qa --pdf
 
 Das erzeugt `assets/profile/<name>_template.html` und die A4-Vorschau `<name>_template.pdf`: die stabilen Teile aus dem Profil (Deckblatt, Absender, Lebenslauf, Zertifikate, Zeugnisse); Anschreiben und Motivationsschreiben bleiben Platzhalter. Zeige dem Nutzer die Vorschau und frage, ob sie passt.
 
-- Das Skript meldet den Füllgrad der Lebenslauf-Seiten und ausgeblendete Schulen; die Aufteilung folgt `references/template.md` (Lebenslauf).
+- Das Skript meldet den Füllgrad der Lebenslauf-Seiten und ausgeblendete Schulen; die Aufteilung folgt Regel `cv.layout` in `references/template.md`.
 - Inhaltliche Änderungen: im Profil-JSON, dann neu bauen.
-- Designänderungen: nur in den Quellen unter `assets/mappe/` (`references/template.md`), visuell über Tencil (`references/tencil.md`), dann `build_mappe.py master` und neu bauen.
-- Generiertes HTML nie von Hand bearbeiten.
+- Designänderungen: als Anfrage über die Warteschlange, mit Tencil oder aus dem Gespräch (`references/tencil.md`):
+
+  ```bash
+  python3 tools/pin_queue.py enqueue --text "<Wunsch des Nutzers>"
+  python3 tools/pin_queue.py status
+  ```
 
 Schleife, bis der Nutzer zufrieden ist. Jede spätere Profiländerung braucht einen neuen Bau und einen neuen Blick des Nutzers.
 
@@ -76,13 +90,13 @@ Nach `references/job-search.md` im Browser des Harness (kein Skript). Ablauf und
 
 1. Suche mit Beruf, Zielort und Umkreis (Vorgabe des Nutzers, sonst „ganzer Ort“; ohne Treffer erst fragen, dann vorsichtig erweitern).
 2. Treffer kurz zeigen (Titel, Firma, Ort, Entfernung, Beginn, Veröffentlichung). Der Nutzer wählt eine oder mehrere Stellen.
-3. Duplikate prüfen: vor dem Erfassen im Ledger, danach mit `check-duplicate`. Bei `same_posting` den Nutzer fragen (`references/applications.md`, Duplikate).
+3. Duplikate prüfen: vor dem Erfassen im Ledger, danach mit `python3 tools/build_mappe.py check-duplicate <stellenordner>` (Regel `jobs.duplicate` in `references/applications.md`).
 4. Ränge nach Entfernung vom Suchort vergeben (`NN`), Ordner anlegen.
-5. Jede Anzeige **nacheinander im selben Tab** vollständig erfassen (Kopf, Text und Kontakt in einem Besuch): `ba_scrape.md` wörtlich, `job.json` strukturiert. Für die Kontaktdaten zum Captcha scrollen und den **Nutzer** bitten, es zu lösen. Kurze Websuche zur Firma ist erlaubt (Fakten mit Quelle).
-6. `job.json` gegen das Schema prüfen, offene Punkte mit `status` führen (`references/job-search.md`, Abschnitt 8), dann `ledger sync`: Die Stellen stehen mit Status `captured` im Ledger.
-7. Stellen, die der Filter oder der Nutzer ausschließt, mit `drop --reason` aussortieren, nie löschen.
+5. Jede Anzeige vollständig erfassen: `ba_scrape.md` wörtlich, `job.json` strukturiert. Ein Tab, eine Anzeige nach der anderen (Regel `capture.one-tab` in `references/job-search.md`); das Captcha löst der Nutzer (Regel `capture.captcha` in `references/job-search.md`).
+6. `python3 tools/build_mappe.py validate <stellenordner>`, offene Punkte mit `status` führen (Regel `jobs.open-questions` in `references/job-search.md`), dann `python3 tools/build_mappe.py ledger sync profile/<name>`: Die Stellen stehen mit Status `captured` im Ledger.
+7. Stellen, die der Filter oder der Nutzer ausschließt, mit `drop --reason` aussortieren (Regel `jobs.drop` in `references/applications.md`).
 
-Browserarbeit bleibt beim Hauptagenten; Subagenten haben oft keinen Browser.
+Browserarbeit bleibt beim Hauptagenten (Regel `agents.lanes` in `references/fan-out.md`).
 
 ### 5. Pro Stelle schreiben, bauen, prüfen (parallel)
 
@@ -90,9 +104,9 @@ Nach `references/fan-out.md`: pro Stelle ein Subagent (Claude Code: `bewerbung-w
 
 1. Passung prüfen (`requirements[].status` in `job.json`). Stellen mit offener blockierender Frage oder nicht eingearbeiteter Antwort gehen erst nach der Klärung an den Subagenten.
 2. `anschreiben.md`, `motivationsschreiben.md`, `email.md` nach `references/writing.md` schreiben, `kontaktdaten.md` aus `job.json` erstellen.
-3. Skill `humanizer` auf Anschreiben, Motivationsschreiben und E-Mail anwenden (nicht auf `kontaktdaten.md`). Fehlt der Skill, das sagen und seine Grundsätze von Hand anwenden.
-4. Bauen und prüfen: `python3 tools/build_mappe.py application <stellenordner> --qa`. Bei Überlauf Text kürzen oder `dichte: dicht` setzen, nie das HTML ändern. Bei Bewerbungsweg `email` meldet die QA einen fehlenden oder unvollständigen `email.md`-Entwurf als Fehler; der Entwurf gehört vor die Freigabe.
-5. QA-Durchgang mit Faktencheck gegen Profil und Anzeige (`references/qa-and-export.md`).
+3. Humanizer anwenden (Regel `letters.humanizer` in `references/writing.md`).
+4. Bauen und prüfen: `python3 tools/build_mappe.py application <stellenordner> --qa`. Befunde über die Texte beheben (`references/qa-and-export.md`, Bei Problemen).
+5. QA-Durchgang nach der Prüfliste in `references/qa-and-export.md`.
 
 Ohne Subagenten: dieselben Schritte nacheinander pro Stelle.
 
@@ -109,28 +123,18 @@ python3 tools/build_mappe.py status <stellenordner> html_approved
 python3 tools/build_mappe.py application <stellenordner> --qa --pdf
 ```
 
-Die Freigabe gilt für genau den gezeigten Stand (Prüfsumme im Manifest). Das Skript verweigert das PDF ohne Freigabe, mit QA-Befund, mit einem Briefdatum älter als 7 Tage oder bei Bewerbungsweg `email` ohne gültigen Entwurf `email.md` (`references/qa-and-export.md`, PDF). Ändert sich danach ein Text, das Profil, die Vorlage oder ein Bild, fällt der Status auf `draft` zurück und die Freigabe ist neu einzuholen.
+Die Freigabe gilt für genau den gezeigten Stand (Regel `approval.checksum` in `references/qa-and-export.md`). Wann das Skript das PDF verweigert: Regel `pdf.refuse` in `references/qa-and-export.md`.
 
 ### 7. Versand durch den Nutzer und Ablage
 
-Der Nutzer sendet selbst (E-Mail-Entwurf in `email.md`, Kontaktdaten in `kontaktdaten.md`). Kein Portal ausfüllen, nichts hochladen, nichts senden. Erst wenn der Nutzer bestätigt, dass die Bewerbung raus ist:
+Der Nutzer sendet selbst (E-Mail-Entwurf in `email.md`, Kontaktdaten in `kontaktdaten.md`; Regel `hard.no-send` in `CLAUDE.md`). Erst wenn der Nutzer bestätigt, dass die Bewerbung raus ist:
 
 ```bash
 python3 tools/build_mappe.py mark-sent <stellenordner> --channel email|post|portal
 ```
 
-Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status, Datum und Kanal. `status … sent` gibt es nicht: nur `mark-sent` setzt „gesendet“, weil es Ordner und Ledger zusammen aktualisiert. Spätere Rückmeldungen: `status <ordner> interview|offer|rejected|withdrawn`. Übersicht: `status profile/<name>`, Statistik: `stats profile/<name>` (`references/applications.md`).
+Der Ordner wandert nach `applications/sent/<typ>/…`, das Ledger bekommt Status, Datum und Kanal (Regel `status.sent` in `references/applications.md`). Spätere Rückmeldungen: `status <ordner> interview|offer|rejected|withdrawn`. Übersicht: `status profile/<name>`, Statistik: `stats profile/<name>` (`references/applications.md`).
 
 ## Harte Regeln
 
-- Ein Profil pro Durchlauf; mehrere Stellen sind erlaubt.
-- Einzige Jobquelle: Bundesagentur für Arbeit, im Browser des Harness. Kein Scraping-Skript. Websuche nur für kurze Firmenfakten mit Quelle und, als letzter Ausweg, für Kontaktdaten.
-- An die BA-Suche gehen nur Beruf, Ort und Umkreis, keine weiteren Profildaten.
-- Keine erfundenen Tatsachen, Kontaktdaten, Qualifikationen, Niveaus, Noten oder Nachweise. Bei fehlenden Fakten stoppen und fragen.
-- Freigegebene Näherungen bleiben `inferred` und erscheinen mit „ca.“.
-- Kein automatisches Senden, kein Portal ausfüllen, kein Upload.
-- Finales PDF erst nach ausdrücklicher HTML-Freigabe.
-- Keine Fotos fremder Personen, keine generierten Porträts oder Projektbilder; Projektfotos nur mit `consent` und `valid` und nur am Beleg mit gleichem Projektnamen; defekte Dateien nicht einbinden.
-- Generiertes HTML nie von Hand bearbeiten, auch die Master-Vorlage `assets/bewerbungsmappe.html` nicht; Design nur in den Quellen unter `assets/mappe/`.
-- Entscheidungen des Nutzers, die die Ausgabe prägen, gehören in ein Profilfeld (mit Interviewfrage) oder in Vorlage und Referenzen, nie nur in ein Gespräch oder in `.tmp/`. Ein neuer Durchlauf aus demselben Profil muss dieselbe Mappe ergeben.
-- Persönliche Daten nur in `profile/` und `.tmp/`; nichts davon committen.
+Die harten Regeln stehen in `CLAUDE.md` (Abschnitte „Harte Regeln“ und „Daten“, Regeln `hard.…`) und gelten in jedem Schritt. Diese Datei wiederholt sie nicht.

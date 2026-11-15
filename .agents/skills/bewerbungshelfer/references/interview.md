@@ -46,22 +46,22 @@ Nur zu den Punkten der Abweichungsliste und zu Feldern, die das Profil braucht u
 - Art: Ausbildung, Job oder Praktikum (`goal.type`)
 - Beruf, Alternativen, frühester Beginn
 - Zielorte und Umkreis (Vorgabe für die BA-Suche)
-- Umzug oder Pendeln? Wenn Umzug: in welche Zielorte (`goal.locations`) und wann (`goal.relocation_timing`, z. B. „Sommer 2027“)? Das steuert den Umzugssatz in der E-Mail (Suchort ≠ Wohnort).
+- Umzug oder Pendeln? Wenn Umzug: in welche Zielorte (`goal.locations`) und wann (`goal.relocation_timing`, z. B. „Sommer 2027“)? Das steuert den Umzugssatz in der E-Mail (Regel `email.relocation` in `references/writing.md`).
 
 ### Block 2: Person und Kontakt
 
 - Name, Anrede im eigenen Absender (`person.salutation`): „Herr“, „Frau“ oder ohne. Standard ist ohne; die Anrede vor dem eigenen Namen ist im deutschen Geschäftsbrief unüblich und steht nur auf ausdrücklichen Wunsch.
-- Anschrift: Straße ausgeschrieben („Straße“, nicht „Str.“), ohne Punkt und Komma am Ende, PLZ und Ort getrennt
+- Anschrift, gespeichert nach Regel `address.format` in `references/template.md`
 - Telefon (so speichern, wie es erscheinen soll, z. B. „+49 …“), E-Mail für Bewerbungen
-- Geburtsdatum und Geburtsort (optional; Ort in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland als „Ort, Land“ (z. B. „Krakau, Polen“; der Lebenslauf zeigt Ort und Land untereinander, ohne Komma); im Lebenslauf nur mit `presentation.show_birth_data: true`)
-- Bewerbungsfoto: gültig, aktuell, zum Nutzer gehörend, ausdrücklich freigegeben? Mindestens 600 × 750 px. Den Ausschnitt (`photo.focus`) wählt der Agent mit dem Nutzer an der Vorschau.
+- Geburtsdatum und Geburtsort (optional; Schreibweise des Orts nach Regel `person.birth-place` in `references/profile-schema.md`; im Lebenslauf nur mit `presentation.show_birth_data: true`)
+- Bewerbungsfoto: gültig, aktuell, zum Nutzer gehörend, ausdrücklich freigegeben (Regel `person.photo` in `references/profile-schema.md`)? Größe und Ausschnitt (`photo.focus`) nach Regel `cover.photo-crop` in `references/template.md`; den Ausschnitt wählt der Agent mit dem Nutzer an der Vorschau.
 - Unterschrift als Bild: gültig und freigegeben?
 
 ### Block 3: Schulbildung
 
 Je Abschluss oder laufendem Bildungsgang: Einrichtung, Ort, offizieller Bildungsgang, Kurzform „Schulform · Profil“ (Ableitung in `references/profile-schema.md`), Abschluss oder Abschlussziel, Zeitraum, ob der Abschluss noch aussteht. Klassenbezeichnungen sind kein Bildungsgang.
 
-Grundschulen: Liegt ein weiterführender Abschluss vor (z. B. Mittlere Reife), bleiben Grundschulen standardmäßig aus dem Lebenslauf. Der Agent schlägt das vor und lässt es bestätigen; die Antwort steht als `show_in_cv: false` am Eintrag, der Eintrag bleibt im Profil. Ohne weiterführenden Abschluss bleibt der Standard `true`.
+Grundschulen: Der Agent schlägt vor, sie aus dem Lebenslauf zu lassen, und lässt das bestätigen (Regel `education.primary-school` in `references/profile-schema.md`).
 
 ### Block 4: Werdegang
 
@@ -71,9 +71,9 @@ Je Station: Art (Praktikum, Anstellung mit Vollzeit/Teilzeit, Ehrenamt, Sonstige
 
 Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, Link, echtes Bild mit Freigabe. Nach Entscheidungen und Problemen fragen, nicht nach Werbesätzen.
 
-Pro Projekt fragen (Runde 6): „Gibt es ein eigenes Foto zu diesem Projekt (z. B. Aufbau, eigene Oberfläche)? Dürfen wir es in der Bewerbungsmappe zeigen?“ Wenn ja: Datei nach `assets/photos/project/` legen, Eintrag mit `consent: true` und `valid: true` nach Sichtprüfung. Wenn nein oder unklar: kein Foto, das Projekt bleibt ohne Bild. Keine Fotos fremder Personen, keine generierten Bilder. Der Projektname muss zum Beleg-Titel im Motivationsschreiben passen (`references/profile-schema.md`, Projekte).
+Pro Projekt fragen: „Gibt es ein eigenes Foto zu diesem Projekt (z. B. Aufbau, eigene Oberfläche)? Dürfen wir es in der Bewerbungsmappe zeigen?“ Wenn ja: Datei nach `assets/photos/project/` legen und nach Sichtprüfung eintragen. Wenn nein oder unklar: kein Foto. Was eingetragen wird und wann das Foto erscheint: Regel `project.photo` in `references/profile-schema.md`.
 
-Lebenslauf: Soll ein Projekt im Block „Eigene Projekte“ erscheinen? Das kostet ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag, also meist eine zusätzliche Seitenaufteilung. Wenn ja: Reihenfolge, ein belegter Satz (`cv_summary`, höchstens 160 Zeichen), vier bis sechs Werkzeuge als Chips, Titel des Blocks (`presentation.cv_projects`). Details: `references/profile-schema.md`.
+Lebenslauf: Soll ein Projekt im Block „Eigene Projekte“ erscheinen? Das braucht Platz und meist eine zusätzliche Seitenaufteilung (Regel `cv.projects-block` in `references/template.md`). Wenn ja: Reihenfolge, ein belegter Satz (`cv_summary`), Werkzeuge als Chips, Titel des Blocks (`presentation.cv_projects`); Feldregeln in `references/profile-schema.md`, Projekte.
 
 ### Block 6: Fähigkeiten
 
@@ -106,12 +106,13 @@ Je Nachweis: Titel, Aussteller, Datum, Datei, Art (Zertifikat, Schulzeugnis, Arb
 - Geburtsdaten im Lebenslauf zeigen? (`presentation.show_birth_data`, Standard nein)
 - Eigene Projekte im Lebenslauf und Grundschulen im Lebenslauf: siehe Block 5 und Block 3
 
-Nicht erfragt, sondern feste Vorgaben der Vorlage: keine Fußzeile, Seitenzahl im Registerreiter, Skalen statt Prozentwerte, kein Firmenname auf dem Deckblatt, kein Kurzprofil im Lebenslauf, Betreff in gemischter Schreibung, kein Rücksendezeilen-Block, keine Timeline-Linien (`references/template.md`). Wünscht der Nutzer etwas anderes, ist das eine Designänderung an der Skill-Vorlage, kein Profilfeld.
+Nicht erfragt werden die festen Vorgaben der Vorlage (Regel `design.fixed` in `references/template.md` und das Designsystem dort, z. B. keine Fußzeile, Skalen statt Prozentwerte, kein Firmenname auf dem Deckblatt). Wünscht der Nutzer etwas anderes, ist das eine Designänderung an den Quellen der Vorlage (`references/tencil.md`), kein Profilfeld.
 
-Die Aufteilung des Lebenslaufs auf Seiten (`presentation.cv_layout`) wählt der Agent nach der Regel in `references/template.md`; der Nutzer sieht das Ergebnis in der Profilvorlage.
+Die Aufteilung des Lebenslaufs auf Seiten (`presentation.cv_layout`) wählt der Agent nach Regel `cv.layout` in `references/template.md`; der Nutzer sieht das Ergebnis in der Profilvorlage.
 
 ## Gesprächsregeln
 
+<!-- rule: interview.conduct -->
 - Nicht nach bereits bestätigten Angaben fragen.
 - Widersprüche genau einmal ansprechen und die Entscheidung mit Quelle speichern.
 - Zusammenfassen und bestätigen lassen; erst dann ins Profil schreiben.

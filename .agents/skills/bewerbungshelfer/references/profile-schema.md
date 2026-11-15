@@ -9,23 +9,24 @@ Startpunkte: `assets/templates/profile.json` und `profile.md`. Alles bleibt giti
 
 ## Grundsätze
 
+<!-- rule: profile.principles -->
 - Keine Angabe ohne Quelle oder ausdrückliche Bestätigung. Quellen stehen in `sources`, Einträge verweisen über `source_ids`.
 - Status je Angabe: `confirmed`, `inferred`, `open`, `conflict`. Listeneinträge (Bildung, Erfahrung, Projekte, Fähigkeiten, Nachweise) nutzen `source_status`; die Blöcke `person`, `goal`, `motivation`, `voice` nutzen `field_status` mit einem Eintrag je ausgefülltem Feld.
 - `inferred` ist eine vom Nutzer freigegebene Näherung, keine überprüfte Tatsache.
 - Praktikum, Anstellung, Schulbildung und Projekt werden nie vermischt.
 - Defekte Dateien werden nicht eingebunden.
 - `profile_status: "confirmed"` nur nach Bestätigung durch den Nutzer und ohne offenen Punkt mit `severity: "blocking"` oder Eintrag mit `conflict`.
-- Pfade zu Dateien sind repo-relativ (`profile/<name>/assets/…`). Das Build-Skript löst jeden Pfad auf (inklusive `..` und Symlinks) und verlangt, dass er unter `profile/<name>/assets/` des gewählten Profils liegt; absolute Pfade außerhalb, `..`-Ausbrüche und Symlinks aus dem Profil heraus brechen mit dem betroffenen Profilfeld ab (`person.photo.file`, `person.signature.file`, `evidence[<id>].file`, `projects[<id>].images[n].file`). Auch `validate` prüft das. In die Mappe kopierte Bilder behalten ihren Dateinamen in `application/assets/`; zwei verschiedene Dateien mit gleichem Namen aus verschiedenen Ordnern sind ein Fehler (eine umbenennen).
+- Pfade zu Dateien sind repo-relativ (`profile/<name>/assets/…`). Das Build-Skript löst jeden Pfad auf (inklusive `..` und Symlinks) und verlangt, dass er unter `profile/<name>/assets/` des gewählten Profils liegt; absolute Pfade außerhalb, `..`-Ausbrüche und Symlinks aus dem Profil heraus brechen mit dem betroffenen Profilfeld ab (`person.photo.file`, `person.signature.file`, `evidence[<id>].file`, `projects[<id>].images[n].file`). Auch `validate` prüft das. In die Mappe kopierte Bilder behalten ihren Dateinamen in `application/assets/`; zwei verschiedene Dateien mit gleichem Namen aus verschiedenen Ordnern sind ein Fehler (eine umbenennen). <!-- rule: profile.asset-paths -->
 
 ## Person
 
-Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckblatt, Schwellen in `references/template.md`), `salutation` (Anrede im eigenen Absender: `Herr`, `Frau` oder leer), Anschrift, Telefon, E-Mail.
+Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckblatt, Regel `cover.name-size` in `references/template.md`), `salutation` (Anrede im eigenen Absender: `Herr`, `Frau` oder leer), Anschrift, Telefon, E-Mail.
 
-- Straße ausgeschrieben mit Hausnummer („Musterstraße 6“), PLZ und Ort getrennt. Die Mappe setzt Straße und „PLZ Ort“ zweizeilig ohne Komma.
+- Anschrift (`person.address`): Straße mit Hausnummer, PLZ und Ort in getrennten Feldern; Schreibweise nach Regel `address.format` in `references/template.md`.
 - Telefon speichern, wie es erscheinen soll („+49 …“); E-Mail ohne Zusatz.
-- Geburtsdatum (Anzeige „TT.MM.JJJJ“) und -ort sind optional und erscheinen nur bei `presentation.show_birth_data: true`. Der Ort steht in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land („Ort, Land“, z. B. „Krakau, Polen“). Der Lebenslauf trennt am letzten Komma: Ort und Land stehen untereinander, ohne Komma (Herkunft in der ersten Zeile der rechten Spalte). Ohne Komma bleibt der Ort einzeilig.
-- `driving_license` (optional): Klasse als Text mit Präfix („Klasse B“). Der Lebenslauf zeigt „Führerschein Klasse B“ mit `i-car` in der Datenbox, nach den Geburtsdaten; leer oder fehlend = keine Zeile.
-- `photo`: nur gültig, wenn die Datei lesbar ist, zum Nutzer gehört, `consent: true` gesetzt und ein Zuschnitt gewählt ist. `focus` steuert den Ausschnitt im 4:5-Rahmen (`x`, `y` als Prozent, `zoom` bis ca. 1,2). Leere oder defekte Datei: `valid: false` und offener Punkt.
+- Geburtsdatum (Anzeige „TT.MM.JJJJ“) und -ort sind optional und erscheinen nur bei `presentation.show_birth_data: true`. Der Ort steht in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land („Ort, Land“, z. B. „Krakau, Polen“). Der Lebenslauf trennt am letzten Komma: Ort und Land stehen untereinander, ohne Komma. Ohne Komma bleibt der Ort einzeilig. <!-- rule: person.birth-place -->
+- `driving_license` (optional): Klasse als Text mit Präfix („Klasse B“). Der Lebenslauf zeigt „Führerschein Klasse B“; leer oder fehlend = keine Zeile.
+- `photo`: nur gültig, wenn die Datei lesbar ist, zum Nutzer gehört, `consent: true` gesetzt und ein Zuschnitt gewählt ist. `focus` steuert den Ausschnitt (`x`, `y` als Prozent, `zoom`); Werte nach Regel `cover.photo-crop` in `references/template.md`. Leere oder defekte Datei: `valid: false` und offener Punkt. <!-- rule: person.photo -->
 - `signature`: Bild der Unterschrift mit `valid` und `consent`. Nur dann im Anschreiben.
 
 ## Ziel
@@ -48,7 +49,7 @@ Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckbl
 Einrichtung, Ort, Land, offizieller Bildungsgang (`program`), Kurzform für den Lebenslauf (`program_short`), Abschluss (`qualification`), Zeitraum, `expected: true` bei ausstehendem Abschluss (Anzeige „Abschluss: …, voraussichtlich MM/JJJJ“), optional Details (erscheinen nicht in der Mappe). Ort im Ausland erscheint als „Ort (Land)“.
 
 - `program_short` leitet der Agent aus `program` ab: „Schulform · Profil“, ohne Zusätze wie „zur Fachschulreife führende“ oder „gewerblich-technischer Bereich“ (z. B. „Zweijährige Berufsfachschule · Profil Metalltechnik“). Ohne Profil steht nur die Schulform; fehlt `program_short`, erscheint `program`. Klassen und Zeugnisdetails gehören nicht in den Lebenslauf.
-- `show_in_cv` (optional, Standard `true`): `false` blendet den Eintrag im Lebenslauf aus, er bleibt im Profil. Gilt für Grundschulen, sobald ein weiterführender Abschluss (z. B. Mittlere Reife) vorliegt: der Agent schlägt das vor, der Nutzer bestätigt (`references/interview.md`, Block 3).
+- `show_in_cv` (optional, Standard `true`): `false` blendet den Eintrag im Lebenslauf aus, er bleibt im Profil. Gilt für Grundschulen, sobald ein weiterführender Abschluss (z. B. Mittlere Reife) vorliegt: der Agent schlägt das vor, der Nutzer bestätigt; ohne weiterführenden Abschluss bleibt der Standard. <!-- rule: education.primary-school -->
 - Reihenfolge im Lebenslauf: neueste zuerst nach Beginn; das Build-Skript sortiert so.
 
 ## Erfahrung
@@ -61,7 +62,8 @@ Aufgaben: zwei bis drei kurze Satzglieder ohne Punkt (Infinitiv oder Nominalstil
 
 Name, Zeitraum, Ziel, eigene Rolle, Werkzeuge, Ergebnis, optional Link, nur echte Bilder mit `consent` und `valid`. Projekte liefern Stoff für die Briefe und die Belege-Spalte im Motivationsschreiben.
 
-**Projektfotos (Runde 6, feste Regel):**
+<!-- rule: project.photo -->
+**Projektfotos:**
 
 - Datei unter `profile/<name>/assets/photos/project/` (repo-relativ `profile/<name>/assets/photos/project/…`), eingetragen in `projects[].images[]` mit `file`, `consent: true` (Nutzer hat zugestimmt) und `valid: true` (Datei lesbar, eigenes Bild).
 - Zuordnung: Ein Beleg im Motivationsschreiben bekommt das Projektfoto, wenn sein Titel (`- <icon> | <Titel> | …`) gleich `projects[].name` ist (ohne Groß-/Kleinschreibung). Es wird das erste Bild mit `consent` und `valid` gezeigt, 4:3 unter dem Belegtext.
@@ -76,7 +78,7 @@ Optional erscheinen ausgewählte Projekte im Lebenslauf-Block „Eigene Projekte
 - `chips`: Werkzeuge als Technik-Chips (ca. 4–6, Format wie bei Fähigkeiten), nur Werkzeuge aus `tools`; fehlt es, werden `tools` als Text-Chips gezeigt
 - Titel und Icon des Blocks: `presentation.cv_projects` (`title`, `icon`), Standard „Eigene Projekte“ mit `i-layers`
 
-Nur mit dem Nutzer abgestimmte Projekte zeigen; der Block braucht ca. 12 mm plus ca. 18–20 mm je Eintrag.
+Nur mit dem Nutzer abgestimmte Projekte zeigen. Platzbedarf und Zahl der Einträge: Regel `cv.projects-block` in `references/template.md`.
 
 ## Fähigkeiten
 
@@ -88,10 +90,11 @@ Jedes Item:
 - optional `label`, `note`, `chips`:
   - `label`: kurze Kategorie als Zeilenname im Lebenslauf (ein bis zwei Wörter, höchstens ca. 16 Zeichen, sonst bricht die Zeile um), z. B. „Frontend“, „Tools“; ohne Angabe gilt `name`.
   - `note`: kleiner Zusatz unter dem Zeilennamen. Bei `level: learning` setzt das Build-Skript ohne Angabe „Lernstand“ (leerer String unterdrückt es); sonst nur ein knapper Beleg wie „eigene Projekte“. Bei `future` nie ein Zusatz.
-  - `chips`: Technik-Chips mit `name`, optional `logo` (`dv-…` Devicon oder `si-…` Simple Icons, Liste in `references/template.md`) oder `icon` (Linien-Icon `i-…`). Reihenfolge wie genannt, höchstens ca. 6 je Zeile. Ohne `chips` bildet das Build-Skript Chips aus `evidence`; deshalb enthält `evidence` nur Technologien. Ein vorhandenes Logo ist kein Grund, eine Technik aufzunehmen. Welches Symbol zu welchem Begriff gehört, steht in `assets/icons/README.md` unter „Zuordnung Begriff → Symbol“.
+  - `chips`: Technik-Chips mit `name`, optional `logo` (`dv-…` Devicon oder `si-…` Simple Icons) oder `icon` (Linien-Icon `i-…`); verfügbare Ids: Regel `icons.list` in `references/template.md`. Reihenfolge wie genannt, höchstens ca. 6 je Zeile. Ohne `chips` bildet das Build-Skript Chips aus `evidence`; deshalb enthält `evidence` nur Technologien. Ein vorhandenes Logo ist kein Grund, eine Technik aufzunehmen. Welches Symbol zu welchem Begriff gehört: Regel `icons.mapping` in `assets/icons/README.md`.
 - Eine Zeile = ein Thema mit genau einem Niveau; mehrere Technologien gleichen Niveaus teilen sich die Zeile und die Skala.
-- Gruppen: zwei bis vier, Name und Icon aus der Themenlage, z. B. „Systeme“ (`i-monitor`), „Netzwerk“ (`i-network`), „Entwicklung“ (`i-code`); weitere Icons stehen in `references/template.md`. Bei „Entwicklung“ trennen die Zeilenbezeichnungen Frontend, Backend und Mobile.
+- Gruppen: zwei bis vier, Name und Icon aus der Themenlage, z. B. „Systeme“ (`i-monitor`), „Netzwerk“ (`i-network`), „Entwicklung“ (`i-code`). Bei „Entwicklung“ trennen die Zeilenbezeichnungen Frontend, Backend und Mobile.
 
+<!-- rule: skills.level-scale -->
 Kopplung von Niveau und Skala (Schema):
 
 | `level` | Bedeutung | `scale` |
@@ -114,19 +117,19 @@ Die Mappe zeigt die Skala mit der Legende 1 Lernwunsch · 2 Grundkenntnisse · 3
 `portfolio` enthält freigegebene Texte der stabilen Seiten:
 
 - `cover_role`: Berufsbezeichnung auf dem Deckblatt, eine Zeile je Eintrag. Ist sie länger als ca. 18 Zeichen, bricht der Agent vor der Fachrichtung um (`["Fachinformatiker", "für Systemintegration"]`); sonst eine Zeile. Maximal drei Zeilen.
-- `cover_bio`: Kurzprofil in der Ich-Form, zwei bis drei natürliche Sätze (aktueller Bildungsweg, Zugang zum Beruf, Ziel), nur belegte Fakten aus dem Profil, keine Floskeln. Das Alter nur als exakte Zahl und nur auf Wunsch, nie als Näherung („bald 21“). Der Agent schlägt den Text vor, der Nutzer gibt ihn frei; er steht nur auf dem Deckblatt, nicht im Lebenslauf.
+- `cover_bio`: Kurzprofil in der Ich-Form, zwei bis drei natürliche Sätze (aktueller Bildungsweg, Zugang zum Beruf, Ziel), nur belegte Fakten aus dem Profil, keine Floskeln, Alter und Zeiträume wie in den Briefen (Regel `letters.voice` in `references/writing.md`). Der Agent schlägt den Text vor, der Nutzer gibt ihn frei; er steht nur auf dem Deckblatt, nicht im Lebenslauf.
 - optional `cover_start` (sonst „Ausbildung ab <Monat Jahr>“ aus `goal.start`) und `cv_goal` (sonst „Ausbildungsziel: <Beruf>“, nie ein noch nicht erreichtes Berufsbild unter dem Namen). Bei `goal.type` `jobs` oder `internships` beide Texte ausdrücklich setzen, die Standardtexte sprechen von Ausbildung.
 
 Fehlt ein Text, setzt das Build-Skript einen Platzhalter, den die QA meldet.
 
 ## Darstellung
 
-`presentation` speichert wiederkehrende Entscheidungen. Feste Vorgaben (Konstanten im Schema, nicht erfragt) und frei wählbare Werte:
+`presentation` speichert wiederkehrende Entscheidungen. Feste Vorgaben (Konstanten im Schema, nicht erfragt; Regel `design.fixed` in `references/template.md`) und frei wählbare Werte:
 
 - `footer: "none"` (keine Fußzeile; Seitenzahl im Registerreiter)
 - `cover_company_name: false`, `skill_display: "bars"`, `timeline_connectors: false`, `page_number_style: "plain_without_total"`
 - `show_birth_data`
-- `cv_layout`: `pages` (Blöcke je A4-Seite in Lesereihenfolge `experience`, `education`, `skills`, `languages`; optional `projects` irgendwo nach `experience`) und `compact` (`true` für alle Lebenslaufseiten oder eine Liste je Seite, z. B. `[false, true]`). Standard ist eine Seite mit `experience`, `education`, `skills`, `languages`; läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben, Reihenfolge beibehalten (`references/template.md`, Lebenslauf). Das Build-Skript warnt, wenn Sprachen vor Schulbildung oder Fähigkeiten stehen.
+- `cv_layout`: `pages` (Blöcke je A4-Seite in Lesereihenfolge `experience`, `education`, `skills`, `languages`; optional `projects` irgendwo nach `experience`) und `compact` (`true` für alle Lebenslaufseiten oder eine Liste je Seite, z. B. `[false, true]`). Die Aufteilung wählt der Agent nach Regel `cv.layout` in `references/template.md`. Das Build-Skript warnt, wenn Sprachen vor Schulbildung oder Fähigkeiten stehen.
 - `cv_projects` (optional): `title` und `icon` des Blocks „Eigene Projekte“.
 - `icons`: ohne Wirkung (veraltet); Icons stehen je Gruppe (`icon`) und je Chip.
 

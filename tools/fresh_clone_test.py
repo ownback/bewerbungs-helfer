@@ -12,10 +12,11 @@ Ablauf:
      Commit prüfen.
   2. profile/<name>/ wird in den Klon kopiert (ohne Angabe: das einzige Profil).
   3. Im Klon laufen, mit „python3 -I“ (keine Pakete des Nutzers, kein PYTHONPATH):
-     check_repo.py all · build_mappe.py master --check · validate · profile-template --qa · application --qa für
+     check_repo.py mit allen Prüfungen außer pins (die Warteschlange unter .tmp/pins/ gehört zum Arbeitsordner,
+     nicht zum Klon) · build_mappe.py master --check · validate · profile-template --qa · application --qa für
      jede Stelle, die im Arbeitsordner eine gebaute Mappe hat.
   4. Verglichen wird mit dem Arbeitsordner: Ausgabe von validate gleich; jede HTML-Datei Byte für Byte gleich;
-     HTML-Seiten = A4-Seiten; Seitenbilder (50 dpi) ohne Abweichung.
+     HTML-Seiten = A4-Seiten; Seitenbilder ohne Abweichung.
 
 Exit 0, wenn alles übereinstimmt, sonst 1. Der Klon wird danach gelöscht (--keep lässt ihn stehen).
 Stufe 2 (Profil aus den Interview-Antworten mit einem Agenten neu aufbauen) ist nicht Teil dieses Skripts.
@@ -33,6 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import build_mappe as bm  # noqa: E402
+import check_repo  # noqa: E402
 
 WORK = ROOT / '.tmp' / 'fresh-clone'
 
@@ -116,8 +118,9 @@ def main(argv: list[str] | None = None) -> int:
         results.append((ok, what, detail))
         print(f'{"ok     " if ok else "FEHLER "} {what}' + (f': {detail}' if detail else ''))
 
-    rc, out = run(clone, 'tools/check_repo.py', 'all')
-    record(rc == 0, 'check_repo.py all', '' if rc == 0 else out.strip().splitlines()[-1])
+    checks = [name for name in check_repo.CHECKS if name != 'pins']
+    rc, out = run(clone, 'tools/check_repo.py', *checks)
+    record(rc == 0, f'check_repo.py {" ".join(checks)}', '' if rc == 0 else out.strip().splitlines()[-1])
     rc, out = run(clone, 'tools/build_mappe.py', 'master', '--check')
     record(rc == 0, 'master --check', '' if rc == 0 else out.strip())
     rc, out = run(clone, 'tools/build_mappe.py', 'validate', prel)

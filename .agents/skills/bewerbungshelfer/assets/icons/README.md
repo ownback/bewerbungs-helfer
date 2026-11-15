@@ -19,11 +19,12 @@ Devicon-Pfad: `icons/<name>/<name>-<variante>.svg`, Simple-Icons-Pfad: `icons/<n
 |---|---|---|
 | android, ansible, archlinux, bash, cloudflare, css3, debian, docker, flutter, git, html5, javascript, kubernetes, linux, nixos, nodejs, podman, python, swift, typescript | apple, github, react, rust, windows11 | bluetooth, cisco, homeassistant, nextcloud, nginx, proxmox, tailscale, wireguard, wireshark |
 
-Die Id-Liste mit Verwendungszweck steht in `references/template.md` (Abschnitt Icons und Logos).
+Die Id-Liste mit Verwendungszweck: Regel `icons.list` in `references/template.md`.
 
 ## Zuordnung Begriff → Symbol
 
-Welcher Chip welches Symbol bekommt, steht hier, damit ein frischer Durchlauf dieselben Symbole wählt. Gilt für `skills.groups[].items[].chips[]` im Profil (`references/profile-schema.md`, Fähigkeiten). Die Liste der Logo-Ids steht in `references/template.md`.
+<!-- rule: icons.mapping -->
+Welcher Chip welches Symbol bekommt, steht hier, damit ein frischer Durchlauf dieselben Symbole wählt. Gilt für `skills.groups[].items[].chips[]` im Profil (`references/profile-schema.md`, Fähigkeiten).
 
 | Begriff (Chip-Name) | Feld im Chip | Symbol | Hinweis |
 |---|---|---|---|

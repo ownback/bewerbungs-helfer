@@ -1,9 +1,8 @@
 # Jobsuche bei der Bundesagentur für Arbeit
 
-Die BA-Jobsuche ist die einzige Jobquelle. Der **Hauptagent** arbeitet im Browser des Harness auf der öffentlichen Website: klicken, lesen, Text übernehmen. Keine Scraping-Skripte, keine internen Endpunkte, keine Umgehung von Anmeldung oder Captcha, keine Massenabfragen.
+Die BA-Jobsuche ist die einzige Jobquelle (Regel `hard.source` in `CLAUDE.md`). Der **Hauptagent** arbeitet im Browser des Harness auf der öffentlichen Website: klicken, lesen, Text übernehmen. Keine internen Endpunkte, keine Umgehung von Anmeldung oder Captcha, keine Massenabfragen. Name, Kontaktdaten, Geburtsdaten, Lebenslauf und Nachweise werden nie in die Suche eingegeben.
 
-An die Suche gehen nur Beruf, Ort und Umkreis. Name, Kontaktdaten, Geburtsdaten, Lebenslauf und Nachweise werden nie eingegeben.
-
+<!-- rule: capture.verbatim -->
 Werkzeuge, die Seiten nur zusammenfassen (z. B. WebFetch), liefern keinen wörtlichen Text. `ba_scrape.md`, `requirements[].evidence` und `company_facts[].evidence` müssen wörtlich sein, also aus dem Seiteninhalt im Browser kopiert.
 
 Die Selektoren unten stammen von der Website im November 2026. Wenn sich die Seite ändert, passt der Agent seinen Weg an und meldet die Abweichung.
@@ -41,17 +40,18 @@ Beispiel-URL: `/jobsuche/suche?suchbereich=ausbildung&was=…&wo=…&umkreis=25`
 
 Dem Nutzer eine kurze Liste zeigen: Titel, Firma, Ort, Entfernung (falls angezeigt), Beginn, Veröffentlichung, Link. Höchstens etwa zehn Treffer auf einmal. Der Nutzer wählt eine oder mehrere Stellen.
 
-Vor dem Erfassen jede gewählte Stelle gegen das Ledger prüfen, nach dem Erfassen mit `check-duplicate` (`references/applications.md`, Duplikate). Bei `same_posting` den Nutzer warnen und fragen, ob trotzdem weiter.
+Vor dem Erfassen jede gewählte Stelle gegen das Ledger prüfen, nach dem Erfassen mit `check-duplicate` (Regel `jobs.duplicate` in `references/applications.md`). Bei `same_posting` den Nutzer warnen und fragen, ob trotzdem weiter.
 
+<!-- rule: jobs.filter -->
 Bei vielen Treffern (mehrere Suchorte, Auswahl „alle“) vor dem Erfassen filtern und die Ausschlüsse dem Nutzer mit Grund zeigen:
 
 - anderer Beruf oder andere Fachrichtung im Titel; Titel ohne Fachrichtung nur nach Rückfrage
 - Beginn nicht im Zieljahr (`goal.start`), auch „ab sofort“
 - geforderter Schulabschluss über dem Profil (z. B. Abitur/Fachhochschulreife bei Mittlerer Reife): nach Rückfrage ausschließen; Anzeigen, die im Text auch den eigenen Abschluss akzeptieren, bleiben
-- Duplikat der Klasse `same_posting` (Definition und Vorgehen: `references/applications.md`, Duplikate), auch mit anderer Referenznummer oder als Partner-Listing
+- Duplikat der Klasse `same_posting` (Regel `jobs.duplicate` in `references/applications.md`), auch mit anderer Referenznummer oder als Partner-Listing
 - abgelaufene Bewerbungsfrist
 
-Ausgeschlossene Stellen werden nicht gelöscht. Schon erfasste Stellen sortiert `build_mappe.py drop <stellenordner> --reason "<Grund>"` aus (`references/applications.md`, Aussortieren); der Ordner bleibt im Profil unter `applications/dropped/`, der Grund steht im Ledger. Anzeigen ohne BA-Kontaktblock (nur Link zu Partnerseiten wie Studyflix, ausbildung.de, finest-jobs oder zur Karriereseite) bleiben in der Auswahl: Bewerbung dann über das Portal.
+Ausgeschlossene Stellen werden nicht gelöscht; schon erfasste sortiert `build_mappe.py drop <stellenordner> --reason "<Grund>"` aus (Regel `jobs.drop` in `references/applications.md`). Anzeigen ohne BA-Kontaktblock (nur Link zu Partnerseiten wie Studyflix, ausbildung.de, finest-jobs oder zur Karriereseite) bleiben in der Auswahl: Bewerbung dann über das Portal.
 
 ## 5. Rang und Ordner
 
@@ -59,7 +59,8 @@ Die gewählten Stellen nach Entfernung vom Suchort sortieren (01 = am nächsten)
 
 ## 6. Anzeige erfassen
 
-Alle gewählten Stellen **nacheinander im selben Tab** erfassen, nicht parallel: Das Captcha braucht den Nutzer, und eine Lösung gilt nur in dem Tab, in dem sie eingegeben wurde. Pro Anzeige in einem Besuch Kopf, Text und Kontakt übernehmen.
+<!-- rule: capture.one-tab -->
+Alle gewählten Stellen **nacheinander im selben Tab** erfassen, nicht parallel und nicht durch Subagenten: Das Captcha braucht den Nutzer, und eine Lösung gilt nur in dem Tab, in dem sie eingegeben wurde. Pro Anzeige in einem Besuch Kopf, Text und Kontakt übernehmen, dann im selben Tab zur nächsten Anzeige navigieren.
 
 ### Kopfbereich
 
@@ -88,21 +89,23 @@ Alle gewählten Stellen **nacheinander im selben Tab** erfassen, nicht parallel:
 
 Firma, Ansprechpartner (Anrede, Name), Abteilung, Straße, Hausnummer, PLZ, Ort, Telefon, E-Mail, Bewerbungsweg (E-Mail, Post oder Arbeitgeber-Website `#detail-bewerbung-url`) und „Sonstige Angaben zur Bewerbung“ (`#detail-bewerbung-anlagen`, geforderte Unterlagen) → `contact`, `application`.
 
+<!-- rule: capture.captcha -->
 Die Kontaktdaten liegen hinter einem Captcha (`#kontaktdaten-captcha-*`):
 
 1. Zum Captcha scrollen.
 2. Den Nutzer bitten: „Bitte löse im Browser das Captcha bei <Firma>. Sag Bescheid, wenn die Kontaktdaten sichtbar sind.“
 3. Erst danach weiterlesen und übernehmen. Das Captcha nie selbst lösen oder umgehen.
 
-Erfahrung (November 2026): Eine Lösung gilt nur im Tab, in dem sie eingegeben wurde, und hält dort für ca. 23–27 Anzeigen; danach erscheint das Captcha erneut. Andere Tabs und Subagenten sehen weiter das Captcha. Deshalb: Captcha einmal lösen lassen, dann im selben Tab von Anzeige zu Anzeige navigieren und jede vollständig erfassen; erscheint das Captcha erneut, den Nutzer wieder bitten (bei 60 Anzeigen ca. drei Mal). Keine Subagenten für die Erfassung, sie sehen nur das Captcha.
+Erfahrung (November 2026): Eine Lösung hält in ihrem Tab für ca. 23–27 Anzeigen; danach erscheint das Captcha erneut, und der Nutzer wird wieder gebeten (bei 60 Anzeigen ca. drei Mal). Andere Tabs und Subagenten sehen weiter das Captcha.
 
 Anzeigen ohne Kontaktblock oder mit Bewerbungsweg „Über Internetseite des Arbeitgebers“: die verlinkte Portal-/Partnerseite öffnen (höchstens zwei Klicks bis zur konkreten Anzeige, keine Formulare ausfüllen, kein Login) und wörtlich nach `job_information/portal_page.md` übernehmen (URL, Abrufdatum, Anzeigentext, Kontakt, Bewerbungsweg, Unterlagen). Fehler wie tote Links, Links auf andere Stellen oder geschlossene Stellen in `application.notes` vermerken.
 
+<!-- rule: capture.contact -->
 Regeln für den Kontakt:
 
 - Name, Anrede und Rolle nur übernehmen, wenn sie auf der Seite stehen. `contact.source: "ba_captcha"` bzw. `"ba_page"`.
 - Allgemeine Bewerbungsadresse gehört nach `application.email`, nicht in den persönlichen Kontakt.
-- Straße ausgeschrieben mit Hausnummer in `contact.street` („Musterstraße 3“), auch wenn die Anzeige „Str.“ schreibt; in `ba_scrape.md` bleibt die Originalschreibweise.
+- Straße mit Hausnummer in `contact.street` nach Regel `address.format` in `references/template.md`, auch wenn die Anzeige „Str.“ schreibt; in `ba_scrape.md` bleibt die Originalschreibweise.
 - `confidence: "verified"` nur mit Name und Quell-URL, `partial` nur mit Quell-URL, sonst `unknown`.
 - Anrede in `contact.salutation`: „Sehr geehrte Frau …“ / „Sehr geehrter Herr …“ nur mit belegtem Namen und belegter Anrede; sonst „Sehr geehrte Damen und Herren“.
 - Fehlt ein Ansprechpartner, zuerst die Karriereseite der Firma prüfen (`company_website`). Eine allgemeine Websuche nach Kontaktdaten nur als letzter Ausweg (`web_search`), mit Quelle, und dem Nutzer sagen.
@@ -110,11 +113,12 @@ Regeln für den Kontakt:
 
 ### Kurzrecherche zur Firma
 
-Erlaubt ist eine kurze Websuche zur Firma (Branche, Größe, Produkte, Ausbildung). Jede Aussage, die in einen Brief soll, kommt nach `company_facts[]` mit wörtlichem Beleg, Quell-URL, Abrufdatum und `source_kind`. Briefe verwenden nur Aussagen aus `company_facts`. Die BA bleibt die einzige Quelle für Stellen.
+<!-- rule: capture.company-facts -->
+Erlaubt ist eine kurze Websuche zur Firma (Branche, Größe, Produkte, Ausbildung). Jede Aussage, die in einen Brief soll, kommt nach `company_facts[]` mit wörtlichem Beleg, Quell-URL, Abrufdatum und `source_kind`. Die BA bleibt die einzige Quelle für Stellen.
 
 ### Entfernung zum Wohnort
 
-`commute`: Wohnort aus dem Profil, Entfernung zum Arbeitsort (Quelle angeben, z. B. Trefferliste, wenn Such- und Wohnort gleich sind), `over_50_km`. Der Umzugssatz der E-Mail hängt am Suchort, nicht an der Entfernung (`references/writing.md`).
+`commute`: Wohnort aus dem Profil, Entfernung zum Arbeitsort (Quelle angeben, z. B. Trefferliste, wenn Such- und Wohnort gleich sind), `over_50_km`. Für den Umzugssatz der E-Mail zählt diese Entfernung nicht (Regel `email.relocation` in `references/writing.md`).
 
 ## 7. Speichern
 
@@ -126,6 +130,7 @@ Erlaubt ist eine kurze Websuche zur Firma (Branche, Größe, Produkte, Ausbildun
 
 ## 8. Offene Punkte
 
+<!-- rule: jobs.open-questions -->
 Jeder Eintrag in `open_questions` hat `question`, `severity` (`blocking`, `non_blocking`, `research_needed`), optional `impact` und einen `status`:
 
 | `status` | Bedeutung | Pflichtfelder |
