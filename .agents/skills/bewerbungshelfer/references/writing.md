@@ -61,7 +61,7 @@ Umfang: bis ca. 300 Wörter (`limits:motivation.words.normal`), mit `dichte: dic
 ## Humanizer
 
 <!-- rule: letters.humanizer -->
-Nach dem Entwurf den Skill `humanizer` auf `anschreiben.md`, `motivationsschreiben.md` und `email.md` anwenden (in Claude Code ggf. als `humanizer:humanizer`), nicht auf `kontaktdaten.md`. Der Skill darf Formulierungen ändern, aber keine Fakten hinzufügen; danach erneut gegen Profil und Anzeige prüfen.
+Nach dem Entwurf den Skill `humanizer` (blader/humanizer, Version 3.1.0, MIT; installiert unter `~/.agents/skills/humanizer/`) im Standardmodus „humanize“ auf `anschreiben.md`, `motivationsschreiben.md` und `email.md` anwenden, nicht auf `kontaktdaten.md`. Nicht das gleichnamige Claude-Code-Plugin `humanizer:humanizer` verwenden: Der Nutzer hat am 2026-11-15 beide an demselben deutschen Probetext verglichen und diese Fassung gewählt (schlichter, fügt keine Schlussfolgerungen hinzu). Fehlt der Skill, ihn aus `github:blader/humanizer` in dieser Version nach `~/.agents/skills/humanizer/` installieren oder den Nutzer fragen. Im Bericht der Stelle Name und Version des verwendeten Humanizers nennen. Der Skill darf Formulierungen ändern, aber keine Fakten hinzufügen; danach erneut gegen Profil und Anzeige prüfen.
 
 Ist der Skill im Harness nicht verfügbar, das dem Nutzer sagen und seine Grundsätze selbst anwenden: keine aufgeblähte Bedeutung, keine Werbesprache, keine vagen Zuschreibungen, keine Dreierketten und Gegensatzpaare, keine Gedankenstrich-Häufung, keine Synonymwechsel um ihrer selbst willen, keine generischen Schlusssätze, keine Füllwörter. Lieber ein schlichter, genauer Satz.
 
