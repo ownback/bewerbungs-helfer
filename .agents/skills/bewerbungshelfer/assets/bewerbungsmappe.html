@@ -9,8 +9,8 @@
        Hand bearbeiten: Aussehen in assets/mappe/ ändern, Inhalt in Profil, job.json und den Texten, dann neu bauen.
        Schrift: Inter 4.1, SIL Open Font License 1.1, Copyright (c) 2016 The Inter Project Authors
        (https://github.com/rsms/inter). Logos: Devicon 2.17.0 (dv-…, MIT, Copyright (c) 2015 konpa) und Simple Icons
-       15.0.0 (si-…, CC0 1.0); Linien-Icons i-cable, i-router, i-shield, i-waypoints: Lucide 0.469.0 (ISC, Teile
-       Feather, MIT). Lizenztexte im Repository: assets/fonts/OFL.txt, assets/icons/LICENSES.md. Die Marken gehören
+       15.0.0 (si-…, CC0 1.0); Linien-Icons i-cable, i-router, i-shield, i-waypoints, i-ethernet: Lucide 0.469.0
+       (ISC, Teile Feather, MIT). Lizenztexte im Repository: assets/fonts/OFL.txt, assets/icons/LICENSES.md. Die Marken gehören
        ihren Inhabern; ein Logo steht nur neben dem Namen der Technik und behauptet keine Zugehörigkeit. -->
   <style>
 /* ------------------------------------------------------------------
@@ -22,10 +22,10 @@
    Zwei Ebenen wie bei Apple-Materialien:
    1. Inhaltsebene: weißes Papier, Text, Scans. Nie Glas.
    2. Funktionsebene (Glisse): Deckblatt-Leiste mit Kontakt und Inhalt, Registerreiter mit
-      Seitenzahl, Bildschirmleiste und Seitennavigation. Glas ist druckfest aus Verläufen,
+      Abschnittsname und Seitenzahl, Bildschirmleiste und Seitennavigation. Glas ist druckfest aus Verläufen,
       Innenkante und Haarlinie gebaut; backdrop-filter nur zusätzlich auf dem Bildschirm.
    Registerreiter: Jede Inhaltsseite trägt oben einen Reiter in der Spalte ihres Abschnitts
-   (6 Spalten = 6 Abschnitte, data-section="1…6"); im Reiter steht die Seitenzahl.
+   (6 Spalten = 6 Abschnitte, data-section="1…6"); im Reiter stehen der Name des Abschnitts und die Seitenzahl.
    Eckige Klammern sind Platzhalter und müssen vor der Freigabe ersetzt werden.
    Keine persönlichen Daten, keine Unternehmensnamen, keine externen Ressourcen.
    Schrift: Inter (OFL), statisch und eingebettet (fonts.css, Block <style id="font-inter"> am Ende des Kopfs).
@@ -75,9 +75,11 @@
   /* Typografie: eine Familie (Inter, statisch 400/500/600/700), Hierarchie über Größe und Gewicht.
      Gewichte nur 400, 500, 600, 700 verwenden (andere Werte fallen auf den nächsten Schnitt). */
   --sans: "Inter", "Helvetica Neue", "Segoe UI", "Noto Sans", Arial, sans-serif;
+  --fs-tab: 7pt;                   /* Abschnittsname im Registerreiter */
   --fs-caption: 7.4pt;
   --fs-small: 8.5pt;
   --fs-body: 9.6pt;
+  --fs-letter: 10pt;               /* Brieftext im Anschreiben */
   --fs-h4: 10.2pt;
   --fs-h3: 12pt;
   --fs-lead: 15.5pt;
@@ -213,27 +215,32 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: 0;
 }
 
-/* Registerreiter (Glisse, getönt) mit Seitenzahl: 1, 2, 3 … ohne führende Null und ohne Gesamtzahl. */
+/* Registerreiter (Glisse, getönt): Name des eigenen Abschnitts und Seitenzahl, z. B. „Lebenslauf 3“. Die Zahl
+   schlicht 1, 2, 3 … ohne führende Null und ohne Gesamtzahl. Andere Abschnitte nennt nur das Deckblatt. */
 .folio {
   position: absolute;
   top: 0;
   left: calc(var(--pad-x) + var(--tab, 0) * var(--slot));
   width: calc(var(--slot) - 3mm);
   height: 12.5mm;
-  display: flex;
-  align-items: flex-end;
-  padding: 0 3.2mm 2.4mm;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  align-content: end;
+  gap: 1mm;
+  padding: 0 2.6mm 2.4mm;
   overflow: hidden;
   color: var(--white);
   background: var(--glass-tint-fill);
   border-radius: 0 0 var(--radius-m) var(--radius-m);
   box-shadow: inset 0 -.35mm 0 rgb(255 255 255 / .22), inset .3mm 0 0 rgb(255 255 255 / .08), 0 1.2mm 3mm rgb(11 79 92 / .22);
-  font-size: 10.5pt;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
+.folio-name { font-size: var(--fs-tab); }
+.folio-no { font-size: 10.5pt; font-variant-numeric: tabular-nums; }
 .folio::before {
   content: "";
   position: absolute;
@@ -416,10 +423,11 @@ a { color: inherit; text-decoration: none; }
 .letter-subject.is-caps .subject-kicker { font-size: 7.8pt; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
 .subject-title { display: block; margin-top: 1mm; color: var(--fg); font-size: 16.5pt; font-weight: 700; line-height: 1.2; letter-spacing: var(--track-title); }
 .subject-ref { display: block; margin-top: 1.2mm; color: var(--fg-faint); font-size: var(--fs-caption); }
-.letter-copy { font-size: var(--fs-body); line-height: 1.5; hyphens: auto; text-wrap: pretty; }
+.letter-copy { font-size: var(--fs-letter); line-height: 1.5; hyphens: auto; text-wrap: pretty; }
 .letter-copy p + p { margin-top: 2.4mm; }
 /* Kompaktmodi gelten nur für A4 und Desktop; auf dem Smartphone fließt der Text normal. */
-/* Kompaktmodus für lange Anschreiben (ca. 250–350 Wörter Brieftext): .letter-copy.is-dense.
+/* Der Brieftext steht in 10 pt (--fs-letter) und fasst so ca. 230 Wörter.
+   Kompaktmodus für längere Anschreiben (bis ca. 350 Wörter Brieftext): .letter-copy.is-dense.
    Über ca. 350 Wörtern kürzen statt weiter verkleinern (Schrift bleibt ≥ 9 pt). */
 @media print, screen and (min-width: 861px) {
   .letter-copy.is-dense { font-size: 9pt; line-height: 1.36; }
@@ -435,6 +443,9 @@ a { color: inherit; text-decoration: none; }
 .signature-img { display: block; width: auto; height: 12mm; max-width: 45mm; object-fit: contain; object-position: left center; mix-blend-mode: multiply; }
 .signature-name { color: var(--fg-faint); font-size: var(--fs-small); line-height: 1.4; }
 .signature-name strong { display: block; color: var(--fg); font-size: var(--fs-body); font-weight: 600; }
+/* Abschluss des Lebenslaufs: Ort und Datum, Unterschriftsbild, Name. Steht nach dem letzten Block der letzten Seite. */
+.cv-sign { margin-top: 9mm; }
+.cv-sign-date { margin-bottom: .6mm; color: var(--fg-muted); font-size: var(--fs-small); line-height: 1.4; }
 
 /* ---------- Lebenslauf ---------- */
 .cv-hero {
@@ -466,29 +477,28 @@ a { color: inherit; text-decoration: none; }
 .cv-facts li { display: grid; grid-template-columns: 3.4mm minmax(0, 1fr); gap: 2.6mm; align-items: center; overflow-wrap: anywhere; }
 
 .cv-section + .cv-section, .cv-section + .skills-band, .skills-band + .cv-section { margin-top: 7mm; }
+/* Blocküberschrift: fett, ohne Icon, darunter eine durchgezogene Linie in Textfarbe. */
 .cv-section-head {
-  display: flex;
-  align-items: center;
-  gap: 2.4mm;
-  padding-bottom: 2.4mm;
-  margin-bottom: 1mm;
-  border-bottom: .25mm solid var(--line);
+  padding-bottom: 1.9mm;
+  border-bottom: .25mm solid var(--fg);
   color: var(--fg);
   font-size: var(--fs-h3);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -.01em;
 }
-/* Keine Verbindungslinien: Stationen werden nur durch Abstand und die Datumsspalte geordnet. */
+/* Keine senkrechten Verbindungslinien: Die Datumsspalte ordnet die Stationen, eine Haarlinie trennt zwei Einträge. */
 .timeline-item {
   display: grid;
   grid-template-columns: var(--rail) minmax(0, 1fr);
   gap: 6mm;
-  padding: 3.2mm 0;
+  padding: 2.7mm 0;
 }
+.timeline-item + .timeline-item { border-top: .25mm solid var(--line); }
 .timeline-date { padding-top: .5mm; color: var(--fg-faint); font-size: var(--fs-small); line-height: 1.4; font-variant-numeric: tabular-nums; }
-.timeline-content h4 { color: var(--fg); font-size: var(--fs-h4); font-weight: 600; line-height: 1.3; letter-spacing: -.005em; }
-.timeline-place { color: var(--fg-faint); font-size: var(--fs-small); }
+.timeline-content h4 { color: var(--fg); font-size: var(--fs-h4); font-weight: 600; line-height: 1.3; letter-spacing: -.005em; text-wrap: wrap; }
+/* Ort in derselben Zeile hinter der Organisation, leiser gesetzt. */
+.timeline-place { color: var(--fg-faint); font-size: var(--fs-small); font-weight: 400; letter-spacing: 0; }
 .timeline-role { margin-top: .6mm; color: var(--accent); font-size: var(--fs-small); font-weight: 500; line-height: 1.4; }
 .timeline-text { margin-top: .6mm; color: var(--fg-muted); font-size: var(--fs-small); line-height: 1.5; }
 /* Eigene Projekte / Homelab (optional): gleiche Zeilen wie Erfahrung und Schulbildung
@@ -496,19 +506,20 @@ a { color: inherit; text-decoration: none; }
 .timeline-chips { margin-top: 1.6mm; }
 
 /* Kompaktmodus für sehr volle Lebensläufe: class="page cv-compact" auf einzelnen Lebenslaufseiten
-   (Profil: cv_layout.compact als true für alle oder als Liste je Seite, z. B. [false, true]).
+   (Profil: cv_layout.compact als true für alle oder als Liste je Seite, z. B. [true, false]).
    Erst Abschnitte umverteilen, dann cv-compact auf der volleren Seite; reicht beides nicht, Beschreibungen kürzen. */
 @media print, screen and (min-width: 861px) {
   .cv-compact .cv-hero { margin-bottom: 6mm; }
-  .cv-compact .timeline-item { padding: 1.6mm 0; }
+  .cv-compact .timeline-item { padding: 2mm 0; }
   .cv-compact .cv-section + .cv-section, .cv-compact .cv-section + .skills-band, .cv-compact .skills-band + .cv-section { margin-top: 4.2mm; }
-  .cv-compact .skill-group { padding-top: 1mm; }
-  .cv-compact .skill-row { padding: .55mm 0; }
-  .cv-compact .skill-head { margin-bottom: .4mm; }
+  .cv-compact .skill-group { padding: 1.1mm 0 .9mm; }
+  .cv-compact .skill-row { padding: .35mm 0; }
+  .cv-compact .skill-head { margin-bottom: .3mm; }
   .cv-compact .tech { padding-top: .15mm; padding-bottom: .15mm; }
   .cv-compact .skill-legend { margin-bottom: 2mm; }
   .cv-compact .language { gap: 1mm; padding: 1.8mm 0; }
   .cv-compact .timeline-chips { margin-top: 1.2mm; }
+  .cv-compact .cv-sign { margin-top: 6mm; }
 }
 
 /* Sprachen: eigene, kompakte Zeile mit direkter Niveaubeschriftung. */
@@ -518,24 +529,27 @@ a { color: inherit; text-decoration: none; }
 .language-level { color: var(--fg-faint); font-size: var(--fs-caption); line-height: 1.35; }
 
 /* ---------- Fähigkeiten ---------- */
-/* Gruppen untereinander; jede Zeile: Kategorie · Technik-Chips (mit Devicon-Logo oder als Text) · Skala.
+/* Gruppen untereinander; jede Zeile: Kategorie · Technik-Chips (mit Logo, Linien-Icon oder als Text) · Skala.
    .skills-band.is-four hat keine Wirkung (Gruppen stehen immer untereinander). */
 .skills-band { display: grid; grid-template-columns: minmax(0, 1fr); }
-.skill-group { min-width: 0; padding-top: 2.2mm; }
-.skill-head { display: flex; align-items: center; gap: 2mm; margin-bottom: 1mm; color: var(--fg); font-size: var(--fs-small); font-weight: 600; }
+/* Trennlinien stehen nur zwischen den Gruppen, nicht zwischen den Zeilen einer Gruppe. */
+.skill-group { min-width: 0; padding: 1.8mm 0 1.5mm; }
+.skill-group + .skill-group { border-top: .25mm solid var(--line); }
+.skill-head { display: flex; align-items: center; gap: 2mm; margin-bottom: .7mm; color: var(--fg); font-size: var(--fs-small); font-weight: 600; }
 .skill-row {
   display: grid;
   grid-template-columns: 28mm minmax(0, 1fr) auto;
   gap: 3mm;
   align-items: center;
-  padding: 1.15mm 0;
-  border-top: .25mm solid var(--line);
+  padding: .75mm 0;
 }
 .skill-name { color: var(--fg); font-size: var(--fs-small); line-height: 1.3; }
 .skill-name small { display: block; margin-top: .3mm; color: var(--fg-faint); font-size: var(--fs-caption); line-height: 1.35; }
 /* Bis ca. 6 Chips je Zeile; was nicht passt, bricht ruhig in eine zweite Zeile um (Skala bleibt mittig). */
 .skill-chips { display: flex; flex-wrap: wrap; gap: 1.1mm 1.1mm; min-width: 0; }
-/* Technik-Chip: einfarbiges Logo (Devicon dv-… oder Simple Icons si-…, lokal als <symbol>) oder Linien-Icon, sonst nur Text. */
+/* Technik-Chip: Logo in Markenfarbe (Devicon dv-… oder Simple Icons si-…, lokal als <symbol>; die Farbe steht im
+   Symbol) oder einfarbiges Linien-Icon, sonst nur Text. Der Chip selbst bleibt hell und der Name dunkel: Im
+   Graustufendruck trägt der Name die Information, das Logo ist Beigabe. */
 .tech {
   display: inline-flex;
   align-items: center;
@@ -567,6 +581,7 @@ a { color: inherit; text-decoration: none; }
   grid-template-columns: auto repeat(5, minmax(0, 1fr));
   align-items: start;
   gap: 1.5mm 4mm;
+  margin-top: 2.6mm;
   margin-bottom: 3mm;
   color: var(--fg-faint);
   font-size: var(--fs-small);
@@ -724,7 +739,10 @@ a { color: inherit; text-decoration: none; }
   }
   .icon { width: 15px; height: 15px; }
   .label { font-size: 12px; }
-  .folio { height: 42px; padding: 0 9px 8px; font-size: 15px; border-radius: 0 0 9px 9px; }
+  /* Schmal: Die Registerspalte wäre zu eng für den Namen; der Reiter steht links und ist so breit wie sein Text. */
+  .folio { left: var(--pad-x); width: auto; height: 42px; grid-template-columns: auto auto; gap: 8px; padding: 0 10px 8px; border-radius: 0 0 9px 9px; }
+  .folio-name { font-size: 12px; }
+  .folio-no { font-size: 15px; }
   .section-head { margin-bottom: 26px; }
   .section-head h2 { font-size: 31px; }
   .section-head .continued { font-size: 13px; }
@@ -758,6 +776,8 @@ a { color: inherit; text-decoration: none; }
   .letter-date { margin-top: 22px; font-size: 13px; }
   .subject-kicker { font-size: 14px; }
   .signature-name { font-size: 13px; }
+  .cv-sign { margin-top: 30px; }
+  .cv-sign-date { font-size: 14px; }
   .letter-subject { margin-top: 30px; margin-bottom: 20px; }
   .subject-title { font-size: 22px; }
   .subject-ref { font-size: 12px; }
@@ -837,16 +857,12 @@ a { color: inherit; text-decoration: none; }
       <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></symbol>
       <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
       <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
-      <symbol id="i-graduation" viewBox="0 0 24 24"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></symbol>
-      <symbol id="i-briefcase" viewBox="0 0 24 24"><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><rect width="20" height="14" x="2" y="6" rx="2"/></symbol>
       <symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol>
       <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h8"/><path d="M7 12h10"/><path d="M7 16h6"/></symbol>
       <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></symbol>
       <symbol id="i-badge" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></symbol>
-      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
       <symbol id="i-branch" viewBox="0 0 24 24"><path d="M15 6a9 9 0 0 0-9 9V3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/></symbol>
       <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol>
-      <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></symbol>
       <symbol id="i-building" viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></symbol>
       <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
       <symbol id="i-cake" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></symbol>
@@ -854,7 +870,7 @@ a { color: inherit; text-decoration: none; }
       <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></symbol>
       <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
       <symbol id="i-code" viewBox="0 0 24 24"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></symbol>
-      <symbol id="dv-linux" viewBox="0 0 128 128"><path fill-rule="evenodd" clip-rule="evenodd" d="M113.823 104.595c-1.795-1.478-3.629-2.921-5.308-4.525-1.87-1.785-3.045-3.944-2.789-6.678.147-1.573-.216-2.926-2.113-3.452.446-1.154.864-1.928 1.033-2.753.188-.92.178-1.887.204-2.834.264-9.96-3.334-18.691-8.663-26.835-2.454-3.748-5.017-7.429-7.633-11.066-4.092-5.688-5.559-12.078-5.633-18.981a47.564 47.564 0 00-1.081-9.475C80.527 11.956 77.291 7.233 71.422 4.7c-4.497-1.942-9.152-2.327-13.901-1.084-6.901 1.805-11.074 6.934-10.996 14.088.074 6.885.417 13.779.922 20.648.288 3.893-.312 7.252-2.895 10.34-2.484 2.969-4.706 6.172-6.858 9.397-1.229 1.844-2.317 3.853-3.077 5.931-2.07 5.663-3.973 11.373-7.276 16.5-1.224 1.9-1.363 4.026-.494 6.199.225.563.363 1.429.089 1.882-2.354 3.907-5.011 7.345-10.066 8.095-3.976.591-4.172 1.314-4.051 5.413.1 3.337.061 6.705-.28 10.021-.363 3.555.008 4.521 3.442 5.373 7.924 1.968 15.913 3.647 23.492 6.854 3.227 1.365 6.465.891 9.064-1.763 2.713-2.771 6.141-3.855 9.844-3.859 6.285-.005 12.572.298 18.86.369 1.702.02 2.679.653 3.364 2.199.84 1.893 2.26 3.284 4.445 3.526 4.193.462 8.013-.16 11.19-3.359 3.918-3.948 8.436-7.066 13.615-9.227 1.482-.619 2.878-1.592 4.103-2.648 2.231-1.922 2.113-3.146-.135-5zM62.426 24.12c.758-2.601 2.537-4.289 5.243-4.801 2.276-.43 4.203.688 5.639 3.246 1.546 2.758 2.054 5.64.734 8.658-1.083 2.474-1.591 2.707-4.123 1.868-.474-.157-.937-.343-1.777-.652.708-.594 1.154-1.035 1.664-1.382 1.134-.772 1.452-1.858 1.346-3.148-.139-1.694-1.471-3.194-2.837-3.175-1.225.017-2.262 1.167-2.4 2.915-.086 1.089.095 2.199.173 3.589-3.446-1.023-4.711-3.525-3.662-7.118zm-12.75-2.251c1.274-1.928 3.197-2.314 5.101-1.024 2.029 1.376 3.547 5.256 2.763 7.576-.285.844-1.127 1.5-1.716 2.241l-.604-.374c-.23-1.253-.276-2.585-.757-3.733-.304-.728-1.257-1.184-1.919-1.762-.622.739-1.693 1.443-1.757 2.228-.088 1.084.477 2.28.969 3.331.311.661 1.001 1.145 1.713 1.916l-1.922 1.51c-3.018-2.7-3.915-8.82-1.871-11.909zM87.34 86.075c-.203 2.604-.5 2.713-3.118 3.098-1.859.272-2.359.756-2.453 2.964a101.744 101.744 0 00-.012 7.753c.061 1.77-.537 3.158-1.755 4.393-6.764 6.856-14.845 10.105-24.512 8.926-4.17-.509-6.896-3.047-9.097-6.639.98-.363 1.705-.607 2.412-.894 3.122-1.27 3.706-3.955 1.213-6.277-1.884-1.757-3.986-3.283-6.007-4.892-1.954-1.555-3.934-3.078-5.891-4.629-1.668-1.323-2.305-3.028-2.345-5.188-.094-5.182.972-10.03 3.138-14.747 1.932-4.209 3.429-8.617 5.239-12.885.935-2.202 1.906-4.455 3.278-6.388 1.319-1.854 2.134-3.669 1.988-5.94-.084-1.276-.016-2.562-.016-3.843l.707-.352c1.141.985 2.302 1.949 3.423 2.959 4.045 3.646 7.892 3.813 12.319.67 1.888-1.341 3.93-2.47 5.927-3.652.497-.294 1.092-.423 1.934-.738 2.151 5.066 4.262 10.033 6.375 15 1.072 2.524 1.932 5.167 3.264 7.547 2.671 4.775 4.092 9.813 4.07 15.272-.012 2.83.137 5.67-.081 8.482z"/></symbol>
+      <symbol id="dv-linux" viewBox="0 0 128 128"><g fill="#000000"><path fill-rule="evenodd" clip-rule="evenodd" d="M113.823 104.595c-1.795-1.478-3.629-2.921-5.308-4.525-1.87-1.785-3.045-3.944-2.789-6.678.147-1.573-.216-2.926-2.113-3.452.446-1.154.864-1.928 1.033-2.753.188-.92.178-1.887.204-2.834.264-9.96-3.334-18.691-8.663-26.835-2.454-3.748-5.017-7.429-7.633-11.066-4.092-5.688-5.559-12.078-5.633-18.981a47.564 47.564 0 00-1.081-9.475C80.527 11.956 77.291 7.233 71.422 4.7c-4.497-1.942-9.152-2.327-13.901-1.084-6.901 1.805-11.074 6.934-10.996 14.088.074 6.885.417 13.779.922 20.648.288 3.893-.312 7.252-2.895 10.34-2.484 2.969-4.706 6.172-6.858 9.397-1.229 1.844-2.317 3.853-3.077 5.931-2.07 5.663-3.973 11.373-7.276 16.5-1.224 1.9-1.363 4.026-.494 6.199.225.563.363 1.429.089 1.882-2.354 3.907-5.011 7.345-10.066 8.095-3.976.591-4.172 1.314-4.051 5.413.1 3.337.061 6.705-.28 10.021-.363 3.555.008 4.521 3.442 5.373 7.924 1.968 15.913 3.647 23.492 6.854 3.227 1.365 6.465.891 9.064-1.763 2.713-2.771 6.141-3.855 9.844-3.859 6.285-.005 12.572.298 18.86.369 1.702.02 2.679.653 3.364 2.199.84 1.893 2.26 3.284 4.445 3.526 4.193.462 8.013-.16 11.19-3.359 3.918-3.948 8.436-7.066 13.615-9.227 1.482-.619 2.878-1.592 4.103-2.648 2.231-1.922 2.113-3.146-.135-5zM62.426 24.12c.758-2.601 2.537-4.289 5.243-4.801 2.276-.43 4.203.688 5.639 3.246 1.546 2.758 2.054 5.64.734 8.658-1.083 2.474-1.591 2.707-4.123 1.868-.474-.157-.937-.343-1.777-.652.708-.594 1.154-1.035 1.664-1.382 1.134-.772 1.452-1.858 1.346-3.148-.139-1.694-1.471-3.194-2.837-3.175-1.225.017-2.262 1.167-2.4 2.915-.086 1.089.095 2.199.173 3.589-3.446-1.023-4.711-3.525-3.662-7.118zm-12.75-2.251c1.274-1.928 3.197-2.314 5.101-1.024 2.029 1.376 3.547 5.256 2.763 7.576-.285.844-1.127 1.5-1.716 2.241l-.604-.374c-.23-1.253-.276-2.585-.757-3.733-.304-.728-1.257-1.184-1.919-1.762-.622.739-1.693 1.443-1.757 2.228-.088 1.084.477 2.28.969 3.331.311.661 1.001 1.145 1.713 1.916l-1.922 1.51c-3.018-2.7-3.915-8.82-1.871-11.909zM87.34 86.075c-.203 2.604-.5 2.713-3.118 3.098-1.859.272-2.359.756-2.453 2.964a101.744 101.744 0 00-.012 7.753c.061 1.77-.537 3.158-1.755 4.393-6.764 6.856-14.845 10.105-24.512 8.926-4.17-.509-6.896-3.047-9.097-6.639.98-.363 1.705-.607 2.412-.894 3.122-1.27 3.706-3.955 1.213-6.277-1.884-1.757-3.986-3.283-6.007-4.892-1.954-1.555-3.934-3.078-5.891-4.629-1.668-1.323-2.305-3.028-2.345-5.188-.094-5.182.972-10.03 3.138-14.747 1.932-4.209 3.429-8.617 5.239-12.885.935-2.202 1.906-4.455 3.278-6.388 1.319-1.854 2.134-3.669 1.988-5.94-.084-1.276-.016-2.562-.016-3.843l.707-.352c1.141.985 2.302 1.949 3.423 2.959 4.045 3.646 7.892 3.813 12.319.67 1.888-1.341 3.93-2.47 5.927-3.652.497-.294 1.092-.423 1.934-.738 2.151 5.066 4.262 10.033 6.375 15 1.072 2.524 1.932 5.167 3.264 7.547 2.671 4.775 4.092 9.813 4.07 15.272-.012 2.83.137 5.67-.081 8.482z"/></g></symbol>
     </defs>
   </svg>
 
@@ -917,7 +933,7 @@ a { color: inherit; text-decoration: none; }
   <section class="page letter-page" data-section="2" aria-labelledby="letter-title" data-part="letter">
     <header class="section-head" data-part="section-head">
       <h2 id="letter-title">Anschreiben</h2>
-      <span class="folio" aria-label="Seite 2">2</span>
+      <span class="folio" aria-label="Anschreiben, Seite 2"><span class="folio-name">Anschreiben</span><span class="folio-no">2</span></span>
     </header>
 
     <div class="letter-head">
@@ -963,7 +979,7 @@ a { color: inherit; text-decoration: none; }
   <section class="page" data-section="3" aria-labelledby="cv-title" data-part="cv">
     <header class="section-head" data-part="section-head">
       <h2 id="cv-title">Lebenslauf</h2>
-      <span class="folio" aria-label="Seite 3">3</span>
+      <span class="folio" aria-label="Lebenslauf, Seite 3"><span class="folio-name">Lebenslauf</span><span class="folio-no">3</span></span>
     </header>
 
     <div class="cv-hero">
@@ -981,24 +997,24 @@ a { color: inherit; text-decoration: none; }
       </ul>
     </div>
 
-    <section class="cv-section" aria-labelledby="experience-title">
-      <h3 class="cv-section-head" id="experience-title"><svg class="icon"><use href="#i-briefcase"/></svg>Praktische Erfahrung</h3>
-      <article class="timeline-item" data-part="timeline-item" data-origin="master:pages[2].content.blocks[0].experience.items[0]">
+    <section class="cv-section" aria-labelledby="education-title">
+      <h3 class="cv-section-head" id="education-title">Schulbildung</h3>
+      <article class="timeline-item" data-part="timeline-item" data-origin="master:pages[2].content.blocks[0].education.items[0]">
         <p class="timeline-date">[ZEITRAUM]</p>
-        <div class="timeline-content"><h4>[ORGANISATION]</h4><p class="timeline-place">[ORT]</p><p class="timeline-role">[ROLLE] · [PRAKTIKUM|ANSTELLUNG]</p><p class="timeline-text">[BELEGTE AUFGABEN]</p></div>
+        <div class="timeline-content"><h4>[SCHULE]<span class="timeline-place">, [ORT]</span></h4><p class="timeline-role">[SCHULFORM] · [PROFIL]</p><p class="timeline-text">Abschluss: [ABSCHLUSS]</p></div>
       </article>
     </section>
 
-    <section class="cv-section" aria-labelledby="education-title">
-      <h3 class="cv-section-head" id="education-title"><svg class="icon"><use href="#i-graduation"/></svg>Schulbildung</h3>
-      <article class="timeline-item" data-part="timeline-item" data-origin="master:pages[2].content.blocks[1].education.items[0]">
+    <section class="cv-section" aria-labelledby="experience-title">
+      <h3 class="cv-section-head" id="experience-title">Praktische Erfahrung</h3>
+      <article class="timeline-item" data-part="timeline-item" data-origin="master:pages[2].content.blocks[1].experience.items[0]">
         <p class="timeline-date">[ZEITRAUM]</p>
-        <div class="timeline-content"><h4>[SCHULE]</h4><p class="timeline-place">[ORT]</p><p class="timeline-role">[SCHULFORM] · [PROFIL]</p><p class="timeline-text">Abschluss: [ABSCHLUSS]</p></div>
+        <div class="timeline-content"><h4>[ORGANISATION]<span class="timeline-place">, [ORT]</span></h4><p class="timeline-role">[ROLLE] · [PRAKTIKUM|ANSTELLUNG]</p><p class="timeline-text">[BELEGTE AUFGABEN]</p></div>
       </article>
     </section>
 
     <section class="skills-band" aria-labelledby="skills-title">
-      <h3 class="cv-section-head" id="skills-title"><svg class="icon"><use href="#i-wrench"/></svg>Fähigkeiten</h3>
+      <h3 class="cv-section-head" id="skills-title">Fähigkeiten</h3>
       <div class="skill-legend" aria-label="Skala">
         <p class="skill-legend-title">Skala <span>1–5</span></p>
         <span class="scale-item"><span class="bars s1 is-future" data-part="bars"><span></span><span></span><span></span><span></span><span></span></span>Lernwunsch</span>
@@ -1019,19 +1035,23 @@ a { color: inherit; text-decoration: none; }
       </div>
     </section>
     <section class="cv-section" aria-labelledby="languages-title">
-      <h3 class="cv-section-head" id="languages-title"><svg class="icon"><use href="#i-globe"/></svg>Sprachen</h3>
+      <h3 class="cv-section-head" id="languages-title">Sprachen</h3>
       <div class="language-list">
         <div class="language" data-origin="master:pages[2].content.blocks[3].languages.items[0]"><span class="language-name">[SPRACHE]</span><span class="bars s5" data-part="bars" role="img" aria-label="5 von 5: Muttersprache"><span></span><span></span><span></span><span></span><span></span></span><span class="language-level">Muttersprache</span></div>
         <div class="language" data-origin="master:pages[2].content.blocks[3].languages.items[1]"><span class="language-name">[SPRACHE]</span><span class="bars s[SKALA]" data-part="bars" role="img" aria-label="[SKALA] von 5: [NIVEAU-LABEL]"><span></span><span></span><span></span><span></span><span></span></span><span class="language-level">[NIVEAU-LABEL]</span></div>
       </div>
     </section>
+    <div class="signature cv-sign">
+      <p class="cv-sign-date" data-origin="master:pages[2].content.sign.date">[ORT], [DATUM]</p>
+      <div class="signature-name" data-origin="master:pages[2].content.sign.signer"><strong>[VORNAME NACHNAME]</strong></div>
+    </div>
   </section>
 
   <!-- Motivationsschreiben -->
   <section class="page" data-section="4" aria-labelledby="motivation-title" data-part="motivation">
     <header class="section-head" data-part="section-head">
       <h2 id="motivation-title">Motivationsschreiben</h2>
-      <span class="folio" aria-label="Seite 4">4</span>
+      <span class="folio" aria-label="Motivation, Seite 4"><span class="folio-name">Motivation</span><span class="folio-no">4</span></span>
     </header>
 
     <p class="motivation-lead" data-origin="master:pages[3].content.lead">[PERSÖNLICHER EINSTIEG IN EINEM SATZ: Woher kommt das Interesse am Beruf?]</p>
@@ -1062,7 +1082,7 @@ a { color: inherit; text-decoration: none; }
   <section class="page" data-section="5" aria-labelledby="cert-title" data-part="evidence">
     <header class="section-head" data-part="section-head">
       <h2 id="cert-title">Zertifikate</h2>
-      <span class="folio" aria-label="Seite 5">5</span>
+      <span class="folio" aria-label="Zertifikate, Seite 5"><span class="folio-name">Zertifikate</span><span class="folio-no">5</span></span>
     </header>
     <div class="evidence-grid">
       <article class="evidence-card" data-origin="master:pages[4].content.cards[0]">
@@ -1077,7 +1097,7 @@ a { color: inherit; text-decoration: none; }
   <section class="page" data-section="6" aria-labelledby="reference-title" data-part="evidence">
     <header class="section-head" data-part="section-head">
       <h2 id="reference-title">Zeugnisse</h2>
-      <span class="folio" aria-label="Seite 6">6</span>
+      <span class="folio" aria-label="Zeugnisse, Seite 6"><span class="folio-name">Zeugnisse</span><span class="folio-no">6</span></span>
     </header>
     <div class="evidence-grid">
       <article class="evidence-card" data-origin="master:pages[5].content.cards[0]">

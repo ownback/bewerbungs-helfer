@@ -199,7 +199,7 @@
             "valid",
             "consent"
           ],
-          "description": "Eingescannte Unterschrift (PNG mit transparentem oder weißem Grund). Nur mit valid und consent im Anschreiben.",
+          "description": "Eingescannte Unterschrift (PNG mit transparentem oder weißem Grund). Nur mit valid und consent in der Mappe; consent gilt für Anschreiben und Lebenslauf.",
           "properties": {
             "file": {
               "type": "string"
@@ -568,10 +568,10 @@
         "cv_layout": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Verteilung der Lebenslauf-Blöcke auf A4-Seiten. Lesereihenfolge experience, education, skills, languages (Sprachen zuletzt); projects optional irgendwo nach experience. Standard: eine Seite mit experience, education, skills, languages.",
+          "description": "Verteilung der Lebenslauf-Blöcke auf A4-Seiten. Lesereihenfolge education, experience, skills, languages (Sprachen zuletzt); projects optional irgendwo nach experience. Standard: eine Seite mit education, experience, skills, languages.",
           "properties": {
             "compact": {
-              "description": "class=\"page cv-compact\": true/false für alle Lebenslaufseiten oder eine Liste je Seite (z. B. [false, true]).",
+              "description": "class=\"page cv-compact\": true/false für alle Lebenslaufseiten oder eine Liste je Seite (z. B. [true, false]).",
               "oneOf": [
                 {
                   "type": "boolean"
@@ -609,7 +609,7 @@
         "cv_projects": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Titel und Icon des optionalen Blocks „Eigene Projekte“.",
+          "description": "Titel des optionalen Blocks „Eigene Projekte“.",
           "properties": {
             "title": {
               "type": "string",
@@ -618,7 +618,7 @@
             "icon": {
               "type": "string",
               "pattern": "^i-",
-              "description": "Linien-Icon, Standard i-layers (z. B. i-server)."
+              "description": "Ohne Wirkung (veraltet): Blocküberschriften im Lebenslauf haben kein Icon."
             }
           }
         }

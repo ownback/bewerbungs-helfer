@@ -30,3 +30,15 @@
 
 # Schemaprüfung braucht keine Installation
 \bpip install jsonschema\b => validate nutzt tools/schema_lite.py
+
+# Lebenslauf: Schulbildung vor Erfahrung (references/template.md, Regel cv.block-order)
+\bPraktische Erfahrung, Schulbildung, Fähigkeiten\b => Schulbildung steht vor der Praktischen Erfahrung
+\bLesereihenfolge `?experience`?, `?education\b => Lesereihenfolge education, experience, skills, languages
+
+# Unterschrift: Die Einwilligung gilt für Anschreiben und Lebenslauf (references/profile-schema.md, Regel person.signature)
+\bNur dann im Anschreiben\b => die Unterschrift steht unter dem Anschreiben und am Ende des Lebenslaufs
+\bNur mit valid und consent im Anschreiben\b => die Unterschrift steht unter dem Anschreiben und am Ende des Lebenslaufs
+
+# Logos stehen in Markenfarbe (assets/icons/README.md, Regel icons.sources)
+\beinfarbige[sn]? Logo\b => Logos stehen in Markenfarbe; einfarbig sind nur die Linien-Icons
+\bals einfarbige `?<symbol> => Logos stehen in Markenfarbe; einfarbig sind nur die Linien-Icons

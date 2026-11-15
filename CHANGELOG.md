@@ -2,6 +2,19 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-15: Ausgewählte Gestaltung aus dem Entwurf (Reiter, Lebenslauf, Chips, Brief)
+
+Der Nutzer hat aus einem Gegenentwurf einzelne Teile übernommen. Unverändert bleiben das dunkle Deckblatt samt Inhaltsangabe, der symmetrische Briefkopf, die Sprachen, die Belege-Spalte und die Regel „kein Firmenname auf dem Deckblatt“.
+
+- **Registerreiter:** Der Reiter zeigt den Kurznamen des eigenen Abschnitts und die Seitenzahl („Lebenslauf 3“), vorher nur die Zahl. Die Inhaltsangabe aller Abschnitte steht weiter nur auf dem Deckblatt. Auf schmalen Bildschirmen steht der Reiter links.
+- **Lebenslauf, Blöcke und Einträge:** Blocküberschriften sind fett ohne Icon mit einer durchgezogenen Linie in Textfarbe (vorher Icon und Haarlinie). Der Ort steht hinter der Organisation in derselben Zeile, zwischen zwei Einträgen steht eine Haarlinie. Die Lesereihenfolge beginnt mit der Schulbildung (`education`, `experience`, `skills`, `languages`; vorher Erfahrung zuerst), das ist auch der Standard von `presentation.cv_layout`. `presentation.cv_projects.icon` hat keine Wirkung mehr. Im View-Model hat `timeline-item` die Schlüssel `place` und `role` statt `meta`.
+- **Fähigkeiten:** Eine Haarlinie trennt nur noch die Gruppen, nicht mehr jede Zeile. Legende „Skala 1–5“ und Blockname bleiben.
+- **Abschluss des Lebenslaufs:** Die letzte Lebenslauf-Seite endet mit Ort, Datum (Briefdatum der Stelle), Unterschriftsbild und Name. Die Einwilligung `person.signature.consent` gilt damit für Anschreiben und Lebenslauf; das Interview fragt ausdrücklich nach beiden Stellen. `master.json` hat dafür den Platzhalter `slots.cv_sign`.
+- **Logos in Markenfarbe:** Die Technik-Chips zeigen ihre Logos farbig (vorher einfarbig grau). Die Chips bleiben hell, der Name dunkel; Linien-Icons bleiben einfarbig. Neu ist `assets/icons/sources.json` mit Quelldatei und Farbe je Logo-Symbol; `tools/devicon_symbols.py` liest sie (`fill: "file"` behält die Farben der Datei, `fill: "#rrggbb"` färbt das ganze Logo), gibt mit `--urls` die Ladebefehle aus und lehnt Symbole ohne Eintrag ab. `tools/check_repo.py docs` vergleicht die Datei mit `icons.svg`. Die Tabelle „Symbol → Quelldatei“ in `assets/icons/README.md` ist dadurch ersetzt.
+- **Neue Symbole:** `dv-gitlab`, `dv-jenkins`, `dv-raspberrypi`, `si-linuxcontainers` (LXC), `si-openwrt` und das Linien-Icon `i-ethernet` (Lucide `ethernet-port`). Für Jujutsu gibt es in den festgelegten Versionen kein Logo: `i-branch`.
+- **Anschreiben:** Der Brieftext steht in 10 pt (`--fs-letter`, vorher 9,6 pt), der Richtwert ist ca. 230 Wörter (`limits:letter.words.normal`, vorher 250). Der dichte Modus bleibt bei 9 pt und ca. 350 Wörtern. Der Bau schreibt dazu, wenn eine Wortzahl über dem Richtwert der gewählten Dichte liegt.
+- **Begriff → Symbol:** Die Tabelle in `assets/icons/README.md` nennt jetzt auch PC-Montage, Ethernet-Verkabelung, Hardware-Reparatur, GitLab, Jenkins, Jujutsu, LXC (Proxmox), NixOS-Container, OpenWRT und Raspberry Pi OS.
+
 ## 2026-11-15: Ein Editor für die Vorlage, ein Zuhause pro Regel
 
 Das Aussehen der Mappe ist unverändert (Seitenvergleich: 0 geänderte Seiten für Master-Vorlage, Profilvorlage und eine Bewerbung).

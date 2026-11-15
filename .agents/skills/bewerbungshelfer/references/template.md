@@ -5,7 +5,7 @@ Das Design heißt „Glisse“. Aussehen und Markup der Mappe stehen an genau ei
 | Datei | Befehl | Inhalt |
 |---|---|---|
 | Master-Vorlage `assets/bewerbungsmappe.html` | `build_mappe.py master` | nur Platzhalter in eckigen Klammern, keine Daten; liegt im Repository für Tencil und die Vorschau |
-| Profilvorlage `profile/<name>/assets/profile/<name>_template.html` | `build_mappe.py profile-template` | echtes Profil; Anschreiben und Motivationsschreiben als Platzhalter |
+| Profilvorlage `profile/<name>/assets/profile/<name>_template.html` | `build_mappe.py profile-template` | echtes Profil; Anschreiben, Motivationsschreiben und das Datum unter dem Lebenslauf als Platzhalter |
 | Mappe `<stelle>/application/bewerbungsmappe - <name>.html` | `build_mappe.py application` | Profil, `job.json` und die Texte der Stelle |
 
 Alle drei sind Bauergebnisse und werden nie von Hand bearbeitet, auch die Master-Vorlage nicht. Visuell geprüft wird über Tencil (`references/tencil.md`).
@@ -18,7 +18,7 @@ assets/mappe/
   mappe.css      Papier: Grundregeln, ein Block je Seite, zuletzt @media print
   screen.css     Bildschirm: Leiste, Navigation, schmale Fenster; nie im PDF
   fonts.css      @font-face für Inter; die Dateien aus assets/fonts/ setzt der Bau als Base64 ein
-  icons.svg      alle Symbole, eines pro Zeile; der Bau bettet nur die verwendeten ein
+  icons.svg      alle Symbole, eines pro Zeile (Logos in Markenfarbe, Linien-Icons einfarbig); der Bau bettet nur die verwendeten ein
   master.json    Platzhalter-Modell: pages = Master-Vorlage, slots = Platzhalter der Profilvorlage
   limits.json    Zahlen und Grenzen, die das Skript liest (Wortzahlen, Fenstergrößen, Schwellen)
   qa.js, qa.html Überlauf- und Füllgradprüfung (references/qa-and-export.md)
@@ -32,7 +32,7 @@ assets/mappe/
 | Zahl, nach der das Skript entscheidet oder die es meldet (Wortzahl, Schwelle, Fenstergröße) | `limits.json`; die Doku nennt den Schlüssel als `limits:<pfad>` |
 | Aufbau einer Seite oder eines Elements | das Partial in `partials/` und sein Block in `mappe.css` |
 | Verhalten auf dem Bildschirm (mobil, Leiste) | `screen.css` |
-| Neues Symbol | `icons.svg` (Ablauf in `assets/icons/README.md`) |
+| Neues Symbol, Farbe eines Logos | `icons.svg` und `assets/icons/sources.json` (Ablauf in `assets/icons/README.md`) |
 | Platzhaltertext der Master- oder Profilvorlage | `master.json` |
 | Was auf einer Seite steht (Daten, Reihenfolge, Sichtbarkeit) | Profil, `job.json`, Texte; neue Regel: View-Model in `tools/build_mappe.py` |
 
@@ -101,7 +101,7 @@ Modern, ruhig, Apple-nah. Weißes Papier, ein Akzent, klare Typografie, viel Wei
 ### Zwei Ebenen
 
 - **Inhaltsebene:** weißes Papier, Text, Scans, helle Fläche `--surface` (#f5f5f7). Nie Glas.
-- **Funktionsebene (Glisse):** Deckblatt-Leiste (Kontakt, optional Foto, Inhalt), Registerreiter mit Seitenzahl, Bildschirmleiste, Seitennavigation am Bildschirmrand.
+- **Funktionsebene (Glisse):** Deckblatt-Leiste (Kontakt, optional Foto, Inhalt), Registerreiter mit Abschnittsname und Seitenzahl, Bildschirmleiste, Seitennavigation am Bildschirmrand.
 
 Glas nur auf der Funktionsebene, höchstens eine große Glasfläche pro Seite, nie hinter Fließtext oder Scans. Druckfest: Verlaufsfüllung, helle Innenkante, Haarlinie, weicher Schatten; `backdrop-filter` nur zusätzlich auf dem Bildschirm. Fallbacks für `prefers-reduced-transparency` (deckende Fläche) und `prefers-contrast: more` (kräftigere Kanten).
 
@@ -119,14 +119,14 @@ Den Akzent nur ändern, wenn Text darauf und daneben mindestens 4,5:1 erreicht.
 - Statische Schnitte 400, 500, 600, 700 (keine variable Schrift): Chromium bettet sie im PDF als TrueType (CID) ein, Text bleibt auswählbar und auswertbar. Nur diese vier Gewichte verwenden. Untermenge Latin + Latin Extended (deutsche Umlaute, ß, ș ț ă, typografische Anführungszeichen, Gedankenstrich).
 - Quelldateien und Lizenz: `assets/fonts/` (`Inter-*.woff2`, `OFL.txt`, `README.md`).
 - SF Pro bewusst nicht im Stapel (Lizenz erlaubt keine Einbettung in eigene Dokumente); `-apple-system`/`BlinkMacSystemFont` ebenfalls nicht (Chromium unter Linux löst sie zu Liberation Sans auf).
-- Hierarchie über Größe und Gewicht: Name ca. 54 pt, Abschnittstitel 25 pt, Betreff 16,5 pt, Einstieg 15,5 pt, Fließtext 9,6 pt, Nebentext 8,5 pt, Chips 7,5 pt, Bildunterschriften 7,4 pt. Überschriften ab 12 pt in 700, kleine Titel und Hervorhebungen in 600, Akzentzeilen in 500. Keine Serifen, keine Großbuchstaben-Labels. Fließtext nie unter 9 pt.
+- Hierarchie über Größe und Gewicht: Name ca. 54 pt, Abschnittstitel 25 pt, Betreff 16,5 pt, Einstieg 15,5 pt, Brieftext im Anschreiben 10 pt, Fließtext 9,6 pt, Nebentext 8,5 pt, Chips 7,5 pt, Bildunterschriften 7,4 pt, Abschnittsname im Registerreiter 7 pt. Überschriften ab 12 pt in 700, kleine Titel und Hervorhebungen in 600, Akzentzeilen in 500. Keine Serifen, keine Großbuchstaben-Labels. Fließtext nie unter 9 pt.
 
 ### Seiten
 
 <!-- rule: design.fixed -->
 - A4 210 × 297 mm, `@page { size: A4; margin: 0 }`, Satzspiegel 20 mm seitlich, 24 mm oben, 20 mm unten.
-- **Keine Fußzeile.** Die Seitenzahl steht im Registerreiter (`.folio`), schlicht `1`, `2`, … ohne führende Null und ohne Gesamtzahl. Der Name steht auf Deckblatt, im Briefkopf und im Lebenslauf.
-- Registratur: sechs Spalten über die Seitenbreite; `data-section="1…6"` setzt den Reiter in die Spalte seines Abschnitts. Folgeseiten bekommen automatisch einen hellen Reiter.
+- **Keine Fußzeile.** Im Registerreiter (`.folio`) stehen der Kurzname des eigenen Abschnitts und die Seitenzahl, z. B. „Lebenslauf 3“ (Kurznamen in `SECTION_META` in `tools/build_mappe.py`; das Motivationsschreiben heißt dort „Motivation“). Die Zahl schlicht `1`, `2`, … ohne führende Null und ohne Gesamtzahl. Andere Abschnitte nennt der Reiter nicht: Die vollständige Inhaltsangabe steht nur auf dem Deckblatt. Der Name des Bewerbers steht auf Deckblatt, im Briefkopf und im Lebenslauf.
+- Registratur: sechs Spalten über die Seitenbreite; `data-section="1…6"` setzt den Reiter in die Spalte seines Abschnitts. Folgeseiten bekommen automatisch einen hellen Reiter. Auf schmalen Bildschirmen steht der Reiter links und ist so breit wie sein Text.
 - Keine vertikalen Dekorlinien, keine Timeline-Verbindungslinien, kein Firmenname auf dem Deckblatt.
 
 ### Deckblatt
@@ -153,25 +153,28 @@ Geschäftsbrief nach DIN-5008-Zonen, angepasst für den E-Mail-Versand (keine Fa
 - Straße ausgeschrieben („Straße“, nicht „Str.“), Straße und PLZ/Ort zweizeilig ohne Punkt und Komma, für Absender und Empfänger, in Profil und `job.json` schon so gespeichert. Das Build-Skript warnt bei „Str.“ oder Satzzeichen am Ende. <!-- rule: address.format -->
 - Ort (Wohnort) und Datum („11. November 2026“) rechtsbündig mit Kalender-Icon zwischen Briefkopf und Betreff.
 - Betreff zweistufig in gemischter Schreibung (Entscheidung des Nutzers, Versalien wirken bei langen Berufsbezeichnungen laut): Einleitung klein in Akzentfarbe, darunter groß der Beruf, darunter optional die BA-Referenznummer. Die Variante `.letter-subject.is-caps` (Einleitung in Versalien) existiert im CSS, das View-Model setzt sie aber nicht; sie wäre eine Änderung an Partial, Skript und Profil.
-- Brieftext: Umfang nach Regel `letter.length` in `references/writing.md`; mit `dichte: dicht` setzt das Skript `.letter-copy.is-dense`.
-- Unterschrift als Bild (12 mm hoch, höchstens 45 mm breit) nur mit gültiger, freigegebener Datei; darunter Name und Ort.
+- Brieftext in 10 pt (`--fs-letter`), Umfang nach Regel `letter.length` in `references/writing.md`; mit `dichte: dicht` setzt das Skript `.letter-copy.is-dense` (9 pt).
+- Unterschrift als Bild (12 mm hoch, höchstens 45 mm breit) nur mit gültiger, freigegebener Datei (Regel `person.signature` in `references/profile-schema.md`); darunter Name und Ort.
 
 ### Lebenslauf
 
-- Reihenfolge der Blöcke: Praktische Erfahrung, Schulbildung, Fähigkeiten, Sprachen (Sprachen immer zuletzt, auch beim Umbrechen auf die Fortsetzung). Optionaler Block „Eigene Projekte“ irgendwo nach der Erfahrung, wo er auf die Seite passt.
+- Reihenfolge der Blöcke: Schulbildung, Praktische Erfahrung, Fähigkeiten, Sprachen (Entscheidung des Nutzers: Schulbildung zuerst; Sprachen immer zuletzt, auch beim Umbrechen auf die Fortsetzung). Optionaler Block „Eigene Projekte“ irgendwo nach der Erfahrung, wo er auf die Seite passt. <!-- rule: cv.block-order -->
+- Blocküberschriften (`.cv-section-head`): fett, ohne Icon, darunter eine durchgezogene Linie in Textfarbe. Das gilt für alle Blöcke des Lebenslaufs. <!-- rule: cv.block-heads -->
 - Kopf: Name, „Ausbildungsziel: …“, persönliche Daten zweispaltig (Spalten nach Inhalt breit, `repeat(2, auto)`), der Block horizontal und vertikal mittig in der grauen Box, Symbol und Text je Zeile mittig. Linke Spalte: Anschrift (zweizeilig), E-Mail, Telefon. Rechte Spalte: Herkunft mit `i-map` (aus `person.birth_place`, Ort und Land untereinander nach Regel `person.birth-place` in `references/profile-schema.md`) in der ersten Zeile neben dem Wohnort, darunter Geburtsdatum mit `i-cake`, optional „Führerschein Klasse B“ mit `i-car` aus `person.driving_license`; mit allen Angaben sind es 3 + 3 Zeilen. Kein Kurzprofil im Lebenslauf (steht auf dem Deckblatt). <!-- rule: cv.personal-data -->
-- Praktische Erfahrung: neueste zuerst; Datum links in eigener Spalte, rechts Organisation, Ort, Rolle · Art, Aufgaben. Näherungen mit „ca.“.
-- Schulbildung: Einrichtung, Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Einträge mit `education[].show_in_cv: false` entfallen (Grundschulen: Regel `education.primary-school` in `references/profile-schema.md`); das Skript meldet die ausgeblendeten Einträge.
+- Einträge in Schulbildung, Erfahrung und Projekten (`timeline-item`): Zeitraum links in eigener Spalte; rechts in der ersten Zeile der Name und dahinter, leiser gesetzt, der Ort („Muster GmbH, Musterstadt“), darunter Rolle bzw. Schulform in Akzentfarbe und eine Textzeile. Zwischen zwei Einträgen steht eine Haarlinie, keine senkrechte Verbindungslinie. <!-- rule: cv.entries -->
+- Schulbildung: Einrichtung mit Ort, „Schulform · Profil“, Detailzeile nur „Abschluss: …“ bzw. „Abschluss: …, voraussichtlich MM/JJJJ“. Keine Zeugnis- oder Klassendetails. Neueste zuerst. Einträge mit `education[].show_in_cv: false` entfallen (Grundschulen: Regel `education.primary-school` in `references/profile-schema.md`); das Skript meldet die ausgeblendeten Einträge.
+- Praktische Erfahrung: neueste zuerst; Organisation mit Ort, „Rolle · Art“, Aufgaben. Näherungen mit „ca.“.
 - Sprachen: Balken mit Niveauwort darunter, keine Belegzeile.
-- Fähigkeiten: Gruppen untereinander, Gruppentitel mit Linien-Icon; jede Zeile = Kategorie (optional kleiner Zusatz), Technik-Chips, Skala. Bis ca. 6 Chips je Zeile passen bei üblichen Namen in eine Zeile; längere Reihen brechen ruhig in eine zweite Zeile um (kostet ca. 4–5 mm Höhe). Keine Prozentwerte.
+- Fähigkeiten: Gruppen untereinander, Gruppentitel mit Linien-Icon; jede Zeile = Kategorie (optional kleiner Zusatz), Technik-Chips, Skala. Eine Haarlinie trennt nur die Gruppen, nicht die Zeilen einer Gruppe. Bis ca. 6 Chips je Zeile passen bei üblichen Namen in eine Zeile; längere Reihen brechen ruhig in eine zweite Zeile um (kostet ca. 4–5 mm Höhe). Keine Prozentwerte.
 - Skala oben im Block Fähigkeiten, direkt unter der Überschrift: Die Skalen-Legende beginnt links mit dem Titel „Skala 1–5“. Der Titel ist vertikal mittig zu den Skalenleisten ausgerichtet (`.skill-legend-title { align-self: center; margin: 0; }`), weil das Grid `align-items: start` hat und der Titel sonst oben hängt. Daneben fünf gleich breite Spalten mit Musterleiste in Originalgröße und Bezeichnung (8,5 pt, gedämpft): Lernwunsch, Grundkenntnisse, sicher, routiniert, sehr sicher. <!-- rule: cv.scale-legend -->
-- Eigene Projekte / Homelab (optional, Block `projects`): nur Projekte mit `show_in_cv: true`, Reihenfolge wie im Profil. Zeile wie bei der Erfahrung: Zeitraum links (leer, wenn unbekannt; „laufend“ bei `is_current` ohne Datum), Projektname, ein Satz aus `cv_summary` (sonst `own_role`), darunter die Werkzeuge als Chips (`chips`, sonst Text-Chips aus `tools`). Titel und Icon aus `presentation.cv_projects` (Standard „Eigene Projekte“, `i-layers`). Platzbedarf: ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag mit einer Zeile Text und einer Chipzeile; höchstens zwei bis drei Einträge. <!-- rule: cv.projects-block -->
+- Eigene Projekte / Homelab (optional, Block `projects`): nur Projekte mit `show_in_cv: true`, Reihenfolge wie im Profil. Zeile wie bei der Erfahrung: Zeitraum links (leer, wenn unbekannt; „laufend“ bei `is_current` ohne Datum), Projektname, ein Satz aus `cv_summary` (sonst `own_role`), darunter die Werkzeuge als Chips (`chips`, sonst Text-Chips aus `tools`). Titel aus `presentation.cv_projects.title` (Standard „Eigene Projekte“). Platzbedarf: ca. 12 mm Kopf plus ca. 18–20 mm je Eintrag mit einer Zeile Text und einer Chipzeile; höchstens zwei bis drei Einträge. <!-- rule: cv.projects-block -->
 - Aufteilung auf Seiten (`presentation.cv_layout`, Blocknamen `experience`, `education`, `projects`, `skills`, `languages`): Die QA meldet den Füllgrad jeder Lebenslauf-Seite („Füllgrad Lebenslauf: S3 95 % (+13.9 mm) · …“, Anteil des Satzspiegels, Rest in mm; negativ = Überlauf). Vorgehen: <!-- rule: cv.layout -->
-  1. Standard ist eine Seite mit allen Blöcken. Läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben (Reihenfolge beibehalten, Sprachen zuletzt) und die Seiten etwa gleich füllen, Richtwert 90–98 % (`limits:cv.fill_target_percent`).
+  1. Standard ist eine Seite mit allen Blöcken. Läuft sie über, ganze Blöcke auf eine Fortsetzungsseite verschieben (Reihenfolge beibehalten, Sprachen zuletzt) und die Seiten etwa gleich füllen, Richtwert 90–98 % (`limits:cv.fill_target_percent`). Schulbildung und Praktische Erfahrung stehen zusammen auf der ersten Seite, wenn sie dort passen, notfalls mit Verdichtung nur dieser Seite (`[true, false]`); Fähigkeiten, Projekte und Sprachen bilden dann die Fortsetzung.
   2. Bei sehr vielen Stationen einen Block teilen.
-  3. Verdichten (`cv_layout.compact`) nur auf einer Seite, die sonst überläuft: auf der volleren Seite (`[false, true]`) oder auf allen (`true`). Eine Seite, die ohne Verdichtung passt, bleibt unverdichtet.
+  3. Verdichten (`cv_layout.compact`) nur auf einer Seite, die sonst überläuft: auf der volleren Seite (z. B. `[true, false]`) oder auf allen (`true`). Eine Seite, die ohne Verdichtung passt, bleibt unverdichtet.
   4. Zuletzt Beschreibungen im Profil kürzen.
   Ändert sich der Inhalt (Eintrag ein- oder ausgeblendet, Projekt, Fähigkeit), die Aufteilung neu prüfen. Ist der Richtwert nicht erreichbar (die zweite Seite bleibt deutlich leerer, weil ein Block nicht auf die erste passt), ist das in Ordnung; die freie Höhe dient dann dem nächsten Block (z. B. „Eigene Projekte“).
+- Abschluss (`.cv-sign`): Nach dem letzten Block der letzten Lebenslauf-Seite stehen Ort und Datum, das Unterschriftsbild und der Name. Ort und Datum sind die des Anschreibens (Regel `letter.date` in `references/writing.md`); in Master- und Profilvorlage steht für das Datum ein Platzhalter. Das Bild erscheint wie im Anschreiben nur mit gültiger, freigegebener Datei (Regel `person.signature` in `references/profile-schema.md`), sonst stehen nur Ort, Datum und Name. Der Abschluss zählt zum Füllgrad der Seite (ca. 30 mm). <!-- rule: cv.sign-off -->
 
 ### Motivationsschreiben
 
@@ -189,15 +192,15 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
 ### Icons und Logos
 
 <!-- rule: icons.list -->
-- Linien-Icons (`<svg class="icon"><use href="#i-…"/></svg>`): `i-phone`, `i-mail`, `i-pin`, `i-calendar`, `i-user`, `i-folder`, `i-graduation`, `i-briefcase`, `i-terminal`, `i-server`, `i-network`, `i-scan`, `i-list`, `i-badge`, `i-globe`, `i-branch`, `i-layers`, `i-wrench`, `i-building`, `i-home`, `i-cake`, `i-map`, `i-car` (Führerschein), `i-monitor`, `i-code`, `i-cpu`, `i-cable` (LAN/WAN), `i-router` (Cisco IOS CLI), `i-shield` (Firewall), `i-waypoints` (TCP/IP). `i-cable`, `i-router`, `i-shield` und `i-waypoints` stammen aus Lucide (ISC, Version 0.469.0, Lizenz in `assets/icons/LICENSES.md`). Ein Icon trägt nie allein eine Information.
-- Technologie-Logos lokal als einfarbige `<symbol>` eingebettet (`<svg class="logo"><use href="#dv-…"/></svg>`), im Chip immer neben dem Namen. Verfügbar:
+- Linien-Icons (`<svg class="icon"><use href="#i-…"/></svg>`): `i-phone`, `i-mail`, `i-pin`, `i-calendar`, `i-user`, `i-folder`, `i-graduation`, `i-briefcase`, `i-terminal`, `i-server`, `i-network`, `i-scan`, `i-list`, `i-badge`, `i-globe`, `i-branch`, `i-layers`, `i-wrench`, `i-building`, `i-home`, `i-cake`, `i-map`, `i-car` (Führerschein), `i-monitor`, `i-code`, `i-cpu`, `i-cable` (LAN/WAN), `i-router` (Cisco IOS CLI), `i-shield` (Firewall), `i-waypoints` (TCP/IP), `i-ethernet` (Ethernet-Verkabelung). `i-cable`, `i-router`, `i-shield`, `i-waypoints` und `i-ethernet` stammen aus Lucide (ISC, Version 0.469.0, Lizenz in `assets/icons/LICENSES.md`). Linien-Icons sind einfarbig. Ein Icon trägt nie allein eine Information.
+- Technologie-Logos lokal als `<symbol>` in Markenfarbe eingebettet (`<svg class="logo"><use href="#dv-…"/></svg>`), im Chip immer neben dem Namen. Der Chip bleibt hell, der Name dunkel; im Graustufendruck trägt der Name die Information. Quelldatei und Farbe je Symbol: Regel `icons.sources` in `assets/icons/README.md`. Verfügbar:
 
   | id | Technik | Quelle |
   |---|---|---|
-  | `dv-windows11`, `dv-apple`, `dv-linux`, `dv-archlinux`, `dv-debian`, `dv-android` | Betriebssysteme (auch iOS über `dv-apple`) | Devicon |
+  | `dv-windows11`, `dv-apple`, `dv-linux`, `dv-archlinux`, `dv-debian`, `dv-android`, `dv-raspberrypi` | Betriebssysteme (auch iOS über `dv-apple`, Raspberry Pi OS über `dv-raspberrypi`) | Devicon |
   | `dv-docker`, `dv-podman`, `dv-kubernetes`, `dv-ansible` | Container, Automatisierung (Dockform über `dv-docker`) | Devicon |
-  | `dv-nixos` | NixOS/Nix | Devicon (plain) |
-  | `dv-git`, `dv-github`, `dv-bash` | Versionierung, Shell | Devicon |
+  | `dv-nixos` | NixOS/Nix | Devicon |
+  | `dv-git`, `dv-github`, `dv-gitlab`, `dv-jenkins`, `dv-bash` | Versionierung, CI, Shell | Devicon |
   | `dv-cloudflare` | Cloudflare (auch Tunnel) | Devicon |
   | `dv-html5`, `dv-css3`, `dv-javascript`, `dv-typescript`, `dv-rust`, `dv-python`, `dv-nodejs`, `dv-flutter`, `dv-swift`, `dv-react` | Entwicklung (auch React Native über `dv-react`) | Devicon |
   | `si-wireshark` | Wireshark | Simple Icons |
@@ -205,6 +208,8 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
   | `si-tailscale` | Tailscale | Simple Icons |
   | `si-cisco` | Cisco (z. B. Packet Tracer) | Simple Icons |
   | `si-proxmox` | Proxmox VE | Simple Icons |
+  | `si-linuxcontainers` | LXC (Linux Containers) | Simple Icons |
+  | `si-openwrt` | OpenWrt | Simple Icons |
   | `si-nginx` | nginx | Simple Icons |
   | `si-homeassistant` | Home Assistant | Simple Icons |
   | `si-nextcloud` | Nextcloud | Simple Icons |
@@ -212,8 +217,8 @@ Titel und Aussteller über dem Scan, der Scan füllt die Resthöhe, darunter „
 
   Welcher Chip welches Symbol bekommt (z. B. VLAN, Firewall, Dockform): Regel `icons.mapping` in `assets/icons/README.md`. Die Ids stehen hier, die Begriffe dort. Nennt ein Profil oder ein Beleg ein Symbol, das in `assets/mappe/icons.svg` fehlt, bricht der Bau mit der Id ab. Jede gebaute Datei enthält nur die Symbole, die sie verwendet.
 
-  Quellen: Devicon 2.17.0 (MIT) und Simple Icons 15.0.0 (CC0 1.0). Lucide 0.469.0 (ISC/Feather, MIT) für die Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`; Lizenz in `assets/icons/LICENSES.md`. Simple Icons nur, wo Devicon kein brauchbares einfarbiges Logo hat (nginx und Proxmox sind bei Devicon Schriftzüge, das Devicon-SSH-Logo zerfällt einfarbig). Für SSH/OpenSSH gibt es kein freies einfarbiges Logo: Linien-Icon `i-terminal`. Quelldatei je Symbol, Lizenztexte und Ablauf: `assets/icons/`.
-- Ein Logo im Vorrat ist keine Aussage über den Bewerber. Welche Technik mit welcher Skala erscheint, steht nur im Profil. Neue Logos sind eine Designänderung an `assets/mappe/icons.svg`: Devicon zuerst, sonst Simple Icons, mit `tools/devicon_symbols.py` einfarbig umwandeln (Ablauf in `assets/icons/README.md`; das Werkzeug prüft XML, `viewBox`, Dateiname/Id, erlaubte Elemente und Attribute und weist Verweise, Skripte, `foreignObject`, `style`-Elemente und Strichfarben mit einer Fehlermeldung je Datei ab), diese Tabelle nachtragen.
+  Quellen: Devicon 2.17.0 (MIT) und Simple Icons 15.0.0 (CC0 1.0). Lucide 0.469.0 (ISC/Feather, MIT) für die Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`, `i-ethernet`; Lizenz in `assets/icons/LICENSES.md`. Simple Icons nur, wo Devicon kein brauchbares Logo hat (nginx und Proxmox sind bei Devicon Schriftzüge; OpenWrt und LXC fehlen dort). Für SSH/OpenSSH und Jujutsu gibt es dort kein brauchbares Logo: Linien-Icons `i-terminal` und `i-branch`. Quelldatei und Farbe je Symbol, Lizenztexte und Ablauf: `assets/icons/`.
+- Ein Logo im Vorrat ist keine Aussage über den Bewerber. Welche Technik mit welcher Skala erscheint, steht nur im Profil. Neue Logos sind eine Designänderung an `assets/mappe/icons.svg`: Devicon zuerst, sonst Simple Icons, in `assets/icons/sources.json` eintragen und mit `tools/devicon_symbols.py` umwandeln (Ablauf in `assets/icons/README.md`; das Werkzeug prüft XML, `viewBox`, Dateiname/Id, erlaubte Elemente und Attribute und weist Verweise, Verläufe, Skripte, `foreignObject`, `style`-Elemente und Strichfarben mit einer Fehlermeldung je Datei ab), diese Tabelle nachtragen.
 
 ### Bildschirm
 

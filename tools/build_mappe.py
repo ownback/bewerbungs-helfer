@@ -94,7 +94,7 @@ KIND_LABEL = {'internship': 'Praktikum', 'employment': 'Anstellung', 'volunteer'
 ORIGINAL_LABEL = {'scan': 'Original-Scan', 'copy': 'Kopie', 'digital_original': 'Digitales Original',
                   'unknown': 'Nachweis'}
 SECTIONS = ['deckblatt', 'anschreiben', 'lebenslauf', 'motivationsschreiben', 'zertifikate', 'zeugnisse']
-SECTION_META = {  # section -> (data-section, id prefix, Titel, Navigationslabel)
+SECTION_META = {  # section -> (data-section, id prefix, Titel, Kurzname für Registerreiter und Navigation)
     'deckblatt': (1, 'cover', 'Deckblatt', 'Deckblatt'),
     'anschreiben': (2, 'letter', 'Anschreiben', 'Anschreiben'),
     'lebenslauf': (3, 'cv', 'Lebenslauf', 'Lebenslauf'),
@@ -486,11 +486,11 @@ def name_class(first: str, last: str) -> str:
 
 
 def page_frame(section: str, number: int, index: int = 0) -> dict:
-    """Rahmen jeder Seite: Registerspalte, Überschrift-Id, Kommentar, Kopf mit Titel und Seitenzahl."""
-    sec_no, prefix, title, _ = SECTION_META[section]
+    """Rahmen jeder Seite: Registerspalte, Überschrift-Id, Kommentar, Kopf mit Titel, Reitername und Seitenzahl."""
+    sec_no, prefix, title, tab = SECTION_META[section]
     hid = f'{prefix}-title' if index == 0 else f'{prefix}{index + 1}-title'
     return {'section_no': sec_no, 'aria': hid, 'comment': title + (', Fortsetzung' if index else ''),
-            'head': {'id': hid, 'title': title, 'continued': index > 0, 'number': number}}
+            'head': {'id': hid, 'title': title, 'tab': tab, 'continued': index > 0, 'number': number}}
 
 
 def page_entry(section: str, number: int, index: int, content: dict) -> dict:
@@ -619,7 +619,6 @@ def letter_view(ctx: Ctx, letter: dict | None, job: dict | None, typ: str) -> di
     """letter/job None -> Profilvorlage: Empfänger und Text sind die Platzhalter aus master.json (slots.letter)."""
     person = ctx.p['person']
     addr = person['address']
-    sig = person.get('signature') or {}
     if job:
         c = job.get('contact', {})
         name = ' '.join(x for x in (c.get('honorific', ''), c.get('name', '')) if x) or c.get('department', '')
@@ -663,12 +662,34 @@ def letter_view(ctx: Ctx, letter: dict | None, job: dict | None, typ: str) -> di
         letter_line('i-phone', lines(person['phone'])),
         letter_line('i-mail', email_parts(person['email'])),
     ]}
-    view['signature'] = None
-    if sig.get('valid') and sig.get('consent') and sig.get('file'):
-        view['signature'] = {'src': ctx.src(sig['file'], 'person.signature.file'),
-                             'alt': f'Unterschrift {person["name"]}', 'origin': 'profile:person.signature'}
+    view['signature'] = signature_view(ctx)
     view['signer'] = {'name': person['name'], 'city': addr['city'], 'origin': 'profile:person.name'}
     return view
+
+
+def signature_view(ctx: Ctx) -> dict | None:
+    """Unterschriftsbild für Anschreiben und Lebenslauf: nur mit gültiger, freigegebener Datei."""
+    person = ctx.p['person']
+    sig = person.get('signature') or {}
+    if not (sig.get('valid') and sig.get('consent') and sig.get('file')):
+        return None
+    return {'src': ctx.src(sig['file'], 'person.signature.file'), 'alt': f'Unterschrift {person["name"]}',
+            'origin': 'profile:person.signature'}
+
+
+def cv_sign_view(ctx: Ctx, letter: dict | None) -> dict:
+    """Abschluss des Lebenslaufs: Ort und Datum wie im Anschreiben (Briefdatum der Stelle), Unterschrift, Name.
+    letter None -> Profilvorlage: Das Datum ist der Platzhalter aus master.json (slots.cv_sign)."""
+    person = ctx.p['person']
+    if letter:
+        meta = letter['meta']
+        date = {'place': meta.get('ort') or person['address']['city'], 'date': german_date(meta['datum']),
+                'origin': 'text:anschreiben.md#datum'}
+    else:
+        slot = master_model()['slots']['cv_sign']['date']
+        date = {'place': person['address']['city'], 'date': slot['text'], 'origin': slot['origin']}
+    return {'date': date, 'signature': signature_view(ctx),
+            'signer': {'name': person['name'], 'origin': 'profile:person.name'}}
 
 
 def project_photo(ctx: Ctx, title: str) -> dict | None:
@@ -736,9 +757,9 @@ def newest_first(entries: list[dict]) -> list[tuple[int, dict]]:
     return sorted(enumerate(entries), key=lambda x: (x[1].get('date_range') or {}).get('start') or '', reverse=True)
 
 
-def timeline_item(origin: str, date: str, name: str, meta: dict | None, text: str, chips: list[dict]) -> dict:
-    return {'origin': origin, 'date': date, 'name': name, 'meta': meta, 'text': text,
-            'chipline': {'chips': chips} if chips else None}
+def timeline_item(origin: str, date: str, name: str, place: str, role: str, text: str, chips: list[dict]) -> dict:
+    return {'origin': origin, 'date': date, 'name': name, 'place': place or None, 'role': role or None,
+            'text': text, 'chipline': {'chips': chips} if chips else None}
 
 
 def cv_experience_view(ctx: Ctx) -> dict:
@@ -749,8 +770,7 @@ def cv_experience_view(ctx: Ctx) -> dict:
             kind += f' ({e["employment_type"]})'
         role = ' · '.join(x for x in (e.get('role', ''), kind) if x)
         items.append(timeline_item(f'profile:experience[{e.get("id", i)}]', fmt_range(e['date_range']),
-                                   e['organization'], {'place': e['city'], 'role': role},
-                                   '; '.join(e.get('tasks', [])), []))
+                                   e['organization'], e['city'], role, '; '.join(e.get('tasks', [])), []))
     return {'items': items}
 
 
@@ -767,8 +787,7 @@ def cv_education_view(ctx: Ctx) -> dict:
             if e.get('expected') and end:
                 text += f', voraussichtlich {fmt_point(end, e["date_range"].get("precision", "month"))}'
         items.append(timeline_item(f'profile:education[{e.get("id", i)}]', fmt_range(e['date_range']),
-                                   e['institution'],
-                                   {'place': place, 'role': e.get('program_short') or e.get('program', '')}, text, []))
+                                   e['institution'], place, e.get('program_short') or e.get('program', ''), text, []))
     return {'items': items}
 
 
@@ -782,13 +801,13 @@ def cv_projects_view(ctx: Ctx) -> dict | None:
         if not date and (pr.get('date_range') or {}).get('is_current'):
             date = 'laufend'
         chips = pr.get('chips') or [{'name': x} for x in pr.get('tools', [])]
-        items.append(timeline_item(f'profile:projects[{pr.get("id", i)}]', date, pr['name'], None,
+        items.append(timeline_item(f'profile:projects[{pr.get("id", i)}]', date, pr['name'], '', '',
                                    pr.get('cv_summary') or pr.get('own_role', ''), [chip_view(c) for c in chips]))
     if not items:
         return None
     conf = ctx.p['presentation'].get('cv_projects') or {}
-    return {'title': conf.get('title') or 'Eigene Projekte', 'icon': conf.get('icon') or 'i-layers',
-            'origin': 'profile:presentation.cv_projects', 'items': items}
+    return {'title': conf.get('title') or 'Eigene Projekte', 'origin': 'profile:presentation.cv_projects',
+            'items': items}
 
 
 def level_label(item: dict) -> str:
@@ -819,9 +838,9 @@ def cv_skills_view(ctx: Ctx) -> dict:
 
 CV_BLOCKS = {'experience': cv_experience_view, 'education': cv_education_view, 'projects': cv_projects_view,
              'skills': cv_skills_view, 'languages': cv_languages_view}
-# Lesereihenfolge: Erfahrung, Schulbildung, Fähigkeiten, Sprachen. Sprachen nie vor Schulbildung oder
+# Lesereihenfolge: Schulbildung, Erfahrung, Fähigkeiten, Sprachen. Sprachen nie vor Schulbildung oder
 # Fähigkeiten. „projects“ (optional) darf überall nach der Erfahrung stehen, wo es auf die Seiten passt.
-CV_ORDER = ['experience', 'education', 'skills', 'languages']
+CV_ORDER = ['education', 'experience', 'skills', 'languages']
 
 
 def cv_block(name: str, view: dict) -> dict:
@@ -829,7 +848,8 @@ def cv_block(name: str, view: dict) -> dict:
     return {**dict.fromkeys(CV_BLOCKS), name: view}
 
 
-def cv_page_view(ctx: Ctx, blocks: list[str], index: int, compact: bool) -> dict:
+def cv_page_view(ctx: Ctx, blocks: list[str], index: int, compact: bool, sign: dict | None) -> dict:
+    """sign: Abschluss mit Ort, Datum und Unterschrift, nur auf der letzten Lebenslauf-Seite gesetzt."""
     views = []
     for b in blocks:
         if b not in CV_BLOCKS:
@@ -837,7 +857,7 @@ def cv_page_view(ctx: Ctx, blocks: list[str], index: int, compact: bool) -> dict
         view = CV_BLOCKS[b](ctx)
         if view is not None:
             views.append(cv_block(b, view))
-    return {'compact': compact, 'hero': cv_hero_view(ctx) if index == 0 else None, 'blocks': views}
+    return {'compact': compact, 'hero': cv_hero_view(ctx) if index == 0 else None, 'blocks': views, 'sign': sign}
 
 
 def address_warnings(profile: dict, job: dict | None = None) -> list[str]:
@@ -888,7 +908,7 @@ def evidence_page_view(ctx: Ctx, section: str, group: list) -> dict:
 
 def plan_pages(profile: dict, warn: bool = True) -> list[dict]:
     layout = profile['presentation'].get('cv_layout') or {}
-    cv_pages = layout.get('pages') or [['experience', 'education', 'skills', 'languages']]
+    cv_pages = layout.get('pages') or [list(CV_ORDER)]
     flat = [b for page in cv_pages for b in page]
     known = [b for b in flat if b in CV_ORDER]
     if warn and (known != sorted(known, key=CV_ORDER.index) or (
@@ -919,6 +939,7 @@ def build_document(ctx: Ctx, letter=None, mot=None, job=None, typ='apprenticeshi
     """Profilvorlage (ohne letter/mot/job) oder Bewerbung aus den Quellen: HTML und Seitenliste fürs Manifest."""
     plan = plan_pages(ctx.p, warn)
     starts = section_starts(plan)
+    last_cv = max(p['index'] for p in plan if p['section'] == 'lebenslauf')
     entries = []
     for page in plan:
         s = page['section']
@@ -927,7 +948,8 @@ def build_document(ctx: Ctx, letter=None, mot=None, job=None, typ='apprenticeshi
         elif s == 'anschreiben':
             content = letter_view(ctx, letter, job, typ)
         elif s == 'lebenslauf':
-            content = cv_page_view(ctx, page['blocks'], page['index'], page['compact'])
+            content = cv_page_view(ctx, page['blocks'], page['index'], page['compact'],
+                                   cv_sign_view(ctx, letter) if page['index'] == last_cv else None)
         elif s == 'motivationsschreiben':
             content = motivation_view(ctx, mot)
         else:
@@ -962,6 +984,7 @@ def build_master() -> str:
             content['toc'] = toc_view(starts)
         elif kind == 'cv':
             content.setdefault('hero', None)
+            content.setdefault('sign', None)
             content['blocks'] = [{name: block.get(name) for name in CV_BLOCKS} for block in content['blocks']]
             for block in content['blocks']:
                 if block['skills'] is not None:
@@ -1056,6 +1079,13 @@ def word_count(paras: list[str]) -> int:
     return sum(len(re.findall(r'\S+', p)) for p in paras)
 
 
+def words_note(label: str, count: int, limits: dict, meta: dict) -> str:
+    """Wortzahl neben den Richtwerten; liegt sie über dem Richtwert der gewählten Dichte, steht das dabei."""
+    mode = 'dicht' if meta.get('dichte', 'normal') in ('dicht', 'dense') else 'normal'
+    over = f'; über dem Richtwert für „{mode}“' if count > limits[mode] else ''
+    return f'Wörter {label}: {count} (Richtwert normal ≤ {limits["normal"]}, dicht ≤ {limits["dicht"]}{over})'
+
+
 # --------------------------------------------------------------------------- Chromium und QA
 
 def chrome() -> str:
@@ -1112,7 +1142,7 @@ PLACEHOLDER = re.compile(r'\[[A-ZÄÖÜ][^\]\n<>]{1,80}\]')
 
 def slot_placeholders() -> set[str]:
     """Platzhalter, die in der Profilvorlage stehen sollen: die Texte für Anschreiben und Motivationsschreiben
-    aus master.json (slots)."""
+    und das Datum unter dem Lebenslauf aus master.json (slots)."""
     found: set[str] = set()
 
     def walk(node) -> None:
@@ -1133,7 +1163,7 @@ def local_images(doc: str, base: Path) -> list[Path]:
 
 
 def run_qa(html_path: Path, ignore_slots: bool = False, fast: bool = False) -> dict:
-    """ignore_slots (Profilvorlage): Die Platzhalter für Anschreiben und Motivationsschreiben sind gewollt.
+    """ignore_slots (Profilvorlage): Die Platzhalter aus master.json (slots) sind gewollt.
     fast: nur der Bildschirmlauf (Überlauf, Füllgrad, Breiten), kein A4-PDF. Für die Schleife beim Ändern der
     Vorlage; vor Freigabe und PDF immer die volle Prüfung."""
     html_path = html_path.resolve()
@@ -1327,7 +1357,8 @@ def cmd_profile_template(args) -> int:
         print(f'  {w}')
     if args.qa:
         qa = run_qa(out, ignore_slots=True, fast=args.qa == 'fast')
-        print_qa(rel(out), qa, ['Platzhalter in Anschreiben und Motivationsschreiben sind in der Profilvorlage gewollt.'])
+        print_qa(rel(out), qa, ['Platzhalter in Anschreiben und Motivationsschreiben und das Datum unter dem '
+                                'Lebenslauf sind in der Profilvorlage gewollt.'])
         if not qa['ok']:
             return 2
     if args.pdf:
@@ -1664,11 +1695,8 @@ def cmd_application(args) -> int:
             manifest.pop(k, None)
     words_letter, words_mot = word_count(letter['paragraphs']), word_count(mot['paragraphs'])
     print(f'Mappe: {rel(out)} ({len(pages)} Seiten)')
-    letter_words, motivation_words = limit('letter.words'), limit('motivation.words')
-    notes = [f'Wörter Anschreiben: {words_letter} (Richtwert normal ≤ {letter_words["normal"]}, '
-             f'dicht ≤ {letter_words["dicht"]})',
-             f'Wörter Motivationsschreiben: {words_mot} (Richtwert normal ≤ {motivation_words["normal"]}, '
-             f'dicht ≤ {motivation_words["dicht"]})']
+    notes = [words_note('Anschreiben', words_letter, limit('letter.words'), letter['meta']),
+             words_note('Motivationsschreiben', words_mot, limit('motivation.words'), mot['meta'])]
     notes += address_warnings(profile, job)
     email_state, email_msg = email_draft_state(posting)
     if email_msg:

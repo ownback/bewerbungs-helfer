@@ -1,5 +1,5 @@
 {
-  "about": "Platzhalter-Modell der Bewerbungsmappe, ohne persönliche Daten. pages: Inhalt der Master-Vorlage assets/bewerbungsmappe.html (build_mappe.py master). slots: Platzhalter für Anschreiben und Motivationsschreiben in der Profilvorlage. Aufbau wie das View-Model der Partials (build_mappe.py contract). Kurzformen, die das Skript ergänzt: parts als Liste von Zeilen, fehlende Lebenslauf-Blöcke, origin, Seitenzahlen, Registerkopf, Inhaltsangabe und Skalen-Legende.",
+  "about": "Platzhalter-Modell der Bewerbungsmappe, ohne persönliche Daten. pages: Inhalt der Master-Vorlage assets/bewerbungsmappe.html (build_mappe.py master). slots: Platzhalter der Profilvorlage für Anschreiben, Motivationsschreiben und das Datum unter dem Lebenslauf. Aufbau wie das View-Model der Partials (build_mappe.py contract). Kurzformen, die das Skript ergänzt: parts als Liste von Zeilen, fehlende Lebenslauf-Blöcke, origin, Seitenzahlen, Registerkopf, Inhaltsangabe und Skalen-Legende.",
   "title": "Bewerbungsmappe",
   "pages": [
     {
@@ -74,26 +74,28 @@
         },
         "blocks": [
           {
-            "experience": {
+            "education": {
               "items": [
                 {
                   "date": "[ZEITRAUM]",
-                  "name": "[ORGANISATION]",
-                  "meta": {"place": "[ORT]", "role": "[ROLLE] · [PRAKTIKUM|ANSTELLUNG]"},
-                  "text": "[BELEGTE AUFGABEN]",
+                  "name": "[SCHULE]",
+                  "place": "[ORT]",
+                  "role": "[SCHULFORM] · [PROFIL]",
+                  "text": "Abschluss: [ABSCHLUSS]",
                   "chipline": null
                 }
               ]
             }
           },
           {
-            "education": {
+            "experience": {
               "items": [
                 {
                   "date": "[ZEITRAUM]",
-                  "name": "[SCHULE]",
-                  "meta": {"place": "[ORT]", "role": "[SCHULFORM] · [PROFIL]"},
-                  "text": "Abschluss: [ABSCHLUSS]",
+                  "name": "[ORGANISATION]",
+                  "place": "[ORT]",
+                  "role": "[ROLLE] · [PRAKTIKUM|ANSTELLUNG]",
+                  "text": "[BELEGTE AUFGABEN]",
                   "chipline": null
                 }
               ]
@@ -160,7 +162,12 @@
               ]
             }
           }
-        ]
+        ],
+        "sign": {
+          "date": {"place": "[ORT]", "date": "[DATUM]"},
+          "signature": null,
+          "signer": {"name": "[VORNAME NACHNAME]"}
+        }
       }
     },
     {
@@ -216,6 +223,9 @@
     }
   ],
   "slots": {
+    "cv_sign": {
+      "date": {"text": "[DATUM]"}
+    },
     "letter": {
       "recipient": {
         "lines": [

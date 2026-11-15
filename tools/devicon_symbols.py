@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
-"""Wandelt lokal gespeicherte Logo-SVGs in einfarbige <symbol>-Elemente für die Mappen-Vorlage.
+"""Wandelt lokal gespeicherte Logo-SVGs in <symbol>-Elemente in Markenfarbe für die Mappen-Vorlage.
 
 Nur Python-Standardbibliothek, keine Daten, kein Netzzugriff. Quellen, Versionen, Lizenzen und der
 Weg, ein neues Logo aufzunehmen: .agents/skills/bewerbungshelfer/assets/icons/README.md
 
 Aufruf:  python3 tools/devicon_symbols.py <ordner-mit-svgs> [--prefix dv|si] [--only name1,name2]
+         python3 tools/devicon_symbols.py <ordner> [--prefix dv|si] [--only …] --urls
 
 - Devicon (MIT):       --prefix dv  ->  id dv-<dateiname>
 - Simple Icons (CC0):  --prefix si  ->  id si-<dateiname>
 
-Regeln der Umwandlung (damit alle Symbole gleich aussehen und drucken):
-- Farbfüllungen entfallen, die Form erbt currentColor (einfarbig, passt zum Chip-Text). Das gilt für das
-  Attribut fill und für fill in einem style-Attribut.
-- Weiße Füllungen werden zu Aussparungen (style fill: var(--dv-cutout, #fff)), damit Details erhalten bleiben.
-- <title>, <desc>, <defs>, class und id werden entfernt, Leerraum wird gekürzt.
-- Simple-Icons-Dateien sind schon einfarbig (ein Pfad, viewBox 0 0 24 24).
+Welche Quelldatei und welche Farbe ein Symbol bekommt, steht in assets/icons/sources.json (Schalter --sources
+für eine andere Datei). Ein Symbol ohne Eintrag dort wird abgelehnt. fill je Symbol:
+- "file": Die Füllfarben der Datei bleiben (mehrfarbiges Original oder einfarbige Datei mit eigener Farbe).
+  Jede Form braucht dann eine Füllfarbe, an sich oder an einer Gruppe darüber; Verläufe gehen nicht.
+- "#rrggbb": Alle Füllfarben der Datei entfallen, das Logo bekommt genau diese Farbe (Gruppe mit fill).
+  Für Dateien ohne Farbe (Simple Icons) und für Logos, deren Original Verläufe hat.
+In beiden Fällen werden weiße Füllungen zu Aussparungen (style fill: var(--dv-cutout, #fff)), damit Details
+auf dem hellen Chip erhalten bleiben. <title>, <desc>, <defs>, class und id werden entfernt, Leerraum gekürzt.
+
+--urls gibt nur die curl-Befehle aus, mit denen die Quelldateien aus sources.json nach <ordner> geladen werden
+(jsDelivr, feste Versionen), und wandelt nichts um.
 
 Prüfungen (jede Datei einzeln; ein Fehler nennt die Datei und bricht nur diese Datei ab, Exit-Code 1):
 - gültiges XML ohne DOCTYPE/ENTITY, Wurzel <svg> im SVG-Namensraum, viewBox mit vier Zahlen (Breite, Höhe > 0)
@@ -31,6 +37,7 @@ Die Zeilen kommen nach assets/mappe/icons.svg (alphabetisch nach id, eine Zeile 
 Tabelle in references/template.md und assets/icons/README.md ergänzen und die Master-Vorlage neu bauen
 (build_mappe.py master)."""
 import argparse
+import json
 import pathlib
 import re
 import sys
@@ -42,6 +49,9 @@ XLINK_NS = 'http://www.w3.org/1999/xlink'
 
 WHITE = {'#fff', '#ffffff', 'white'}
 CUTOUT = 'var(--dv-cutout,#fff)'
+SOURCES = pathlib.Path(__file__).resolve().parents[1] / '.agents/skills/bewerbungshelfer/assets/icons/sources.json'
+HEX = re.compile(r'^#[0-9a-fA-F]{6}$')
+CDN = 'https://cdn.jsdelivr.net/npm'
 
 SHAPES = {'g', 'path', 'circle', 'ellipse', 'rect', 'polygon', 'polyline', 'line'}
 ALLOWED_ELEMENTS = SHAPES | {'svg', 'title', 'desc', 'defs'}
@@ -186,7 +196,26 @@ def symbol_id(prefix: str, stem: str) -> str:
     return f'{prefix}-{stem}'
 
 
-def convert(svg: str, symbol_id_: str) -> str:
+def unfilled_shapes(root: ET.Element) -> int:
+    """Formen ohne Füllfarbe an sich oder an einer Gruppe darüber (Attribut fill oder fill im style-Attribut)."""
+    def has_fill(e: ET.Element) -> bool:
+        return 'fill' in e.attrib or any(prop == 'fill' for prop, _ in parse_style(e.attrib.get('style', '')))
+
+    def walk(e: ET.Element, inherited: bool) -> int:
+        name = local(e.tag)
+        if name in ('defs', 'title', 'desc'):
+            return 0
+        filled = inherited or has_fill(e)
+        own = 1 if name in SHAPES - {'g'} and not filled else 0
+        return own + sum(walk(c, filled) for c in e)
+
+    return sum(walk(c, 'fill' in root.attrib) for c in root)
+
+
+def convert(svg: str, symbol_id_: str, fill: str) -> str:
+    """fill: „file“ (Farben der Datei behalten) oder „#rrggbb“ (eine Farbe für das ganze Logo)."""
+    if fill != 'file' and not HEX.match(fill):
+        raise SvgError(f'fill „{fill}“ in sources.json: erlaubt sind "file" oder eine Farbe "#rrggbb"')
     if re.search(r'<!(DOCTYPE|ENTITY)|<!\[CDATA\[|<\?(?!xml\b)', svg, flags=re.I):
         raise SvgError('DOCTYPE, ENTITY, CDATA und Verarbeitungsanweisungen sind nicht erlaubt')
     try:
@@ -195,6 +224,10 @@ def convert(svg: str, symbol_id_: str) -> str:
         raise SvgError(f'kein gültiges XML: {e}') from e
     validate_tree(root, symbol=False)
     viewbox = viewbox_of(root)
+    keep = fill == 'file'
+    if keep and unfilled_shapes(root):
+        raise SvgError(f'{unfilled_shapes(root)} Form(en) ohne Füllfarbe: in sources.json statt "file" eine Farbe '
+                       '"#rrggbb" eintragen')
 
     inner = re.sub(r'<!--.*?-->', '', svg, flags=re.S)
     inner = re.sub(r'^.*?<svg[^>]*>|</svg>\s*$', '', inner, flags=re.S).strip()
@@ -207,7 +240,7 @@ def convert(svg: str, symbol_id_: str) -> str:
             return f'style="fill:{CUTOUT}"'
         if value == 'none':
             return 'fill="none"'
-        return ''
+        return m.group(0) if keep else ''
 
     def fix_style(m):
         kept = []
@@ -217,7 +250,9 @@ def convert(svg: str, symbol_id_: str) -> str:
                     kept.append(f'fill:{CUTOUT}')
                 elif val == 'none':
                     kept.append('fill:none')
-                continue  # andere Farben entfallen (erben currentColor)
+                elif keep:
+                    kept.append(f'fill:{val}')
+                continue  # sonst entfallen andere Farben: das Logo bekommt die eine Farbe aus sources.json
             kept.append(f'{prop}:{val}')
         return f'style="{";".join(kept)}"' if kept else ''
 
@@ -230,6 +265,8 @@ def convert(svg: str, symbol_id_: str) -> str:
     inner = re.sub(r'\s(class|id)="[^"]*"', '', inner)
     inner = re.sub(r'<g\s*>', '<g>', inner)
     inner = re.sub(r'\s+', ' ', inner)
+    if not keep:
+        inner = f'<g fill="{fill}">{inner}</g>'
 
     # Ergebnis erneut prüfen (gültiges XML, keine doppelten Attribute, nur erlaubte Inhalte)
     try:
@@ -240,13 +277,39 @@ def convert(svg: str, symbol_id_: str) -> str:
     return f'<symbol id="{symbol_id_}" viewBox="{viewbox}">{inner}</symbol>'
 
 
+def load_sources(path: pathlib.Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+        data['packages'], data['symbols']
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise SystemExit(f'Fehler: {path} nicht lesbar ({type(e).__name__}: {e})')
+    return data
+
+
+def source_url(sources: dict, sid: str) -> str:
+    """Adresse der Quelldatei eines Symbols: Paket und Version aus packages, Pfad nach dem Muster des Pakets."""
+    prefix, _, name = sid.partition('-')
+    pkg = sources['packages'][prefix]
+    path = pkg['path'].replace('<name>', name).replace('<variant>', sources['symbols'][sid].get('variant', ''))
+    return f'{CDN}/{pkg["npm"]}@{pkg["version"]}/{path}'
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('src', help='Ordner mit <name>.svg')
     ap.add_argument('--prefix', default='dv', choices=('dv', 'si'))
     ap.add_argument('--only', default='', help='kommagetrennte Dateinamen ohne .svg')
+    ap.add_argument('--sources', default=str(SOURCES), help='Quellen und Farben je Symbol (Standard: sources.json)')
+    ap.add_argument('--urls', action='store_true', help='nur die curl-Befehle für die Quelldateien ausgeben')
     args = ap.parse_args()
     only = {x.strip() for x in args.only.split(',') if x.strip()}
+    sources = load_sources(pathlib.Path(args.sources))
+    if args.urls:
+        for sid in sorted(sources['symbols']):
+            name = sid.partition('-')[2]
+            if sid.startswith(args.prefix + '-') and (not only or name in only):
+                print(f'curl -fLo {args.src.rstrip("/")}/{name}.svg {source_url(sources, sid)}')
+        return 0
     files = [f for f in sorted(pathlib.Path(args.src).glob('*.svg')) if not only or f.stem in only]
     errors = 0
     for missing in sorted(only - {f.stem for f in files}):
@@ -257,7 +320,10 @@ def main() -> int:
         return 1
     for f in files:
         try:
-            print(convert(f.read_text(encoding='utf-8'), symbol_id(args.prefix, f.stem)))
+            sid = symbol_id(args.prefix, f.stem)
+            if sid not in sources['symbols']:
+                raise SvgError(f'kein Eintrag „{sid}“ in {args.sources} (Quelldatei und fill eintragen)')
+            print(convert(f.read_text(encoding='utf-8'), sid, sources['symbols'][sid].get('fill', '')))
         except (SvgError, UnicodeDecodeError, OSError) as e:
             print(f'Fehler in {f}: {e}', file=sys.stderr)
             errors += 1

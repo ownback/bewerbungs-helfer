@@ -32,7 +32,7 @@ Struktur:
 7. klarer Schluss (Bitte um Gespräch), dann „Mit freundlichen Grüßen“
 
 <!-- rule: letter.length -->
-Umfang: bis ca. 250 Wörter (`limits:letter.words.normal`), mit `dichte: dicht` bis ca. 350 Wörter (`limits:letter.words.dicht`), darüber kürzen. Das sind Richtwerte, die der Bau meldet; maßgeblich ist die Überlaufprüfung.
+Umfang: ca. 230 Wörter (`limits:letter.words.normal`); der Brieftext steht dann in 10 pt. Mit `dichte: dicht` (9 pt, engerer Satz) bis ca. 350 Wörter (`limits:letter.words.dicht`), darüber kürzen. Erst kürzen, dann verdichten: `dicht` ist die Ausnahme für Briefe, die sich nicht kürzen lassen. Das sind Richtwerte, die der Bau meldet; maßgeblich ist die Überlaufprüfung.
 
 ## Motivationsschreiben
 
@@ -87,7 +87,7 @@ Erster Absatz …
 Mit freundlichen Grüßen
 ```
 
-- `datum`: Briefdatum (JJJJ-MM-TT, wird als „11. November 2026“ gesetzt). Pflicht: Ohne gültiges `datum` baut das Skript nicht, und es setzt nie selbst das Tagesdatum ein, damit dieselben Quellen dieselbe Mappe ergeben. Für das PDF darf es höchstens 7 Tage (`limits:letter.max_age_days`) alt sein; sonst `datum` auf den Versandtag setzen, neu bauen und erneut freigeben lassen. <!-- rule: letter.date -->
+- `datum`: Briefdatum (JJJJ-MM-TT, wird als „11. November 2026“ gesetzt). Pflicht: Ohne gültiges `datum` baut das Skript nicht, und es setzt nie selbst das Tagesdatum ein, damit dieselben Quellen dieselbe Mappe ergeben. Für das PDF darf es höchstens 7 Tage (`limits:letter.max_age_days`) alt sein; sonst `datum` auf den Versandtag setzen, neu bauen und erneut freigeben lassen. Dasselbe Datum steht mit dem Ort unter dem Lebenslauf (Regel `cv.sign-off` in `references/template.md`). <!-- rule: letter.date -->
 - `ort`: Wohnort aus dem Profil.
 - `betreff_einleitung` und `betreff` ergeben den zweistufigen Betreff. Der Agent setzt die Einleitung ausdrücklich: bei Ausbildung „Bewerbung um einen Ausbildungsplatz zum/zur“ (passend zur Berufsbezeichnung), sonst „Bewerbung als“ bzw. „Bewerbung um einen Praktikumsplatz als“; `betreff` ist `occupation` aus `job.json`. Ohne Angabe nutzt das Skript die neutrale Form mit „als“. <!-- rule: letter.subject -->
 - Die Referenzzeile „Ihre Anzeige bei der Bundesagentur für Arbeit, Ref.-Nr. …“ setzt das Skript aus `job.json`.

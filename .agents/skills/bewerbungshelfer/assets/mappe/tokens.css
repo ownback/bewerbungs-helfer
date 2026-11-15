@@ -7,10 +7,10 @@
    Zwei Ebenen wie bei Apple-Materialien:
    1. Inhaltsebene: weißes Papier, Text, Scans. Nie Glas.
    2. Funktionsebene (Glisse): Deckblatt-Leiste mit Kontakt und Inhalt, Registerreiter mit
-      Seitenzahl, Bildschirmleiste und Seitennavigation. Glas ist druckfest aus Verläufen,
+      Abschnittsname und Seitenzahl, Bildschirmleiste und Seitennavigation. Glas ist druckfest aus Verläufen,
       Innenkante und Haarlinie gebaut; backdrop-filter nur zusätzlich auf dem Bildschirm.
    Registerreiter: Jede Inhaltsseite trägt oben einen Reiter in der Spalte ihres Abschnitts
-   (6 Spalten = 6 Abschnitte, data-section="1…6"); im Reiter steht die Seitenzahl.
+   (6 Spalten = 6 Abschnitte, data-section="1…6"); im Reiter stehen der Name des Abschnitts und die Seitenzahl.
    Eckige Klammern sind Platzhalter und müssen vor der Freigabe ersetzt werden.
    Keine persönlichen Daten, keine Unternehmensnamen, keine externen Ressourcen.
    Schrift: Inter (OFL), statisch und eingebettet (fonts.css, Block <style id="font-inter"> am Ende des Kopfs).
@@ -60,9 +60,11 @@
   /* Typografie: eine Familie (Inter, statisch 400/500/600/700), Hierarchie über Größe und Gewicht.
      Gewichte nur 400, 500, 600, 700 verwenden (andere Werte fallen auf den nächsten Schnitt). */
   --sans: "Inter", "Helvetica Neue", "Segoe UI", "Noto Sans", Arial, sans-serif;
+  --fs-tab: 7pt;                   /* Abschnittsname im Registerreiter */
   --fs-caption: 7.4pt;
   --fs-small: 8.5pt;
   --fs-body: 9.6pt;
+  --fs-letter: 10pt;               /* Brieftext im Anschreiben */
   --fs-h4: 10.2pt;
   --fs-h3: 12pt;
   --fs-lead: 15.5pt;

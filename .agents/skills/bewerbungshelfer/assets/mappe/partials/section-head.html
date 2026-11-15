@@ -1,5 +1,7 @@
-{{! Registerreiter jeder Inhaltsseite: Abschnittstitel und Seitenzahl. Die Spalte setzt data-section der Seite. }}
+{{! Kopf jeder Inhaltsseite: Abschnittstitel und Registerreiter. Im Reiter stehen der Name des Abschnitts (tab) und
+   die Seitenzahl; die Spalte setzt data-section der Seite. Die Inhaltsangabe aller Abschnitte steht nur auf dem
+   Deckblatt. }}
     <header class="section-head" data-part="section-head">
       <h2 id="{{id}}">{{title}}{{#continued}}<span class="continued">Fortsetzung</span>{{/continued}}</h2>
-      <span class="folio" aria-label="Seite {{number}}">{{number}}</span>
+      <span class="folio" aria-label="{{tab}}, Seite {{number}}"><span class="folio-name">{{tab}}</span><span class="folio-no">{{number}}</span></span>
     </header>

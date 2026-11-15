@@ -1,5 +1,8 @@
 {{! Lebenslauf-Seite. Der Kopf (hero) steht nur auf der ersten Seite. Jeder Eintrag in blocks hat genau einen
    der fünf Blöcke gesetzt; welche Blöcke auf welcher Seite stehen, legt presentation.cv_layout im Profil fest.
+   Blocküberschriften sind reiner Text mit einer durchgezogenen Linie darunter, ohne Icon.
+   Die letzte Lebenslauf-Seite endet mit Ort, Datum, Unterschrift und Name (sign): das Datum ist das Briefdatum
+   der Stelle, in Vorlagen ein Platzhalter; das Unterschriftsbild erscheint nur mit valid und consent.
    Zeiträume, Texte, Chips und Skalen kommen nur aus dem Profil. Kein Kurzprofil hier: es steht auf dem Deckblatt. }}
   <!-- {{comment}} -->
   <section class="page{{#compact}} cv-compact{{/compact}}" data-section="{{section_no}}" aria-labelledby="{{aria}}" data-part="cv">
@@ -28,7 +31,7 @@
 {{#blocks}}
 {{#experience}}
     <section class="cv-section" aria-labelledby="experience-title">
-      <h3 class="cv-section-head" id="experience-title"><svg class="icon"><use href="#i-briefcase"/></svg>Praktische Erfahrung</h3>
+      <h3 class="cv-section-head" id="experience-title">Praktische Erfahrung</h3>
 {{#items}}
 {{> timeline-item}}
 {{/items}}
@@ -37,7 +40,7 @@
 {{/experience}}
 {{#education}}
     <section class="cv-section" aria-labelledby="education-title">
-      <h3 class="cv-section-head" id="education-title"><svg class="icon"><use href="#i-graduation"/></svg>Schulbildung</h3>
+      <h3 class="cv-section-head" id="education-title">Schulbildung</h3>
 {{#items}}
 {{> timeline-item}}
 {{/items}}
@@ -46,7 +49,7 @@
 {{/education}}
 {{#projects}}
     <section class="cv-section" aria-labelledby="projects-title">
-      <h3 class="cv-section-head" id="projects-title" data-origin="{{origin}}"><svg class="icon"><use href="#{{icon}}"/></svg>{{title}}</h3>
+      <h3 class="cv-section-head" id="projects-title" data-origin="{{origin}}">{{title}}</h3>
 {{#items}}
 {{> timeline-item}}
 {{/items}}
@@ -55,7 +58,7 @@
 {{/projects}}
 {{#skills}}
     <section class="skills-band" aria-labelledby="skills-title">
-      <h3 class="cv-section-head" id="skills-title"><svg class="icon"><use href="#i-wrench"/></svg>Fähigkeiten</h3>
+      <h3 class="cv-section-head" id="skills-title">Fähigkeiten</h3>
       <div class="skill-legend" aria-label="Skala">
         <p class="skill-legend-title">Skala <span>1–5</span></p>
 {{#legend}}
@@ -74,7 +77,7 @@
 {{/skills}}
 {{#languages}}
     <section class="cv-section" aria-labelledby="languages-title">
-      <h3 class="cv-section-head" id="languages-title"><svg class="icon"><use href="#i-globe"/></svg>Sprachen</h3>
+      <h3 class="cv-section-head" id="languages-title">Sprachen</h3>
       <div class="language-list">
 {{#items}}
         <div class="language" data-origin="{{origin}}"><span class="language-name">{{name}}</span>{{#bars}}{{> bars}}{{/bars}}<span class="language-level">{{level}}</span></div>
@@ -83,4 +86,17 @@
     </section>
 {{/languages}}
 {{/blocks}}
+{{#sign}}
+    <div class="signature cv-sign">
+{{#date}}
+      <p class="cv-sign-date" data-origin="{{origin}}">{{place}}, {{date}}</p>
+{{/date}}
+{{#signature}}
+      <img class="signature-img" src="{{src}}" alt="{{alt}}" data-origin="{{origin}}">
+{{/signature}}
+{{#signer}}
+      <div class="signature-name" data-origin="{{origin}}"><strong>{{name}}</strong></div>
+{{/signer}}
+    </div>
+{{/sign}}
   </section>

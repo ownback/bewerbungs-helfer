@@ -32,10 +32,10 @@ Die Schemaprüfung braucht keine Installation: `validate` nutzt `tools/schema_li
 - **Füllgrad der Lebenslauf-Seiten:** nur Information, Grundlage für `presentation.cv_layout` (Richtwert und Vorgehen: Regel `cv.layout` in `references/template.md`).
 - **Bildschirmbreiten:** kein horizontaler Überlauf in den Fenstern 1440 × 900 (`limits:qa.viewports.desktop`), 390 × 844 (`limits:qa.viewports.mobile`) und 375 × 812 (`limits:qa.viewports.mobile_375`). <!-- rule: qa.viewports --> Die Ausgabe nennt immer alle drei Werte: `Horizontaler Überlauf (px): 1440: 0 · 390: 0 · 375: 0`; im Manifest steht `validation.hscroll` je Breite, `hscroll_mobile` ist der größere der beiden Mobilwerte. Headless-Chromium erzwingt mindestens ca. 500 px Fensterbreite, deshalb misst das Skript jede Breite in einem iframe exakter Größe (Media-Queries gelten dort für die Iframe-Breite); stimmt die gemessene Breite nicht, gilt die Messung als Fehler.
 - **E-Mail-Entwurf** (Regel `email.required` in `references/writing.md`): Fehlt `application/email.md` bei Bewerbungsweg `email`, ist die Datei leer oder enthält sie offene `[Platzhalter]`, meldet `application --qa` (und `qa <html>` im Bewerbungsordner) einen FEHLER mit Exit-Code 2, `validate` meldet FEHLER, sobald die Mappe gebaut ist (ab Status `draft`; bei `captured` ist der Entwurf noch nicht fällig), und `application --pdf` verweigert den Export. Das HTML wird trotzdem gebaut (Entwürfe bleiben möglich); die Freigabe (`status … html_approved`) warnt, bis der Entwurf vorliegt. Bei `post`, `portal` und `unknown` ist kein Entwurf nötig. Ergebnis im Manifest: `validation.email_draft` (`ok`, `missing`, `empty`, `placeholders`, `not_required`).
-- **Platzhalter:** keine `[GROSSBUCHSTABEN …]` außerhalb von Kommentaren. In der Profilvorlage sind genau die Platzhalter aus `assets/mappe/master.json` (`slots`: Anschreiben und Motivationsschreiben) gewollt; jeder andere zählt als Befund.
+- **Platzhalter:** keine `[GROSSBUCHSTABEN …]` außerhalb von Kommentaren. In der Profilvorlage sind genau die Platzhalter aus `assets/mappe/master.json` (`slots`: Anschreiben, Motivationsschreiben, Datum unter dem Lebenslauf) gewollt; jeder andere zählt als Befund.
 - **Bilder:** alle lokalen Bilder vorhanden.
 - **Klassen:** Hinweis auf Klassen in der Mappe, die weder eine CSS-Regel noch ein Partial kennt (`references/template.md`, Vertrag prüfen).
-- **Wörter:** Wortzahl von Anschreiben (Regel `letter.length` in `references/writing.md`) und Motivationsschreiben (Regel `motivation.length` in `references/writing.md`), als Hinweis neben den Richtwerten.
+- **Wörter:** Wortzahl von Anschreiben (Regel `letter.length` in `references/writing.md`) und Motivationsschreiben (Regel `motivation.length` in `references/writing.md`), als Hinweis neben den Richtwerten; liegt die Zahl über dem Richtwert der gewählten Dichte, steht das dabei.
 
 Das Ergebnis steht im Manifest unter `validation`. Die automatische Prüfung ersetzt nicht den Blick auf die Seiten: Elemente, die innerhalb der Seite aus ihrem Block ragen (z. B. ein langer Name in die Glasleiste), erkennt sie nicht. Deshalb immer:
 
@@ -114,7 +114,7 @@ Er klont das Repository nach `.tmp/fresh-clone/`, kopiert den Profilordner hinei
 
 - [ ] sechs Abschnitte in der richtigen Reihenfolge, Folgeseiten nur für Lebenslauf oder Nachweise
 - [ ] QA ohne Befund, alle Seiten als Bild angesehen
-- [ ] Inhaltsangabe und Reiter-Seitenzahlen stimmen
+- [ ] Inhaltsangabe, Reiternamen und Reiter-Seitenzahlen stimmen
 - [ ] feste Vorgaben eingehalten (Regel `design.fixed` in `references/template.md`)
 - [ ] Fähigkeiten nur mit gespeicherten Skalen; nur Technologien aus dem Profil; alle Logos lokal
 - [ ] Nachweise lesbar; Nachweis-Paar nach Regel `evidence.pair` in `references/template.md`
@@ -210,7 +210,7 @@ Die Prüfung läuft an zwei Stellen von selbst:
 - `pins`: jede geänderte Datei unter `assets/mappe/` ist von einer Anfrage in der Warteschlange gedeckt (Regel `pins.one-writer` in `references/tencil.md`)
 - `docs`: die Doku passt zum Rest des Repositorys
   - jede Regel-Id (`<!-- rule: <id> -->`) ist genau einmal definiert; jeder Verweis „Regel `<id>` in `<datei>`“ nennt eine vorhandene Regel und ihr Zuhause
-  - jeder Pfad und Dateiname in `…` existiert; jeder Befehl und Schalter von `build_mappe.py`, `check_repo.py`, `pin_queue.py`, `fresh_clone_test.py`, `serve_template.py` und `devicon_symbols.py` existiert; jedes Schemafeld (`person.phone`, `job:contact`) steht in einem Schema; jede Symbol-Id steht in `assets/mappe/icons.svg`, und jedes Symbol dort steht in der Liste in `references/template.md`
+  - jeder Pfad und Dateiname in `…` existiert; jeder Befehl und Schalter von `build_mappe.py`, `check_repo.py`, `pin_queue.py`, `fresh_clone_test.py`, `serve_template.py` und `devicon_symbols.py` existiert; jedes Schemafeld (`person.phone`, `job:contact`) steht in einem Schema; jede Symbol-Id steht in `assets/mappe/icons.svg`, jedes Symbol dort steht in der Liste in `references/template.md`, und jedes Logo-Symbol (`dv-…`, `si-…`) hat genau einen Eintrag in `assets/icons/sources.json`
   - jeder Schlüssel `limits:<pfad>` steht in `assets/mappe/limits.json`; eine Zahl direkt vor „(`limits:<pfad>`)“ hat den Wert aus der Datei; Zahlen neben bekannten Stichwörtern (Wörter, Tage Briefdatum, Fenstergrößen, Zahl der Symbole und Abschnitte) passen zu `limits.json` oder zum gezählten Wert; jeden Wert in `limits.json` liest `tools/build_mappe.py`
   - keine Formulierung aus `tools/stale-terms.txt` steht in einer Datei (außer in `CHANGELOG.md`)
 
@@ -221,4 +221,4 @@ Dazu von Hand:
 - vor einem Commit, der Vorlage, Build-Skript oder Schemas berührt: `python3 tools/fresh_clone_test.py --working-tree` (Abschnitt Reproduzierbarkeit)
 - alle Schemas gültig nach Draft 2020-12 (nur mit dem optionalen Paket `jsonschema`): `.tmp/venv/bin/python -c "import json,sys,jsonschema; [jsonschema.Draft202012Validator.check_schema(json.load(open(f))) for f in sys.argv[1:]]" .agents/skills/bewerbungshelfer/assets/schemas/*.json`
 - `python3 tools/build_mappe.py --help` läuft
-- Symbole reproduzierbar: `python3 tools/devicon_symbols.py` auf den Quellen aus `assets/icons/README.md` liefert die 34 Logo-Symbole (25 Devicon, 9 Simple Icons) in `assets/mappe/icons.svg` Byte für Byte
+- Symbole reproduzierbar: `python3 tools/devicon_symbols.py` auf den Quellen aus `assets/icons/README.md` liefert die 39 Logo-Symbole (28 Devicon, 11 Simple Icons) in `assets/mappe/icons.svg` Byte für Byte

@@ -82,8 +82,8 @@
       "compact": false,
       "pages": [
         [
-          "experience",
           "education",
+          "experience",
           "skills",
           "languages"
         ]

@@ -1,6 +1,7 @@
-{{! Ein Eintrag in Erfahrung, Schulbildung oder Projekten: Zeitraum links, rechts Name, optional Ort und Rolle
-   (meta), ein Satz Text und eine Chipzeile. Näherungen stehen als „ca. …“ im Zeitraum. }}
+{{! Ein Eintrag in Schulbildung, Erfahrung oder Projekten: Zeitraum links; rechts der Name, dahinter in derselben
+   Zeile der Ort (optional), darunter Rolle (optional), ein Satz Text und eine Chipzeile. Näherungen stehen als
+   „ca. …“ im Zeitraum. Zwischen zwei Einträgen zieht das CSS eine Haarlinie. }}
       <article class="timeline-item" data-part="timeline-item" data-origin="{{origin}}">
         <p class="timeline-date">{{date}}</p>
-        <div class="timeline-content"><h4>{{name}}</h4>{{#meta}}<p class="timeline-place">{{place}}</p><p class="timeline-role">{{role}}</p>{{/meta}}{{#text}}<p class="timeline-text">{{text}}</p>{{/text}}{{#chipline}}<p class="skill-chips timeline-chips">{{#chips}}{{> chip}}{{/chips}}</p>{{/chipline}}</div>
+        <div class="timeline-content"><h4>{{name}}{{#place}}<span class="timeline-place">, {{place}}</span>{{/place}}</h4>{{#role}}<p class="timeline-role">{{role}}</p>{{/role}}{{#text}}<p class="timeline-text">{{text}}</p>{{/text}}{{#chipline}}<p class="skill-chips timeline-chips">{{#chips}}{{> chip}}{{/chips}}</p>{{/chipline}}</div>
       </article>

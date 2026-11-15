@@ -29,7 +29,7 @@ Simple Icons (https://github.com/simple-icons/simple-icons) stellt seine Icons u
 (Public Domain Dedication, https://creativecommons.org/publicdomain/zero/1.0/). Es besteht keine Pflicht
 zur Namensnennung. Die abgebildeten Marken und Logos gehören ihren jeweiligen Inhabern.
 
-## Lucide 0.469.0 (Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`), ISC
+## Lucide 0.469.0 (Linien-Icons `i-cable`, `i-router`, `i-shield`, `i-waypoints`, `i-ethernet`), ISC
 
 Quelle: lucide-static 0.469.0, https://lucide.dev. Lucide-Lizenz: Die Copyright-Hinweise für Teile von Lucide
 halten Cole Bemis 2013–2022 als Teil von Feather (MIT) und die Lucide-Mitwirkenden 2022 für den Rest.

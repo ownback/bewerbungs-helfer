@@ -55,7 +55,7 @@ Nur zu den Punkten der Abweichungsliste und zu Feldern, die das Profil braucht u
 - Telefon (so speichern, wie es erscheinen soll, z. B. „+49 …“), E-Mail für Bewerbungen
 - Geburtsdatum und Geburtsort (optional; Schreibweise des Orts nach Regel `person.birth-place` in `references/profile-schema.md`; im Lebenslauf nur mit `presentation.show_birth_data: true`)
 - Bewerbungsfoto: gültig, aktuell, zum Nutzer gehörend, ausdrücklich freigegeben (Regel `person.photo` in `references/profile-schema.md`)? Größe und Ausschnitt (`photo.focus`) nach Regel `cover.photo-crop` in `references/template.md`; den Ausschnitt wählt der Agent mit dem Nutzer an der Vorschau.
-- Unterschrift als Bild: gültig und freigegeben?
+- Unterschrift als Bild: gültig und freigegeben? Wörtlich fragen: „Darf deine Unterschrift als Bild in der Mappe stehen, unter dem Anschreiben und am Ende des Lebenslaufs?“ Nur ein Ja für beide Stellen setzt `consent: true` (Regel `person.signature` in `references/profile-schema.md`).
 
 ### Block 3: Schulbildung
 

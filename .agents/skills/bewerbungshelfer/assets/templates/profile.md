@@ -16,7 +16,7 @@
 - Geburtsdaten im Lebenslauf zeigen: nein|ja (nur nach Freigabe)
 - Staatsangehörigkeit:
 - Bewerbungsfoto: Datei | gültig ja/nein | freigegeben ja/nein | Ausschnitt
-- Unterschrift: Datei | gültig ja/nein | freigegeben ja/nein
+- Unterschrift: Datei | gültig ja/nein | freigegeben für Anschreiben und Lebenslauf ja/nein
 - Status je Angabe: confirmed|inferred|open|conflict
 
 ## Ziel

@@ -27,7 +27,7 @@ Name, `first_name` und `last_name` (sie steuern die Namensgröße auf dem Deckbl
 - Geburtsdatum (Anzeige „TT.MM.JJJJ“) und -ort sind optional und erscheinen nur bei `presentation.show_birth_data: true`. Der Ort steht in der vom Nutzer bestätigten deutschen Schreibweise, im Ausland mit Land („Ort, Land“, z. B. „Krakau, Polen“). Der Lebenslauf trennt am letzten Komma: Ort und Land stehen untereinander, ohne Komma. Ohne Komma bleibt der Ort einzeilig. <!-- rule: person.birth-place -->
 - `driving_license` (optional): Klasse als Text mit Präfix („Klasse B“). Der Lebenslauf zeigt „Führerschein Klasse B“; leer oder fehlend = keine Zeile.
 - `photo`: nur gültig, wenn die Datei lesbar ist, zum Nutzer gehört, `consent: true` gesetzt und ein Zuschnitt gewählt ist. `focus` steuert den Ausschnitt (`x`, `y` als Prozent, `zoom`); Werte nach Regel `cover.photo-crop` in `references/template.md`. Leere oder defekte Datei: `valid: false` und offener Punkt. <!-- rule: person.photo -->
-- `signature`: Bild der Unterschrift mit `valid` und `consent`. Nur dann im Anschreiben.
+- `signature`: Bild der Unterschrift mit `valid` (Datei lesbar, eigene Unterschrift) und `consent`. Die Einwilligung gilt für beide Stellen, an denen die Mappe unterschrieben ist: unter dem Anschreiben und am Ende des Lebenslaufs (Regel `cv.sign-off` in `references/template.md`). Ohne `valid` und `consent` erscheint das Bild an keiner der beiden Stellen; Name, Ort und Datum stehen trotzdem. <!-- rule: person.signature -->
 
 ## Ziel
 
@@ -76,7 +76,7 @@ Optional erscheinen ausgewählte Projekte im Lebenslauf-Block „Eigene Projekte
 - `show_in_cv: true` am Projekt und der Block `projects` in `presentation.cv_layout.pages`
 - `cv_summary`: ein kurzer, belegter Satz (höchstens 160 Zeichen); fehlt er, erscheint `own_role`
 - `chips`: Werkzeuge als Technik-Chips (ca. 4–6, Format wie bei Fähigkeiten), nur Werkzeuge aus `tools`; fehlt es, werden `tools` als Text-Chips gezeigt
-- Titel und Icon des Blocks: `presentation.cv_projects` (`title`, `icon`), Standard „Eigene Projekte“ mit `i-layers`
+- Titel des Blocks: `presentation.cv_projects.title`, Standard „Eigene Projekte“
 
 Nur mit dem Nutzer abgestimmte Projekte zeigen. Platzbedarf und Zahl der Einträge: Regel `cv.projects-block` in `references/template.md`.
 
@@ -90,7 +90,7 @@ Jedes Item:
 - optional `label`, `note`, `chips`:
   - `label`: kurze Kategorie als Zeilenname im Lebenslauf (ein bis zwei Wörter, höchstens ca. 16 Zeichen, sonst bricht die Zeile um), z. B. „Frontend“, „Tools“; ohne Angabe gilt `name`.
   - `note`: kleiner Zusatz unter dem Zeilennamen. Bei `level: learning` setzt das Build-Skript ohne Angabe „Lernstand“ (leerer String unterdrückt es); sonst nur ein knapper Beleg wie „eigene Projekte“. Bei `future` nie ein Zusatz.
-  - `chips`: Technik-Chips mit `name`, optional `logo` (`dv-…` Devicon oder `si-…` Simple Icons) oder `icon` (Linien-Icon `i-…`); verfügbare Ids: Regel `icons.list` in `references/template.md`. Reihenfolge wie genannt, höchstens ca. 6 je Zeile. Ohne `chips` bildet das Build-Skript Chips aus `evidence`; deshalb enthält `evidence` nur Technologien. Ein vorhandenes Logo ist kein Grund, eine Technik aufzunehmen. Welches Symbol zu welchem Begriff gehört: Regel `icons.mapping` in `assets/icons/README.md`.
+  - `chips`: Technik-Chips mit `name`, optional `logo` (`dv-…` Devicon oder `si-…` Simple Icons, in Markenfarbe) oder `icon` (Linien-Icon `i-…`, einfarbig); verfügbare Ids: Regel `icons.list` in `references/template.md`. Reihenfolge wie genannt, höchstens ca. 6 je Zeile. Ohne `chips` bildet das Build-Skript Chips aus `evidence`; deshalb enthält `evidence` nur Technologien. Ein vorhandenes Logo ist kein Grund, eine Technik aufzunehmen. Welches Symbol zu welchem Begriff gehört: Regel `icons.mapping` in `assets/icons/README.md`.
 - Eine Zeile = ein Thema mit genau einem Niveau; mehrere Technologien gleichen Niveaus teilen sich die Zeile und die Skala.
 - Gruppen: zwei bis vier, Name und Icon aus der Themenlage, z. B. „Systeme“ (`i-monitor`), „Netzwerk“ (`i-network`), „Entwicklung“ (`i-code`). Bei „Entwicklung“ trennen die Zeilenbezeichnungen Frontend, Backend und Mobile.
 
@@ -129,8 +129,8 @@ Fehlt ein Text, setzt das Build-Skript einen Platzhalter, den die QA meldet.
 - `footer: "none"` (keine Fußzeile; Seitenzahl im Registerreiter)
 - `cover_company_name: false`, `skill_display: "bars"`, `timeline_connectors: false`, `page_number_style: "plain_without_total"`
 - `show_birth_data`
-- `cv_layout`: `pages` (Blöcke je A4-Seite in Lesereihenfolge `experience`, `education`, `skills`, `languages`; optional `projects` irgendwo nach `experience`) und `compact` (`true` für alle Lebenslaufseiten oder eine Liste je Seite, z. B. `[false, true]`). Die Aufteilung wählt der Agent nach Regel `cv.layout` in `references/template.md`. Das Build-Skript warnt, wenn Sprachen vor Schulbildung oder Fähigkeiten stehen.
-- `cv_projects` (optional): `title` und `icon` des Blocks „Eigene Projekte“.
+- `cv_layout`: `pages` (Blöcke je A4-Seite in Lesereihenfolge `education`, `experience`, `skills`, `languages` nach Regel `cv.block-order` in `references/template.md`; optional `projects` irgendwo nach `experience`) und `compact` (`true` für alle Lebenslaufseiten oder eine Liste je Seite, z. B. `[true, false]`). Die Aufteilung wählt der Agent nach Regel `cv.layout` in `references/template.md`. Das Build-Skript warnt, wenn die Blöcke von dieser Reihenfolge abweichen.
+- `cv_projects` (optional): `title` des Blocks „Eigene Projekte“. `icon` ist ohne Wirkung (veraltet): Blocküberschriften haben kein Icon.
 - `icons`: ohne Wirkung (veraltet); Icons stehen je Gruppe (`icon`) und je Chip.
 
 ### Woher kommen die Anzeigewerte?
@@ -150,7 +150,7 @@ Alle Werte, die die Mappe zeigt, stehen im Profil. Ein neuer Durchlauf leitet si
 | `person.driving_license` | Zeile „Führerschein …“ in der Datenbox des Lebenslaufs | Antwort des Nutzers, leer = nicht gezeigt |
 | `presentation.show_birth_data` | Geburtsdaten im Lebenslauf | Antwort des Nutzers, Standard `false` |
 | `presentation.cv_layout` | Blöcke je Lebenslauf-Seite, Verdichtung | Regel in `references/template.md` (Lebenslauf); das Build-Skript meldet den Füllgrad |
-| `presentation.cv_projects` | Titel und Icon des Projektblocks | nur mit Projekten im Lebenslauf; Antwort des Nutzers |
+| `presentation.cv_projects` | Titel des Projektblocks | nur mit Projekten im Lebenslauf; Antwort des Nutzers |
 
 ## Offene Punkte
 

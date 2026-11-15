@@ -56,7 +56,7 @@ ALLOWED = (
     f'{SKILL}/assets/mappe/qa.html', f'{SKILL}/assets/mappe/master.json', f'{SKILL}/assets/mappe/limits.json',
     f'{SKILL}/assets/mappe/partials/*.html',
     f'{SKILL}/assets/fonts/*.woff2', f'{SKILL}/assets/fonts/OFL.txt', f'{SKILL}/assets/fonts/README.md',
-    f'{SKILL}/assets/icons/*.md',
+    f'{SKILL}/assets/icons/*.md', f'{SKILL}/assets/icons/sources.json',
     f'{SKILL}/assets/schemas/*.schema.json',
     f'{SKILL}/assets/templates/*.json', f'{SKILL}/assets/templates/*.md',
     f'{SKILL}/references/*.md',
@@ -395,6 +395,7 @@ DOC_EXEMPT = ('CHANGELOG.md', STALE_TERMS)  # der Verlauf und die Liste selbst d
 LIMITS = f'{SKILL}/assets/mappe/limits.json'
 ICONS = f'{SKILL}/assets/mappe/icons.svg'
 ICON_HOME = f'{SKILL}/references/template.md'  # dort steht die Liste aller Symbol-Ids
+ICON_SOURCES = f'{SKILL}/assets/icons/sources.json'  # Quelldatei und Farbe je Logo-Symbol
 RULE_ID = r'[a-z0-9-]+(?:\.[a-z0-9-]+)+'
 RULE_DEF = re.compile(r'<!--\s*rule:\s*(.*?)\s*-->')
 RULE_REF = re.compile(rf'\bRegel `({RULE_ID})`(?: in `([^`\n]+)`)?')
@@ -716,6 +717,14 @@ def check_docs(files: list[str] | None = None, only: str | None = None) -> list[
     home = docs.get(ICON_HOME, '')
     out += [f'docs: {ICON_HOME}: Symbol „{s}“ aus {ICONS} fehlt in der Liste (Icons und Logos)'
             for s in symbols if f'`{s}`' not in home]
+    try:
+        listed = set(json.loads((ROOT / ICON_SOURCES).read_text(encoding='utf-8'))['symbols'])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        return out + [f'docs: {ICON_SOURCES}: nicht lesbar ({e})']
+    logo_ids = {s for s in symbols if not s.startswith('i-')}
+    out += [f'docs: {ICON_SOURCES}: Logo-Symbol „{s}“ aus {ICONS} hat keinen Eintrag (Quelldatei und Farbe)'
+            for s in sorted(logo_ids - listed)]
+    out += [f'docs: {ICON_SOURCES}: Eintrag „{s}“ ohne Symbol in {ICONS}' for s in sorted(listed - logo_ids)]
     used = set(re.findall(r'''limit\(['"]([a-z0-9_.]+)['"]\)''', read_text('tools/build_mappe.py') or ''))
     out += [f'docs: {LIMITS}: „{key}“ liest tools/build_mappe.py nicht (limit(…)); streichen oder verwenden'
             for key, value in limits.items() if not isinstance(value, dict)
@@ -744,7 +753,7 @@ def check_docs(files: list[str] | None = None, only: str | None = None) -> list[
 CHECKS = {'privacy': check_privacy, 'stray': check_stray, 'schemas': check_schemas, 'template': check_template,
           'pins': check_pins, 'docs': check_docs}
 # Dateien, deren Inhalt die Doku zitiert: Nach einer Änderung dort prüft der Hook die ganze Doku.
-DOC_INPUTS = (LIMITS, ICONS, STALE_TERMS, f'{SKILL}/assets/schemas/', 'tools/')
+DOC_INPUTS = (LIMITS, ICONS, ICON_SOURCES, STALE_TERMS, f'{SKILL}/assets/schemas/', 'tools/')
 
 
 def cmd_rules() -> int:

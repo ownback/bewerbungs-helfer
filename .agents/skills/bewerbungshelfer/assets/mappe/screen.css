@@ -59,7 +59,10 @@
   }
   .icon { width: 15px; height: 15px; }
   .label { font-size: 12px; }
-  .folio { height: 42px; padding: 0 9px 8px; font-size: 15px; border-radius: 0 0 9px 9px; }
+  /* Schmal: Die Registerspalte wäre zu eng für den Namen; der Reiter steht links und ist so breit wie sein Text. */
+  .folio { left: var(--pad-x); width: auto; height: 42px; grid-template-columns: auto auto; gap: 8px; padding: 0 10px 8px; border-radius: 0 0 9px 9px; }
+  .folio-name { font-size: 12px; }
+  .folio-no { font-size: 15px; }
   .section-head { margin-bottom: 26px; }
   .section-head h2 { font-size: 31px; }
   .section-head .continued { font-size: 13px; }
@@ -93,6 +96,8 @@
   .letter-date { margin-top: 22px; font-size: 13px; }
   .subject-kicker { font-size: 14px; }
   .signature-name { font-size: 13px; }
+  .cv-sign { margin-top: 30px; }
+  .cv-sign-date { font-size: 14px; }
   .letter-subject { margin-top: 30px; margin-bottom: 20px; }
   .subject-title { font-size: 22px; }
   .subject-ref { font-size: 12px; }
