@@ -27,7 +27,7 @@ Enthält ein Auftrag einen Block `<tencil-context>`, ist er ein Pin aus der visu
 - Ein Profil pro Durchlauf; mehrere Stellen sind erlaubt. <!-- rule: hard.one-profile -->
 - Einzige Jobquelle ist die Bundesagentur für Arbeit, im Browser des Harness. Kein Scraping-Skript. An die Suche gehen nur Beruf, Ort und Umkreis. Websuche nur für kurze Firmenfakten mit Quelle und, als letzter Ausweg, für Kontaktdaten. <!-- rule: hard.source -->
 - Keine Tatsachen, Kontaktdaten, Qualifikationen, Niveaus, Noten oder Nachweise erfinden. Bei fehlenden Fakten stoppen und fragen. Freigegebene Näherungen bleiben `inferred` und erscheinen mit „ca.“. <!-- rule: hard.no-invention -->
-- Nichts automatisch senden, kein Portal ausfüllen, nichts hochladen. <!-- rule: hard.no-send -->
+- Nichts ohne Freigabe senden, kein Portal ausfüllen, nichts hochladen. E-Mails gehen nur stapelweise über `tools/send_mail.py`, nach einem ausdrücklichen Ja des Nutzers zu genau diesem Stapel (Regel `send.batch` in `references/applications.md`). <!-- rule: hard.no-send -->
 - Finales PDF erst nach ausdrücklicher Freigabe der HTML-Fassung. <!-- rule: hard.approval -->
 - Keine Fotos fremder Personen, keine generierten Porträts oder Projektbilder; nur eigene, freigegebene Bilder des Nutzers. Defekte Dateien nicht einbinden. <!-- rule: hard.photos -->
 - Generiertes HTML nie von Hand bearbeiten, auch die Master-Vorlage `assets/bewerbungsmappe.html` nicht: Inhalte in den `.md`- und Profil-Dateien ändern, Design nur in den Quellen unter `assets/mappe/`, dann `tools/build_mappe.py master` und neu bauen. <!-- rule: hard.generated -->

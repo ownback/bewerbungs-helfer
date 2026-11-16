@@ -2,6 +2,12 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-16: E-Mail-Versand stapelweise nach Freigabe
+
+- **Neu:** `tools/send_mail.py` (Standardbibliothek): `setup`, `check`, `preview`, `test`, `send`, `replies`. Versand über SMTP mit App-spezifischem Passwort, Kopie in „Gesendet“ per IMAP, danach `mark-sent`; `replies` listet Antworten der Firmen-Domains, nur lesend (Regel `send.batch` in `references/applications.md`).
+- **Regel `hard.no-send` geändert:** vorher „nichts automatisch senden“, der Nutzer schickte jede E-Mail selbst. Jetzt sendet der Agent E-Mails stapelweise, aber nur nach einem ausdrücklichen Ja des Nutzers zu genau diesem Stapel. Portale und Post bleiben beim Nutzer.
+- **Zugangsdaten** liegen außerhalb des Repos unter `~/.config/bewerbungs-helfer/` (0600) und kommen über die sichere Eingabe des Harness, nie über den Chat.
+
 ## 2026-11-15: Leitfäden des Nutzers für Anschreiben, E-Mail und Motivationsschreiben
 
 Der Nutzer hat festgelegt, wie seine Texte aufgebaut sind. Das Aussehen der Mappe ist unverändert.

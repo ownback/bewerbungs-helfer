@@ -405,10 +405,10 @@ PATH_ROOTS = ('references/', 'assets/', 'tools/', '.claude/', '.agents/')
 PROFILE_ASSETS = re.compile(r'assets/\{?(documents|photos|signature|profile)(/|$)')
 FILE_NAME = re.compile(r'[A-Za-z0-9_][A-Za-z0-9_.-]*\.(py|css|svg|js|html|json|md|txt|yaml|woff2)')
 # Dateinamen, die erst zur Laufzeit oder außerhalb des Repositorys entstehen
-LOCAL_NAMES = {'portal_page.md', 'DROPPED.txt', 'privacy-needles.txt', 'tencil.js'}
+LOCAL_NAMES = {'portal_page.md', 'DROPPED.txt', 'privacy-needles.txt', 'tencil.js', 'mail.json', 'sent.json'}
 FIELD = re.compile(r'(?:(profile|job):)?([a-z_][a-z_0-9]*(?:\[[^\]]*\])?(?:\.[a-z_][a-z_0-9]*(?:\[[^\]]*\])?)*)')
 ICON_ID = re.compile(r'(?:i|dv|si)-[a-z0-9]+(?:-[a-z0-9]+)*')
-TOOL_CALL = re.compile(r'\b(build_mappe|check_repo|pin_queue|fresh_clone_test|serve_template|devicon_symbols)\.py'
+TOOL_CALL = re.compile(r'\b(build_mappe|check_repo|pin_queue|send_mail|fresh_clone_test|serve_template|devicon_symbols)\.py'
                        r'"?([^`\n#]*)')
 FLAG = re.compile(r'(?<![\w-])--[a-z][a-z-]*')
 EXTERNAL_FLAGS = {'--help', '--model', '--user', '--now'}  # Schalter anderer Programme, die die Doku nennt
@@ -535,12 +535,14 @@ def tool_tables() -> tuple[dict[str, dict[str, set[str]]], dict[str, set[str]]]:
     sys.path.insert(0, str(ROOT / 'tools'))
     import build_mappe
     import pin_queue
+    import send_mail
 
     def table(parser) -> dict[str, set[str]]:
         subs = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction)).choices
         return {name: {o for a in sub._actions for o in a.option_strings} for name, sub in subs.items()}
 
     commands = {'build_mappe': table(build_mappe.build_parser()), 'pin_queue': table(pin_queue.build_parser()),
+                'send_mail': table(send_mail.build_parser()),
                 'check_repo': {name: {'--quiet'} for name in (*CHECKS, 'all', 'hook', 'rules')}}
     flags = {tool: set(re.findall(r"'(--[a-z][a-z-]*)'", (ROOT / 'tools' / f'{tool}.py').read_text(encoding='utf-8')))
              for tool in ('fresh_clone_test', 'serve_template', 'devicon_symbols')}

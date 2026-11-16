@@ -128,9 +128,9 @@ python3 tools/build_mappe.py application <stellenordner> --qa --pdf
 
 Die Freigabe gilt für genau den gezeigten Stand (Regel `approval.checksum` in `references/qa-and-export.md`). Wann das Skript das PDF verweigert: Regel `pdf.refuse` in `references/qa-and-export.md`.
 
-### 7. Versand durch den Nutzer und Ablage
+### 7. Versand und Ablage
 
-Der Nutzer sendet selbst (E-Mail-Entwurf in `email.md`, Kontaktdaten in `kontaktdaten.md`; Regel `hard.no-send` in `CLAUDE.md`). Erst wenn der Nutzer bestätigt, dass die Bewerbung raus ist:
+Bewerbungsweg `email`: Versand stapelweise über `tools/send_mail.py`, nur nach Freigabe des Stapels (Regel `send.batch` in `references/applications.md`); das Skript setzt `sent` selbst. Portal und Post erledigt der Nutzer (Regel `hard.no-send` in `CLAUDE.md`). Erst wenn er bestätigt, dass die Bewerbung raus ist:
 
 ```bash
 python3 tools/build_mappe.py mark-sent <stellenordner> --channel email|post|portal

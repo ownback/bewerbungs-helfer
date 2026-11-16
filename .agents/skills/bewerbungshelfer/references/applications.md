@@ -161,6 +161,18 @@ python3 tools/build_mappe.py mark-sent <stellenordner> --channel email [--date J
 
 Der Ordner wird nach `applications/sent/<typ>/<beruf>/<suchort>/<NN-…>/` verschoben, leere Elternordner werden entfernt, Manifest und Ledger bekommen `sent`, Datum und Kanal.
 
+## E-Mail-Versand
+
+<!-- rule: send.batch -->
+E-Mails sendet nur `tools/send_mail.py`, stapelweise und erst nach einem ausdrücklichen Ja des Nutzers zu genau dem gezeigten Stapel. Ablauf:
+
+1. Einmalig: App-spezifisches Passwort (account.apple.com bzw. beim jeweiligen Anbieter) und Login-Adresse über die sichere Eingabe des Harness holen, nie im Chat. `send_mail.py setup --user <login> --password-file <datei>` legt sie unter `~/.config/bewerbungs-helfer/` (0600) ab, außerhalb des Repos. Bei iCloud ist der Login die `@icloud.com`-Adresse, nicht die Apple-ID; Server und Ordner stehen als Vorgaben im Skript und lassen sich in `mail.json` überschreiben. `send_mail.py check` prüft die Anmeldung.
+2. `send_mail.py test <stelle>`: eine Testmail an den Absender selbst, bevor der erste Stapel rausgeht.
+3. `send_mail.py preview <stellen>…` zeigen: Empfänger, Betreff, Anhang, Probleme. Das Skript verweigert eine Stelle ohne Bewerbungsweg `email`, ohne Status `pdf_exported`, mit Briefdatum älter als sieben Tage (Regel `letter.date` in `references/writing.md`), mit Platzhaltern oder wenn sie schon gesendet ist.
+4. Nach dem Ja: `send_mail.py send <stellen>… --yes`. Abstand zwischen zwei Mails 45 Sekunden (`--delay`). Je Stelle schreibt das Skript `application/sent.json` (Zeit, Empfänger, Message-ID), legt eine Kopie in „Gesendet“ ab, falls der Server das nicht selbst tut, und ruft `mark-sent --channel email` auf.
+
+Absender ist `person.email` aus dem Profil, der Text der Entwurf `application/email.md` (Regel `email.text` in `references/writing.md`), der einzige Anhang die Mappe als PDF, benannt `Bewerbungsmappe_<Vorname>_<Nachname>.pdf`. Antworten: `send_mail.py replies [--days N]` listet Nachrichten im Posteingang von den Domains der gesendeten Bewerbungen, nur lesend; den neuen Status (`interview`, `rejected` …) setzt der Agent erst nach Rücksprache mit dem Nutzer.
+
 ## Statistik
 
 ```bash
