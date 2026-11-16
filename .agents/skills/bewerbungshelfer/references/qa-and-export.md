@@ -17,7 +17,7 @@
 | `validate <profil\|stelle>` | Schemaprüfung, Asset-Pfade des Profils, bei Bewerbungsweg `email` der E-Mail-Entwurf `application/email.md` und offene blockierende Fragen der Stellen (`references/job-search.md`, Abschnitt 8) |
 | `status <profil>` | Übersicht aller Stellen mit nächstem Schritt |
 | `ledger sync`, `status <stelle> <status>`, `check-duplicate`, `mark-sent`, `drop`, `restore`, `stats` | Stand, Ledger und Ablage, siehe `references/applications.md` |
-| `tools/send_mail.py setup\|check\|preview\|test\|send\|replies` | E-Mail-Versand und Antworten (Regel `send.batch` in `references/applications.md`) |
+| `tools/send_mail.py setup\|check\|preview\|test\|send\|replies\|inbox\|move` | E-Mail-Versand, Antworten und Ablage (Regel `send.batch` in `references/applications.md`) |
 
 Exit-Codes: 0 ok, 1 Fehler, 2 QA meldet Probleme bzw. ein Vergleich findet eine Abweichung (`snapshot --compare`, `rebuild --check`, `master --check`), 3 `same_posting` ohne Entscheidung (`check-duplicate`).
 

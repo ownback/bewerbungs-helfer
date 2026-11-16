@@ -21,7 +21,11 @@ Befehle:
       (falls der Server sie nicht selbst ablegt), application/sent.json schreiben, dann
       build_mappe.py mark-sent --channel email.
   replies [--days N]
-      Listet Nachrichten im Posteingang von den Domains der gesendeten Bewerbungen (nur lesen).
+      Listet Nachrichten im Posteingang, die zu gesendeten Bewerbungen passen (Domain oder Ref.-Nr.; nur lesen).
+  inbox [--days N]
+      Listet den Posteingang mit UID, Datum, Absender und Betreff (nur lesen).
+  move <uid>… --to <ordner>
+      Verschiebt Nachrichten aus dem Posteingang in einen Ordner (legt ihn an; Ablage nach Regel mail.sort).
 """
 import functools
 import argparse, datetime as dt, email.header, email.utils, imaplib, json, mimetypes, os, pathlib, re, smtplib, ssl
@@ -255,6 +259,42 @@ def cmd_replies(a):
         m.logout()
 
 
+def cmd_inbox(a):
+    c = load_conf()
+    dec = lambda v: str(email.header.make_header(email.header.decode_header(v or '')))
+    since = (dt.date.today() - dt.timedelta(days=a.days)).strftime('%d-%b-%Y')
+    m = imap_conn(c)
+    try:
+        m.select('INBOX', readonly=True)
+        typ, data = m.uid('SEARCH', None, 'SINCE', since)
+        for uid in (data[0].split() if typ == 'OK' and data and data[0] else []):
+            typ, hd = m.uid('FETCH', uid, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])')
+            h = email.message_from_bytes(hd[0][1])
+            print(f'{uid.decode()} · {h["Date"]} · {dec(h["From"])}\n    {dec(h["Subject"])}')
+    finally:
+        m.logout()
+
+
+def cmd_move(a):
+    if not a.to.isascii():
+        die('Ordnername nur mit ASCII-Zeichen (IMAP), z. B. „Bewerbungen Automatisch“')
+    c = load_conf()
+    m = imap_conn(c)
+    try:
+        folder = '"%s"' % a.to
+        m.create(folder)  # existiert er schon, meldet der Server NO; das ist in Ordnung
+        m.select('INBOX')
+        uids = ','.join(a.uids)
+        typ, _ = m.uid('COPY', uids, folder)
+        if typ != 'OK':
+            die(f'Kopieren nach {a.to} fehlgeschlagen, nichts verschoben')
+        m.uid('STORE', uids, '+FLAGS', r'(\Deleted)')
+        m.expunge()
+        print(f'{len(a.uids)} Nachricht(en) nach „{a.to}“ verschoben.')
+    finally:
+        m.logout()
+
+
 def build_parser():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest='cmd', required=True)
@@ -265,13 +305,15 @@ def build_parser():
     s = sp.add_parser('send'); s.add_argument('folders', nargs='+'); s.add_argument('--yes', action='store_true')
     s.add_argument('--delay', type=int, default=45)
     s = sp.add_parser('replies'); s.add_argument('--days', type=int, default=60)
+    s = sp.add_parser('inbox'); s.add_argument('--days', type=int, default=30)
+    s = sp.add_parser('move'); s.add_argument('uids', nargs='+'); s.add_argument('--to', required=True)
     return ap
 
 
 def main():
     a = build_parser().parse_args()
     {'setup': cmd_setup, 'check': cmd_check, 'preview': cmd_preview, 'test': cmd_test,
-     'send': cmd_send, 'replies': cmd_replies}[a.cmd](a)
+     'send': cmd_send, 'replies': cmd_replies, 'inbox': cmd_inbox, 'move': cmd_move}[a.cmd](a)
 
 
 if __name__ == '__main__':

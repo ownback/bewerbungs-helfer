@@ -2,6 +2,11 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-16: Bewerbungsweg aus der Anzeige, Antworten sortieren
+
+- **Regel `apply.channel` geändert:** Nennt die Anzeige ein Portal oder Online-Formular, gilt das Portal. Vorher ging E-Mail vor, sobald irgendeine Bewerbungsadresse bekannt war. Drei Firmen (KTE, KIT, E-Werk Mittelbaden) haben E-Mail-Bewerbungen deshalb abgelehnt und auf ihr Portal verwiesen. Nennt die Anzeige nur die Post, geht E-Mail weiter vor.
+- **Antworten sortieren:** `send_mail.py inbox` listet den Posteingang mit UID, `send_mail.py move <uid>… --to <ordner>` verschiebt Nachrichten. Ablage nach Regel `mail.sort` in `references/applications.md`.
+
 ## 2026-11-16: E-Mail-Versand stapelweise nach Freigabe
 
 - **Neu:** `tools/send_mail.py` (Standardbibliothek): `setup`, `check`, `preview`, `test`, `send`, `replies`. Versand über SMTP mit App-spezifischem Passwort, Kopie in „Gesendet“ per IMAP, danach `mark-sent`; `replies` listet Antworten der Firmen-Domains, nur lesend (Regel `send.batch` in `references/applications.md`).

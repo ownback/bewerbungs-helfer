@@ -173,6 +173,9 @@ E-Mails sendet nur `tools/send_mail.py`, stapelweise und erst nach einem ausdrü
 
 Absender ist `person.email` aus dem Profil, der Text der Entwurf `application/email.md` (Regel `email.text` in `references/writing.md`), der einzige Anhang die Mappe als PDF, benannt `Bewerbungsmappe_<Vorname>_<Nachname>.pdf`. Antworten: `send_mail.py replies [--days N]` listet Nachrichten im Posteingang von den Domains der gesendeten Bewerbungen, nur lesend; den neuen Status (`interview`, `rejected` …) setzt der Agent erst nach Rücksprache mit dem Nutzer.
 
+<!-- rule: mail.sort -->
+Posteingang aufräumen, wenn der Nutzer seine Mails prüfen lässt: Im Posteingang bleiben nur Antworten mit einer Entscheidung oder einem nächsten Schritt, also Einladung zu Gespräch oder Test, Zusage, Absage, Rückfrage einer Person oder ihre Zusage, sich zu melden. Alles andere aus dem Bewerbungsverlauf kommt in den Ordner „Bewerbungen Automatisch“ (eine Ebene, weil iOS Mail keine Unterordner zeigt): automatische Eingangsbestätigungen, Zugangsdaten und Passwortmails der Portale, Abwesenheitsnotizen und Hinweise „bitte über das Portal bewerben“, sobald der Nutzer das erledigt hat. Der Agent liest die Nachrichten, ordnet sie zu und verschiebt mit `send_mail.py inbox` und `send_mail.py move <uid>… --to "Bewerbungen Automatisch"`; gelöscht wird nichts. Nachrichten ohne Bezug zu Bewerbungen bleiben unberührt.
+
 ## Statistik
 
 ```bash
@@ -188,4 +191,4 @@ Für Fragen, die das Skript nicht abdeckt (z. B. „Welche Firmen haben noch nic
 ## Bewerbungsweg
 
 <!-- rule: apply.channel -->
-E-Mail geht vor (Entscheidung des Nutzers vom 2026-11-15): Ist für eine Stelle eine Bewerbungsadresse bekannt (`application.email`, belegte E-Mail des Ansprechpartners oder eine Bewerbungsadresse aus Anzeige, `portal_page.md` oder `firma.md`), wird per E-Mail beworben, auch wenn die Anzeige Post oder ein Portal nennt. Dann `application.method: email` setzen und den ursprünglichen Weg mit Quelle in `application.notes` vermerken. Ausnahme: Schreibt die Firma ausdrücklich, dass Bewerbungen per E-Mail nicht berücksichtigt werden (Quelle in `firma.md`), bleibt es beim Portal. Ohne belegte E-Mail-Adresse bleibt es beim Portal (füllt der Nutzer aus) oder bei der Post.
+Der Weg aus der Anzeige gilt (Entscheidung des Nutzers vom 2026-11-16): Nennt die Anzeige, `portal_page.md` oder `firma.md` ein Portal, ein Online-Formular oder „über die Internetseite des Arbeitgebers“, wird über das Portal beworben (füllt der Nutzer aus), auch wenn irgendwo eine E-Mail-Adresse steht. Per E-Mail nur, wenn die Anzeige selbst eine Bewerbungsadresse nennt oder um E-Mail bittet, oder wenn sie gar keinen Weg nennt und eine belegte Bewerbungsadresse bekannt ist. Nennt die Anzeige nur die Post und ist eine belegte Bewerbungsadresse bekannt, geht E-Mail vor. Den gewählten Weg in `application.method`, den Beleg in `application.notes`.
