@@ -226,25 +226,31 @@ def cmd_send(a):
 
 
 def cmd_replies(a):
+    """Posteingang seit --days: Nachrichten, deren Absender-Domain zu einer gesendeten Bewerbung passt
+    oder deren Betreff deren Ref.-Nr. enthält (Antworten kommen oft von einer anderen Domain)."""
     c = load_conf()
     sent = []
     for p in ROOT.glob('profile/*/applications/sent/**/application/sent.json'):
         j = json.loads(p.read_text())
-        sent.append((j['to'].split('@')[1].lower(), p.parent.parent, j))
+        ref = re.search(r'Ref\.-Nr\.\s*([\w-]+)', j.get('subject', ''))
+        sent.append((j['to'].split('@')[1].lower(), ref.group(1) if ref else None, p.parent.parent))
     if not sent:
         print('Noch keine gesendeten Bewerbungen.'); return
+    dec = lambda v: str(email.header.make_header(email.header.decode_header(v or '')))
     since = (dt.date.today() - dt.timedelta(days=a.days)).strftime('%d-%b-%Y')
     m = imap_conn(c)
     try:
         m.select('INBOX', readonly=True)
-        for dom in sorted({d for d, _, _ in sent}):
-            typ, data = m.search(None, 'SINCE', since, 'FROM', dom)
-            for num in (data[0].split() if typ == 'OK' and data and data[0] else []):
-                typ, hd = m.fetch(num, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])')
-                h = email.message_from_bytes(hd[0][1])
-                folders = [str(fo.relative_to(ROOT)) for d, fo, _ in sent if d == dom]
-                dec = lambda v: str(email.header.make_header(email.header.decode_header(v or '')))
-                print(f'{h["Date"]} · {dec(h["From"])}\n    {dec(h["Subject"])}\n    Stelle: {", ".join(folders)}')
+        typ, data = m.search(None, 'SINCE', since)
+        for num in (data[0].split() if typ == 'OK' and data and data[0] else []):
+            typ, hd = m.fetch(num, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])')
+            h = email.message_from_bytes(hd[0][1])
+            frm, subj = dec(h['From']), dec(h['Subject'])
+            dom = (email.utils.parseaddr(frm)[1].split('@')[-1]).lower()
+            hits = [str(fo.relative_to(ROOT)) for d, ref, fo in sent
+                    if dom == d or dom.endswith('.' + d) or (ref and ref in subj)]
+            if hits:
+                print(f'{h["Date"]} · {frm}\n    {subj}\n    Stelle: {", ".join(hits)}')
     finally:
         m.logout()
 
