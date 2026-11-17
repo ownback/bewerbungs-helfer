@@ -2,6 +2,10 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-17: Erneut senden
+
+- `send_mail.py send … --again [--to <adresse>]`: eine gesendete Bewerbung erneut senden, nach einem Rückläufer oder an eine Portaladresse für E-Mail-Bewerbungen; der Versand wird an `sent.json` angehängt, der Status bleibt (Regel `send.batch`, Schritt 5).
+
 ## 2026-11-17: Recherche-Subagent, Sammelfreigabe, Mastertext abgleichen
 
 Damit ein neuer Durchlauf ohne die Arbeitsnotizen in `.tmp/` gleich arbeitet:

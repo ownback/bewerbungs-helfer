@@ -16,10 +16,12 @@ Befehle:
   test <stellenordner> [--to <adresse>]
       Sendet die E-Mail dieser Stelle an den Absender selbst (oder --to), Betreff mit „[TEST]“.
       Kein Ledger-Eintrag.
-  send <stellenordner>… --yes [--delay SEKUNDEN]
+  send <stellenordner>… --yes [--delay SEKUNDEN] [--again] [--to <adresse>]
       Sendet den freigegebenen Stapel. Ohne --yes nur Vorschau. Je Stelle: Senden, Kopie in „Gesendet“
       (falls der Server sie nicht selbst ablegt), application/sent.json schreiben, dann
-      build_mappe.py mark-sent --channel email.
+      build_mappe.py mark-sent --channel email. --again sendet eine gesendete Bewerbung erneut (Rückläufer, oder die
+      Firma nennt eine Portal-Adresse für E-Mail-Bewerbungen) und hängt den Versand an sent.json an; --to ersetzt den
+      Empfänger des Entwurfs (nur mit einem Ordner).
   replies [--days N]
       Listet Nachrichten im Posteingang, die zu gesendeten Bewerbungen passen (Domain oder Ref.-Nr.; nur lesen).
   inbox [--days N]
@@ -79,8 +81,9 @@ def letter_date(folder):
     return dt.date.fromisoformat(m.group(1)) if m else None
 
 
-def check_folder(folder):
-    """Gibt (nachricht_daten, probleme) zurück."""
+def check_folder(folder, again=False, to=None):
+    """Gibt (nachricht_daten, probleme) zurück. again: erneut senden (nach Rückläufer oder an eine Portaladresse),
+    to: anderer Empfänger als im Entwurf."""
     probs = []
     job = json.loads((folder / 'job_information/job.json').read_text())
     mp = folder / 'application/application-manifest.json'
@@ -90,10 +93,14 @@ def check_folder(folder):
     if (job.get('application') or {}).get('method') != 'email':
         return {'to': '–', 'subject': '–', 'body': '', 'pdf': folder / 'application/email.md',
                 'company': man.get('company')}, ['Bewerbungsweg ist nicht „email“']
-    if man.get('status') != 'pdf_exported':
-        probs.append(f'Status {man.get("status")} (nötig: pdf_exported)')
-    if (folder / 'application/sent.json').exists():
-        probs.append('bereits gesendet (application/sent.json)')
+    if again:
+        if man.get('status') not in ('sent', 'interview') or not (folder / 'application/sent.json').exists():
+            probs.append(f'--again nur für gesendete Bewerbungen (Status {man.get("status")})')
+    else:
+        if man.get('status') != 'pdf_exported':
+            probs.append(f'Status {man.get("status")} (nötig: pdf_exported)')
+        if (folder / 'application/sent.json').exists():
+            probs.append('bereits gesendet (application/sent.json); erneut nur mit --again')
     pdf = folder / 'application' / (man.get('pdf') or '')
     if not man.get('pdf') or not pdf.exists():
         probs.append('PDF fehlt')
@@ -102,7 +109,8 @@ def check_folder(folder):
     d = letter_date(folder)
     if not d or (dt.date.today() - d).days > MAX_LETTER_AGE_DAYS:
         probs.append(f'Briefdatum {d} älter als {MAX_LETTER_AGE_DAYS} Tage: neu datieren, freigeben, exportieren')
-    to, subj, body = parse_draft(folder)
+    to_draft, subj, body = parse_draft(folder)
+    to = to or to_draft
     if '[' in body or '[' in subj:
         probs.append('Platzhalter im Entwurf')
     return {'to': to, 'subject': subj, 'body': body, 'pdf': pdf, 'company': man.get('company')}, probs
@@ -178,7 +186,7 @@ def cmd_preview(a, folders=None):
     ok = True
     for f in folders or [pathlib.Path(x) for x in a.folders]:
         _, person = profile_of(f)
-        data, probs = check_folder(f)
+        data, probs = check_folder(f, getattr(a, 'again', False), getattr(a, 'to', None))
         ok &= not probs
         size = f'{data["pdf"].stat().st_size // 1024} KB' if data['pdf'].exists() else 'fehlt'
         print(f'{"OK " if not probs else "-- "} {data["company"]}\n    An: {data["to"]}\n    Betreff: {data["subject"]}'
@@ -200,6 +208,8 @@ def cmd_test(a):
 
 def cmd_send(a):
     folders = [pathlib.Path(x) for x in a.folders]
+    if a.to and len(folders) != 1:
+        die('--to nur mit genau einem Stellenordner')
     if not cmd_preview(a, folders):
         die('Stapel hat Probleme, nichts gesendet.')
     if not a.yes:
@@ -207,13 +217,28 @@ def cmd_send(a):
     c = load_conf()
     for i, f in enumerate(folders):
         _, person = profile_of(f)
-        data, _ = check_folder(f)
+        data, _ = check_folder(f, a.again, a.to)
         msg, att = build_message(data, person)
         smtp_send(c, msg)
+        sent_json = f / 'application/sent.json'
+        if a.again:  # erneuter Versand: an sent.json anhängen, Status bleibt
+            j = json.loads(sent_json.read_text())
+            entry = {'sent_at': dt.datetime.now().astimezone().isoformat(timespec='seconds'), 'to': data['to'],
+                     'message_id': msg['Message-ID'], 'sent_copy': 'offen'}
+            j.setdefault('resends', []).append(entry)
+            sent_json.write_text(json.dumps(j, ensure_ascii=False, indent=2) + '\n')
+            try:
+                entry['sent_copy'] = ensure_in_sent(c, msg)
+            except Exception as e:
+                entry['sent_copy'] = f'Kopie fehlgeschlagen: {e}'
+            sent_json.write_text(json.dumps(j, ensure_ascii=False, indent=2) + '\n')
+            print(f'ERNEUT GESENDET {data["company"]} → {data["to"]} ({entry["sent_copy"]})')
+            if i < len(folders) - 1:
+                time.sleep(a.delay)
+            continue
         record = {'sent_at': dt.datetime.now().astimezone().isoformat(timespec='seconds'),
                   'to': data['to'], 'subject': data['subject'], 'message_id': msg['Message-ID'],
                   'attachment': att, 'sent_copy': 'offen'}
-        sent_json = f / 'application/sent.json'
         sent_json.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')  # sofort, vor allem anderen
         try:
             where = ensure_in_sent(c, msg)
@@ -303,7 +328,7 @@ def build_parser():
     s = sp.add_parser('preview'); s.add_argument('folders', nargs='+')
     s = sp.add_parser('test'); s.add_argument('folder'); s.add_argument('--to')
     s = sp.add_parser('send'); s.add_argument('folders', nargs='+'); s.add_argument('--yes', action='store_true')
-    s.add_argument('--delay', type=int, default=45)
+    s.add_argument('--delay', type=int, default=45); s.add_argument('--again', action='store_true'); s.add_argument('--to')
     s = sp.add_parser('replies'); s.add_argument('--days', type=int, default=60)
     s = sp.add_parser('inbox'); s.add_argument('--days', type=int, default=30)
     s = sp.add_parser('move'); s.add_argument('uids', nargs='+'); s.add_argument('--to', required=True)
