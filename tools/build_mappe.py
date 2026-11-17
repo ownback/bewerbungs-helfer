@@ -51,6 +51,10 @@ Befehle:
       Stelle aussortieren: Ordner nach applications/dropped/<typ>/… verschieben, Grund in DROPPED.txt.
   restore <stellen-ordner>       Aussortierte Stelle zurückholen (Gegenstück zu drop).
   stats <profil-ordner>          Kennzahlen aus dem Ledger (Status, Typ, Monat).
+  motivation-sync <stellen-ordner>… [--check]
+      Mastertext nach einer Änderung in die Motivationsschreiben übernehmen: Einstieg, Belege und alle Sätze von
+      „## Text“ aus dem Mastertext, erster und letzter Satz der Stelle bleiben. Gesendete und aussortierte Stellen
+      werden übersprungen. --check ändert nichts (Exit 2, wenn eine Stelle abweicht).
 
 Chromium wird über $CHROME oder chromium/chromium-browser/google-chrome gesucht.
 """
@@ -1098,7 +1102,7 @@ def words_note(label: str, count: int, limits: dict | None, meta: dict) -> str:
 
 GREETING = 'Mit freundlichen'
 # Ein Punkt nach diesen Wörtern, nach einem einzelnen Buchstaben („z. B.“) oder nach einer Zahl beendet keinen Satz.
-ABBREVIATIONS = {'bzw', 'ca', 'ggf', 'inkl', 'usw', 'evtl', 'vgl', 'nr', 'dr', 'prof', 'st', 'etc', 'sog'}
+ABBREVIATIONS = {'bzw', 'ca', 'ggf', 'inkl', 'usw', 'evtl', 'vgl', 'nr', 'dr', 'prof', 'st', 'etc', 'sog', 'co'}
 
 
 def sentence_ends(text: str) -> list[int]:
@@ -2394,6 +2398,85 @@ def cmd_stats(args) -> int:
     return 0
 
 
+def md_section_span(text: str, name: str) -> tuple[int, int] | None:
+    """Anfang und Ende des Inhalts von „## <name>“ (bis zur nächsten Überschrift oder zum Dateiende)."""
+    m = re.search(rf'^##[ \t]*{re.escape(name)}[ \t]*\n', text, flags=re.M | re.I)
+    if not m:
+        return None
+    nxt = re.search(r'^##\s', text[m.end():], flags=re.M)
+    return m.end(), m.end() + nxt.start() if nxt else len(text)
+
+
+def synced_motivation(master_src: str, posting_src: str, path: Path) -> str:
+    """Motivationsschreiben einer Stelle mit dem Mastertext abgleichen: Einstieg, Belege und alle Sätze von
+    „## Text“ kommen aus dem Mastertext; der erste und der letzte Satz der Stelle bleiben (Regel motivation.master)."""
+    def blocks(src: str) -> tuple[list[str], str]:
+        span = md_section_span(src, 'Text')
+        if not span:
+            raise BuildError(f'{rel(path)}: Abschnitt „## Text“ fehlt')
+        paras = [p.strip() for p in re.split(r'\n\s*\n', src[span[0]:span[1]]) if p.strip()]
+        greet = paras.pop() if paras and paras[-1].startswith(GREETING) else ''
+        if not paras:
+            raise BuildError(f'{rel(path)}: „## Text“ ist leer')
+        return paras, greet
+
+    want, greet = blocks(master_src)
+    have, _ = blocks(posting_src)
+    first_end, last_start = sentence_ends(have[0]), sentence_ends(have[-1])
+    if not first_end or (len(have) == 1 and len(first_end) < 2) or not last_start:
+        raise BuildError(f'{rel(path)}: erster und letzter Satz von „## Text“ nicht eindeutig erkennbar')
+    own_first, own_last = have[0][:first_end[0]].strip(), have[-1][last_start[-1]:].strip()
+    m_first, m_last = sentence_ends(want[0]), sentence_ends(want[-1])
+    if not m_first or not m_last:
+        raise BuildError('Mastertext: erster und letzter Satz von „## Text“ nicht eindeutig erkennbar')
+    new = list(want)
+    if len(new) == 1:
+        new[0] = f'{own_first} {want[0][m_first[0]:m_last[-1]].strip()} {own_last}'
+    else:
+        new[0] = f'{own_first} {want[0][m_first[0]:].strip()}'
+        new[-1] = f'{want[-1][:m_last[-1]].strip()} {own_last}'
+    text_block = '\n\n'.join(new + ([greet] if greet else [])) + '\n\n'
+    out = posting_src
+    for name, value in (('Text', text_block), ('Einstieg', None), ('Belege', None)):
+        dst = md_section_span(out, name)
+        if value is None:
+            src = md_section_span(master_src, name)
+            if not src or not dst:
+                continue
+            value = master_src[src[0]:src[1]]
+        out = out[:dst[0]] + '\n' + value.strip('\n') + '\n\n' + out[dst[1]:].lstrip('\n')
+    return out.rstrip('\n') + '\n'
+
+
+def cmd_motivation_sync(args) -> int:
+    """Mastertext in die Motivationsschreiben der Stellen übernehmen, erster und letzter Satz bleiben."""
+    changed = 0
+    for d in args.dirs:
+        posting = Path(d).resolve()
+        info = posting_info(posting)
+        path = posting / 'text_generation' / 'motivationsschreiben.md'
+        if info['dropped'] or info['sent'] or not path.is_file():
+            print(f'übersprungen: {rel(posting)} ({"aussortiert" if info["dropped"] else "gesendet" if info["sent"] else "kein Motivationsschreiben"})')
+            continue
+        master = motivation_master_path(info['profile_dir'])
+        if not master.is_file():
+            raise BuildError(f'Mastertext fehlt: {rel(master)}')
+        old = path.read_text(encoding='utf-8')
+        new = synced_motivation(master.read_text(encoding='utf-8'), old, path)
+        if new == old:
+            print(f'unverändert: {rel(posting)}')
+            continue
+        changed += 1
+        if args.check:
+            print(f'weicht ab: {rel(posting)}')
+            continue
+        path.write_text(new, encoding='utf-8')
+        print(f'abgeglichen: {rel(posting)}')
+    if changed and not args.check:
+        print(f'{changed} Stelle(n) geändert. Neu bauen (application … --qa), zeigen und neu freigeben lassen.')
+    return 2 if (args.check and changed) else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Alle Befehle und Schalter. tools/check_repo.py docs liest sie hier ab und prüft damit die Doku."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -2428,6 +2511,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument('--date'); s.set_defaults(fn=cmd_drop)
     s = sub.add_parser('restore'); s.add_argument('dir'); s.set_defaults(fn=cmd_restore)
     s = sub.add_parser('stats'); s.add_argument('dir'); s.set_defaults(fn=cmd_stats)
+    s = sub.add_parser('motivation-sync'); s.add_argument('dirs', nargs='+'); s.add_argument('--check', action='store_true')
+    s.set_defaults(fn=cmd_motivation_sync)
     return ap
 
 

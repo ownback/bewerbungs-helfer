@@ -148,7 +148,7 @@ Jeder Eintrag in `open_questions` hat `question`, `severity` (`blocking`, `non_b
 ## 9. Firmenrecherche vor dem Schreiben
 
 <!-- rule: company.research -->
-Bevor für eine Stelle Texte entstehen, gibt es `job_information/firma.md` nach `assets/templates/firma.md`. Die Datei ist die einzige Grundlage für Aussagen über die Firma im Anschreiben und im Motivationsschreiben (Regel `letters.evidence` in `references/writing.md`). Sie entsteht beim Hauptagenten oder bei einem Recherche-Subagenten mit Browser; der Schreib-Subagent hat kein Web-Werkzeug und liest sie nur.
+Bevor für eine Stelle Texte entstehen, gibt es `job_information/firma.md` nach `assets/templates/firma.md`. Die Datei ist die einzige Grundlage für Aussagen über die Firma im Anschreiben und im Motivationsschreiben (Regel `letters.evidence` in `references/writing.md`). Sie entsteht beim Hauptagenten oder beim Recherche-Subagenten (`.claude/agents/bewerbung-recherche.md`); der Schreib-Subagent hat kein Web-Werkzeug und liest sie nur. Seiten der Firma holt `python3 tools/research.py fetch <stelle> <url>…` als Text nach `.tmp/research/`; `python3 tools/research.py verify <stelle>…` prüft, dass jeder Beleg wörtlich in einer gelesenen Quelle steht.
 
 Quellen, in dieser Reihenfolge:
 

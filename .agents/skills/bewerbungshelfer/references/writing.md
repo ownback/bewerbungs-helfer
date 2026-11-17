@@ -91,7 +91,7 @@ Inhalt, nach der Vorgabe des Nutzers: alle eigenen Projekte in der Reihenfolge, 
 
 Quellen sind `projects[]` (`goal`, `own_role`, `tools`, `result`, `learned`, `worked`, `did_not_work`, `connection`) und der Block `motivation` im Profil. Erzählt wird nur, was dort steht. Ein leeres Feld wird nicht ausgefüllt, sondern erfragt (Regel `interview.projects` in `references/interview.md`); bis dahin fehlt dieser Teil der Geschichte.
 
-Den Mastertext schreibt der Hauptagent nach dem Interview, wendet den Humanizer an und legt ihn dem Nutzer vor. Er gilt erst nach dessen ausdrücklicher Freigabe; sie steht als Kommentar `<!-- freigegeben: JJJJ-MM-TT -->` direkt unter dem Vorspann des Mastertexts. Ohne diesen Kommentar wird kein Motivationsschreiben für eine Stelle abgeleitet. Ändert sich ein Projekt im Profil, wird der Mastertext angepasst und neu freigegeben.
+Den Mastertext schreibt der Hauptagent nach dem Interview, wendet den Humanizer an und legt ihn dem Nutzer vor. Er gilt erst nach dessen ausdrücklicher Freigabe; sie steht als Kommentar `<!-- freigegeben: JJJJ-MM-TT -->` direkt unter dem Vorspann des Mastertexts. Ohne diesen Kommentar wird kein Motivationsschreiben für eine Stelle abgeleitet. Ändert sich ein Projekt im Profil, wird der Mastertext angepasst und neu freigegeben. Danach übernimmt `python3 tools/build_mappe.py motivation-sync <stellen>…` den neuen Mastertext in die Motivationsschreiben der offenen Stellen (erster und letzter Satz der Stelle bleiben, gesendete Stellen werden übersprungen); dann neu bauen und neu freigeben lassen. Die Schreib-Subagenten schreiben dafür nichts neu.
 
 Pro Stelle:
 

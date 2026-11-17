@@ -2,6 +2,14 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-17: Recherche-Subagent, Sammelfreigabe, Mastertext abgleichen
+
+Damit ein neuer Durchlauf ohne die Arbeitsnotizen in `.tmp/` gleich arbeitet:
+
+- **Recherche-Subagent** `.claude/agents/bewerbung-recherche.md` auf Claude Haiku (vorher nur eine Zeile in `fan-out.md`; der Auftrag stand in einer Notiz unter `.tmp/`). Neu `tools/research.py`: `fetch` holt Firmenseiten als Text nach `.tmp/research/`, `verify` prüft jeden Beleg in `firma.md` wörtlich gegen die gelesenen Quellen (vorher Hilfsskripte unter `.tmp/`). Der Subagent prüft auch Portal-Link und Bewerbungsadressen.
+- **Sammelfreigabe** (Regel `approval.batch` in `references/qa-and-export.md`): Der Nutzer darf mehrere Mappen auf einmal freigeben; vorher hieß es „einzeln pro Mappe“. Prüfsumme weiter pro Mappe.
+- **`build_mappe.py motivation-sync`**: übernimmt einen geänderten Mastertext in die Motivationsschreiben der offenen Stellen, erster und letzter Satz der Stelle bleiben (vorher Skript unter `.tmp/` oder alle Briefe neu schreiben). „Co.“ beendet für die Satzerkennung keinen Satz mehr.
+
 ## 2026-11-16: Bewerbungsweg aus der Anzeige, Antworten sortieren
 
 - **Regel `apply.channel` geändert:** Nennt die Anzeige ein Portal oder Online-Formular, gilt das Portal. Vorher ging E-Mail vor, sobald irgendeine Bewerbungsadresse bekannt war. Drei Firmen (KTE, KIT, E-Werk Mittelbaden) haben E-Mail-Bewerbungen deshalb abgelehnt und auf ihr Portal verwiesen. Nennt die Anzeige nur die Post, geht E-Mail weiter vor.

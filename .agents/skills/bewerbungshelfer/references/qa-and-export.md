@@ -17,6 +17,8 @@
 | `validate <profil\|stelle>` | Schemaprüfung, Asset-Pfade des Profils, bei Bewerbungsweg `email` der E-Mail-Entwurf `application/email.md` und offene blockierende Fragen der Stellen (`references/job-search.md`, Abschnitt 8) |
 | `status <profil>` | Übersicht aller Stellen mit nächstem Schritt |
 | `ledger sync`, `status <stelle> <status>`, `check-duplicate`, `mark-sent`, `drop`, `restore`, `stats` | Stand, Ledger und Ablage, siehe `references/applications.md` |
+| `motivation-sync <stelle>… [--check]` | Mastertext nach einer Änderung in die Motivationsschreiben übernehmen (Regel `motivation.master` in `references/writing.md`) |
+| `tools/research.py fetch\|verify` | Firmenseiten als Text holen, Belege in `firma.md` prüfen (Regel `company.research` in `references/job-search.md`) |
 | `tools/send_mail.py setup\|check\|preview\|test\|send\|replies\|inbox\|move` | E-Mail-Versand, Antworten und Ablage (Regel `send.batch` in `references/applications.md`) |
 
 Exit-Codes: 0 ok, 1 Fehler, 2 QA meldet Probleme bzw. ein Vergleich findet eine Abweichung (`snapshot --compare`, `rebuild --check`, `master --check`), 3 `same_posting` ohne Entscheidung (`check-duplicate`).
@@ -148,6 +150,9 @@ Ohne eindeutiges Ja kein PDF. Schweigen oder „sieht gut aus, aber …“ ist k
 ```bash
 python3 tools/build_mappe.py status <stelle> html_approved
 ```
+
+<!-- rule: approval.batch -->
+Sammelfreigabe: Gibt der Nutzer mehrere Mappen auf einmal frei („alle Mappen freigegeben“, „Tuttlingen ist freigegeben“), gilt das für genau die Mappen, die er zu dem Zeitpunkt gesehen haben kann (Stichprobe gezeigt, Rest zum Durchsehen bereitgestellt) und die er damit benennt. Der Agent nennt danach Zahl und Liste der freigegebenen Mappen. Pro Mappe läuft trotzdem `status <stelle> html_approved` mit eigener Prüfsumme; ändert sich eine Mappe später, braucht nur sie eine neue Freigabe.
 
 <!-- rule: approval.checksum -->
 Der Befehl hält im Manifest fest, was freigegeben wurde: `approved_sha256` ist die Prüfsumme über die HTML-Datei und jedes eingebundene Bild. Freigegeben ist genau dieser Stand. Entspricht die gespeicherte Mappe nicht mehr ihren Quellen (nach dem Bau wurde etwas geändert), lehnt der Befehl ab: erst neu bauen, zeigen, erneut fragen. Ändert sich danach ein Text, das Profil, die Vorlage oder ein Bild, hat der nächste Bau eine andere Prüfsumme: Der Status fällt auf `draft` zurück, und die Freigabe ist neu einzuholen. Eine Freigabe ohne Prüfsumme (ältere Manifeste) gilt nicht als Freigabe.
