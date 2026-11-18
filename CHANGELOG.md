@@ -2,6 +2,13 @@
 
 Hier steht, was sich wann geändert hat. Die Referenzen unter `.agents/skills/bewerbungshelfer/references/` beschreiben nur den heutigen Stand.
 
+## 2026-11-18: Rückzug, Antworten im Verlauf, Ordner pro Suchort
+
+- `send_mail.py withdraw`: Rückzug per E-Mail mit festem Text (`assets/templates/rueckzug.md`, Regel `send.withdraw`), Status danach `withdrawn`.
+- `send_mail.py reply`: Antwort im selben Verlauf (Re:-Betreff, In-Reply-To), Text aus einer Datei, `--to` für eine Korrektur zur eigenen Mail, mit Humanizer-Durchgang (Regel `letters.humanizer`).
+- `send_mail.py compose`: freie Rückfrage an eine Firma, Text aus einer Datei.
+- Regel `mail.sort` geändert: Ordner nach Handlungsbedarf statt nach Suchort, „Angenommen und Tests“ (der Nutzer muss etwas tun), „Abgesagt“, „Automatische Antworten“, „Alt“ (zurückgezogen oder aussortiert) und ein eigener Ordner für eine hervorgehobene Firma. Vorher blieben Entscheidungen im Posteingang und Automatisches lag in „Bewerbungen Automatisch“. `inbox` und `move` können mit `--from` aus einem Ordner lesen.
+
 ## 2026-11-17: Erneut senden
 
 - `send_mail.py send … --again [--to <adresse>]`: eine gesendete Bewerbung erneut senden, nach einem Rückläufer oder an eine Portaladresse für E-Mail-Bewerbungen; der Versand wird an `sent.json` angehängt, der Status bleibt (Regel `send.batch`, Schritt 5).
