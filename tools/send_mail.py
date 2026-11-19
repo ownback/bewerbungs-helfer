@@ -272,6 +272,8 @@ def cmd_replies(a):
     sent = []
     for p in ROOT.glob('profile/*/applications/sent/**/application/sent.json'):
         j = json.loads(p.read_text())
+        if 'to' not in j:  # Portal-Bewerbung, nur Rückzug per Mail protokolliert
+            continue
         ref = re.search(r'Ref\.-Nr\.\s*([\w-]+)', j.get('subject', ''))
         sent.append((j['to'].split('@')[1].lower(), ref.group(1) if ref else None, p.parent.parent))
     if not sent:
